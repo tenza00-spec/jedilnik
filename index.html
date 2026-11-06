@@ -105,11 +105,11 @@ nav button.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;font-size:14px;display:flex;gap:14px;align-items:center;z-index:9;max-width:calc(100% - 32px)}
 .meal .items li{align-items:flex-start}
 .tick{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);background:var(--bg);flex:0 0 auto;padding:0;display:grid;place-items:center;margin-top:1px}
-.tick[aria-pressed="true"]{border-color:var(--warn);background:var(--warn);color:var(--surface)}
+.tick[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
 .tick svg{width:12px;height:12px}
 .it{display:flex;gap:10px;align-items:flex-start;flex:1;min-width:0}
 .it .lab{flex:1;min-width:0}.it .lab small{display:block;color:var(--muted);font-size:13px}
-li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
+li.eaten .lab{color:var(--muted)}
 .xtag{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-left:4px}
 .mini{border:0;background:none;color:var(--warn);font-size:18px;line-height:1;padding:0 2px}
 .eitem{border-top:1px solid var(--line);padding-top:8px;margin-top:8px;display:flex;flex-direction:column;gap:6px}
@@ -140,6 +140,10 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
 .dlog li{align-items:center}
 .dlog li span{flex:1}
 .water .two{display:flex;gap:8px;align-items:center}
+.rec summary{display:flex;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;font-weight:700}
+.rec summary::-webkit-details-marker{display:none}
+.rec summary .kc{font-weight:700}
+.rec[open] summary{margin-bottom:6px}
 .toast[hidden]{display:none}
 .toast button{background:none;border:0;color:var(--accent);font-weight:700;padding:0}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .toast button{color:var(--accent-ink)}}
@@ -250,15 +254,59 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
       if (/saj/i.test(x.n)) { x.n = 'Aljaški polak, fileji brez kože (Lidl)'; x.q = '1 pakiranje 950 g (porabiš 400 g, ostane za prihodnji teden)'; }
     }); });
   }
-  function prep() { if (!S) return; if (!S.foods) S.foods = []; addNewFoods(); migrateCooked(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
+  var NEWRECIPES = [{"id": "r0", "n": "Ovsena kaša s cimetom", "k": 742, "p": 36, "ing": "60 g ovsenih kosmičev\n250 ml mleka\n125 g skute\n1 banana\n1 žlička medu\n1 žlica arašidovega masla\n½ žličke cimeta\nščep soli", "steps": "V lonček daj kosmiče, mleko in ščep soli.\nKuhaj na srednjem ognju 4–5 minut in ves čas mešaj, da se zgosti. V mikrovalovni: 2–3 minute, vmes enkrat premešaj.\nOdstavi in vmešaj skuto in cimet. Kaša postane kremasta.\nNa vrh daj narezano banano, med in arašidovo maslo.\nHitreje: kosmiče in mleko zvečer daj v kozarec v hladilnik, zjutraj samo segreješ in dodaš ostalo."}, {"id": "r1", "n": "Palačinke iz blenderja", "k": 580, "p": 34, "ing": "2 jajci\n40 g ovsenih kosmičev\n1 banana\n125 g skute\nščep cimeta\nkapljica olja za peko\n1 žlička medu za na vrh", "steps": "Jajca, kosmiče, banano, skuto in cimet zmiksaj 30 sekund v gladko testo.\nPusti stati 5 minut, da se zgosti.\nPonev segrej na srednji ogenj in jo s papirnato brisačko namaži s kapljico olja.\nZa vsako palačinko vlij ~2 žlici testa (male, ~10 cm). Iz testa jih je 6–8.\nPeci 1–2 minuti, da se na vrhu pojavijo mehurčki, obrni in peci še 1 minuto.\nPrelij z medom."}, {"id": "r2", "n": "Omleta z zmiksano špinačo", "k": 280, "p": 21, "ing": "3 jajca\n50 g zamrznjene špinače\n1 žlička olja\nsol, poper", "steps": "Špinačo odmrzni (mikrovalovna ~1 minuto) in jo ožemi.\nJajca in špinačo zmiksaj 10 sekund, da je omleta enakomerno zelena, brez kosov.\nV ponvi na srednjem ognju segrej žličko olja.\nVlij jajca, pokrij s pokrovko in peci 3–4 minute, da se zgoraj strdi.\nPrepogni na pol in postrezi."}, {"id": "r3", "n": "Umešana jajca s špinačo in praženim krompirjem", "k": 430, "p": 26, "ing": "3 jajca\n50 g zamrznjene špinače\n200 g kuhanega krompirja (lahko od prejšnjega dne)\n1 žlička olja\nsol, poper, paprika", "steps": "Kuhan krompir nareži na kocke.\nV ponvi segrej žličko olja in krompir praži 8–10 minut, da porjavi. Posoli in popopraj.\nŠpinačo odmrzni in ožemi, jajca zmiksaj s špinačo.\nKrompir porini na rob ponve, na prazen del vlij jajca in jih mešaj 1–2 minuti, da se strdijo."}, {"id": "r4", "n": "Pečen krompir v pečici", "k": 290, "p": 8, "ing": "~350 g surovega krompirja (po peki ~300 g)\n1 žlička olja\nsol, paprika, rožmarin", "steps": "Pečico segrej na 200 °C.\nKrompir operi in nareži na krhlje.\nV skledi ga premešaj z oljem in začimbami.\nRazporedi na pekač s peki papirjem in peci 30–35 minut, vmes enkrat obrni."}, {"id": "r5", "n": "Krompirjeva solata s tuno", "k": 510, "p": 45, "ing": "250 g kuhanega krompirja\n1 pločevinka tune v lastnem soku\n1 žlička olja\n1–2 žlici kisa\n100 g skute\nsol, poper, drobnjak", "steps": "Krompir v olupku kuhaj 20–25 minut, ohladi, olupi in nareži na kolobarje.\nPripravi preliv: olje, kis, sol, poper in 2 žlici tople vode.\nPrelij krompir in dodaj odcejeno tuno.\nSkuto zmešaj z drobnjakom in ščepom soli ter jo poješ zraven."}, {"id": "r6", "n": "Testenine s tuno in paradižnikovo omako", "k": 515, "p": 40, "ing": "80 g surovih testenin (po kuhanju ~180 g)\n1 pločevinka tune\n125 g pasiranega paradižnika\n1 žlička olja\n1 strok česna\norigano, sol\npo želji 50 g kuhanega korenja (zmiksaj v omako)", "steps": "Testenine skuhaj v slani vodi po navodilih na embalaži (~10 minut) in odcedi.\nV ponvi segrej olje in na njem 30 sekund praži sesekljan česen.\nDodaj pasiran paradižnik (in zmiksan korenček), origano in sol. Kuhaj 5 minut.\nVmešaj odcejeno tuno in segrevaj še 1–2 minuti.\nOmako zmešaj s testeninami."}, {"id": "r7", "n": "Pečen aljaški polak z limono", "k": 150, "p": 33, "ing": "~200 g surovega fileja (po peki ~150 g)\nsok ½ limone\nščep olja\nsol, poper", "steps": "Pečico segrej na 200 °C.\nFile položi na peki papir, pokapaj z oljem in limono, posoli in popopraj.\nPeci 15–18 minut (zamrznjen 20–25 minut), da se meso lepo lušči.\nV ponvi: 3–4 minute na vsaki strani na srednjem ognju.\nZraven: kuhan krompir z žličko olja."}, {"id": "r8", "n": "Skuta s česnom in drobnjakom", "k": 225, "p": 24, "ing": "200 g skute\n½ stroka česna\ndrobnjak\n1–2 žlici mleka\nsol, poper", "steps": "Česen stisni ali drobno naribaj, drobnjak nareži.\nVse zmešaj s skuto in toliko mleka, da je mazava.\nPosoli in popopraj. Odlična je zraven pečenega krompirja."}, {"id": "r9", "n": "Skuta s kakavom in banano", "k": 410, "p": 32, "ing": "250 g skute\n1 žlička kakava\n1 žlička medu\n1 banana\n2 žlici mleka", "steps": "Skuto, kakav, med in mleko zmešaj z vilico.\nBanano nareži na vrh.\nKot »čokoladni puding«: vse skupaj z banano zmiksaj v blenderju 20 sekund."}, {"id": "r10", "n": "Tortilja rolada s piščančjo salamo in sirom", "k": 385, "p": 26, "ing": "1 tortilja (25 cm)\n60 g piščančje prsne salame\n40 g sira (2 rezini) ali naribane mozzarelle\n1 žlička gorčice", "steps": "Tortiljo namaži z gorčico.\nObloži jo s salamo in sirom, rob pusti prost.\nTesno zvij.\nPo želji jo 1–2 minuti segrej v ponvi ali toasterju, da se sir stopi.\nNareži na kolutke."}, {"id": "r11", "n": "Pire krompir", "k": 280, "p": 7, "ing": "~300 g surovega olupljenega krompirja\n50 ml mleka\n2 žlici kisle smetane (30 g)\nsol, muškatni orešček", "steps": "Krompir nareži na kose in kuhaj v slani vodi 15–20 minut, da je mehak.\nOdcedi in pretlači.\nVmešaj toplo mleko in kislo smetano, dosoli in dodaj ščep muškatnega oreščka.\nZa več beljakovin del smetane zamenjaj z žlico skute ali jogurta."}, {"id": "r12", "n": "Kuhana jajca", "k": 150, "p": 13, "ing": "2 jajci", "steps": "Jajca daj v vrelo vodo.\nKuhaj 9–10 minut za trda jajca (6–7 minut za mehka).\nOhladi jih v mrzli vodi, da se lažje olupijo."}];
+  function addRecipes() {
+    if (!Array.isArray(S.recipes)) S.recipes = [];
+    if (!Array.isArray(S.recipesAdded)) S.recipesAdded = [];
+    NEWRECIPES.forEach(function (r) {
+      if (S.recipesAdded.indexOf(r.id) !== -1) return;
+      S.recipesAdded.push(r.id);
+      if (!S.recipes.some(function (x) { return x.id === r.id; })) S.recipes.push(JSON.parse(JSON.stringify(r)));
+    });
+  }
+  function lines(t) { return String(t || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); }
+  function renderRecipes() {
+    var h = '<h2>Recepti</h2><p class="note">Kako pripraviš jedi iz jedilnika. Tapni recept, da ga odpreš.</p>';
+    S.recipes.forEach(function (r) {
+      if (!editing) {
+        h += '<details class="card rec"><summary><span class="nm">' + esc(r.n) + '</span><span class="kc tnum">~' + r.k + ' kcal</span></summary>' +
+          '<span class="pill tnum">~' + fmtN(r.p) + ' g beljakovin</span>' +
+          '<h3>Sestavine</h3><ul class="tips">' + lines(r.ing).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+          '<h3>Priprava</h3><ol class="steps">' + lines(r.steps).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></details>';
+      } else {
+        h += '<div class="card ed"><div class="two"><input class="field" style="flex:1" id="rn-' + r.id + '" data-rf="n" data-id="' + r.id + '" value="' + esc(r.n) + '" aria-label="Ime recepta">' +
+          '<button type="button" class="x" data-act="delRec" data-id="' + r.id + '" aria-label="Odstrani">×</button></div>' +
+          '<div class="two"><label class="note" style="flex:1">kcal<input class="field tnum" style="width:100%" id="rk-' + r.id + '" data-rf="k" data-id="' + r.id + '" value="' + esc(r.k) + '" inputmode="numeric"></label>' +
+          '<label class="note" style="flex:1">beljak. (g)<input class="field tnum" style="width:100%" id="rp-' + r.id + '" data-rf="p" data-id="' + r.id + '" value="' + esc(fmtN(r.p)) + '" inputmode="decimal"></label></div>' +
+          '<label class="note">Sestavine (vsaka v svoji vrstici)<textarea class="field" style="width:100%" rows="5" id="ri-' + r.id + '" data-rf="ing" data-id="' + r.id + '">' + esc(r.ing) + '</textarea></label>' +
+          '<label class="note">Priprava (vsak korak v svoji vrstici)<textarea class="field" style="width:100%" rows="6" id="rs-' + r.id + '" data-rf="steps" data-id="' + r.id + '">' + esc(r.steps) + '</textarea></label></div>';
+      }
+    });
+    if (editing) h += '<button type="button" class="add" data-act="addRec">+ Dodaj recept</button>';
+    return h;
+  }
+  function cleanWeek() {
+    var mon = dateOfIdx(0);
+    (S.days || []).forEach(function (d, di) { (d.meals || []).forEach(function (m) {
+      (m.items || []).forEach(function (it) { if (it.extra && !it.addedOn) { it.addedOn = dateOfIdx(di); it.eatenOn = it.addedOn; } }); // from older version
+      m.items = (m.items || []).filter(function (it) { return !it.extra || it.addedOn >= mon; });
+      m.items.forEach(function (it) { delete it.skip; if (it.eatenOn && it.eatenOn < mon) delete it.eatenOn; });
+    }); });
+  }
+  function prep() { if (!S) return; if (!S.foods) S.foods = []; addNewFoods(); migrateCooked(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
     if (it.f) { var fd = food(it.f); if (!fd) return +it.p || 0; return (+fd.p || 0) * (+it.q || 0) / per(fd.unit); }
     return +it.p || 0;
   }
   function pTxt(g) { return Math.round(g) + ' g belj.'; }
-  function mealP(m) { return m.items.reduce(function (a, i) { return a + (i.skip ? 0 : itemP(i)); }, 0); }
-  function dayP(d) { return d.meals.reduce(function (a, m) { return a + mealP(m); }, 0); }
+  function weekMonday() { var n = new Date(), d = new Date(n.getFullYear(), n.getMonth(), n.getDate()); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
+  function dateOfIdx(i) { var m = weekMonday(); return dKey(new Date(m.getFullYear(), m.getMonth(), m.getDate() + i)); }
+  function isEaten(it, i) { return it.eatenOn === dateOfIdx(i); }
+  function shown(it, i) { return !it.extra || it.addedOn === dateOfIdx(i); }
+  function mealEK(m, i) { return m.items.reduce(function (a, it) { return a + (shown(it, i) && isEaten(it, i) ? itemK(it) : 0); }, 0); }
+  function mealEP(m, i) { return m.items.reduce(function (a, it) { return a + (shown(it, i) && isEaten(it, i) ? itemP(it) : 0); }, 0); }
+  function dayP(d) { var i = S.days.indexOf(d); return d.meals.reduce(function (a, m) { return a + mealEP(m, i); }, 0); }
   function per(unit) { return unit === 'g' || unit === 'ml' ? 100 : 1; }
   function food(f) {
     if (!f) return null;
@@ -277,8 +325,13 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
     if (it.f) { var fd = food(it.f); if (fd) return fd.label + ' · ' + qtyText(it.q, fd.unit); return it.n || 'Neznano živilo'; }
     return it.n || 'Brez imena';
   }
-  function mealK(m) { return m.items.reduce(function (a, i) { return a + (i.skip ? 0 : itemK(i)); }, 0); }
-  function dayKD(d) { var k = dayK(d); if (S.days.indexOf(d) === (new Date().getDay() + 6) % 7) { var x = drinksTodayK(); k = { no: k.no + x, lunch: k.lunch, all: k.all + x, drinks: x }; } return k; }
+  function mealK(m) { return m.items.reduce(function (a, i) { return a + (i.extra ? 0 : itemK(i)); }, 0); }
+  function dayKD(d) {
+    var i = S.days.indexOf(d), e = 0, plan = dayK(d).all;
+    d.meals.forEach(function (m) { e += mealEK(m, i); });
+    var x = i === (new Date().getDay() + 6) % 7 ? drinksTodayK() : 0;
+    return { all: e + x, drinks: x, plan: plan };
+  }
   function dayK(d) { var t = 0, l = 0; d.meals.forEach(function (m) { var k = mealK(m); if (m.lunch) l += k; else t += k; }); return { no: t, lunch: l, all: t + l }; }
   function foodOptions(sel) {
     var h = '<option value=""' + (!sel ? ' selected' : '') + '>Drugo (vpišem kalorije sam)</option><optgroup label="Smutiji">';
@@ -353,8 +406,8 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
 
   function gaugeHtml(k, pr) {
     return '<div class="bar"><div class="fill" style="width:' + Math.min(100, k.all / SCALE * 100) + '%"></div><div class="band" style="left:' + (TARGET_LO / SCALE * 100) + '%;width:' + ((TARGET_HI - TARGET_LO) / SCALE * 100) + '%"></div></div>' +
-      '<div class="lbl tnum"><span>Skupaj <b>~' + k.all + ' kcal</b> · <b>~' + Math.round(pr) + ' g</b> beljakovin</span><span>kosilo ~' + k.lunch + (k.drinks ? ' · pijače ~' + k.drinks : '') + '</span></div>' +
-      (k.all < 2000 ? '<div class="lbl" style="color:var(--warn)">Pod ~2000 kcal. Dodaj kaj beljakovinskega (skuta, jajca, mleko).</div>' : '');
+      '<div class="lbl tnum"><span>Pojedeno <b>~' + k.all + ' kcal</b> · <b>~' + Math.round(pr) + ' g</b> beljakovin</span><span>načrt ~' + k.plan + (k.drinks ? ' · pijače ~' + k.drinks : '') + '</span></div>' +
+      (k.plan < 2000 ? '<div class="lbl" style="color:var(--warn)">Načrt za ta dan je pod ~2000 kcal. Dodaj kaj beljakovinskega (skuta, jajca, mleko).</div>' : '');
   }
 
   // editor fields for an item-like object; pfx distinguishes the adder ("a") from saved items ("e")
@@ -442,10 +495,10 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
       h += '<div class="meal' + (m.lunch ? ' lunch' : '') + '"><div class="mh"><span class="nm">' + esc(m.name) + (m.lunch ? '<span class="tag">babica</span>' : '') + '</span><span class="rt"><span class="kc tnum" id="mk-' + m.id + '">~' + mealK(m) + ' kcal</span>' +
         '<button type="button" class="medit" data-act="editMeal" data-m="' + m.id + '" aria-pressed="' + me + '">' + (me ? 'Končano' : 'Uredi') + '</button></span></div>';
       if (!me) {
-        h += '<ul class="items">' + m.items.map(function (it) {
+        h += '<ul class="items">' + m.items.filter(function (it) { return shown(it, dayIdx); }).map(function (it) {
           var fd = it.f ? food(it.f) : null;
-          return '<li class="' + (it.skip ? 'skip' : '') + '"><div class="it"><button type="button" class="tick" data-act="skip" data-id="' + it.id + '" aria-pressed="' + !!it.skip + '" aria-label="' + (it.skip ? 'Vseeno sem jedel' : 'Tega nisem jedel') + '">' +
-            (it.skip ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M6 6l12 12M18 6L6 18"/></svg>' : '') + '</button>' +
+          return '<li class="' + (isEaten(it, dayIdx) ? 'eaten' : '') + '"><div class="it"><button type="button" class="tick" data-act="eat" data-id="' + it.id + '" aria-pressed="' + isEaten(it, dayIdx) + '" aria-label="' + (isEaten(it, dayIdx) ? 'Tega nisem jedel' : 'To sem pojedel') + '">' +
+            (isEaten(it, dayIdx) ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12.5l4.5 4.5L19 7"/></svg>' : '') + '</button>' +
             '<span class="lab">' + esc(itemLabel(it)) + (it.extra ? '<span class="xtag">dodano</span>' : '') + (fd && it.note ? '<small>' + esc(it.note) + '</small>' : '') + '</span></div>' +
             '<em class="tnum">' + itemK(it) + ' kcal' + (itemP(it) >= 3 ? '<span class="pg">' + pTxt(itemP(it)) + '</span>' : '') + '</em>' + (it.extra ? '<button type="button" class="mini" data-act="delItem" data-id="' + it.id + '" aria-label="Odstrani">×</button>' : '') + '</li>';
         }).join('') + '</ul>';
@@ -457,13 +510,12 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
           h += '<button type="button" class="add" data-act="adderOpen" data-m="' + m.id + '">+ Dodaj, kar sem jedel</button>';
         }
       } else {
-        m.items.forEach(function (it) { h += '<div class="eitem">' + itemEditor(it, 'e', it.id) + '</div>'; });
+        m.items.filter(function (it) { return shown(it, dayIdx); }).forEach(function (it) { h += '<div class="eitem">' + itemEditor(it, 'e', it.id) + '</div>'; });
         h += '<button type="button" class="add" data-act="addItem" data-m="' + m.id + '">+ Dodaj jed v jedilnik</button>';
       }
       h += '</div>';
     });
-    h += '<p class="note">Krogec pred jedjo: tapni, če tega nisi jedel. Jed se prečrta in ne šteje več v kalorije. Z gumbom Uredi pri obroku spremeniš jedi in količine v jedilniku. Črtkani pas je ciljnih 2100–2400 kcal.</p>';
-    h += '<button type="button" class="ghost" data-act="resetWeek" style="margin-top:6px">Nov teden: počisti oznake in dodane jedi</button>';
+    h += '<p class="note">Krogec pred jedjo: tapni, ko jed poješ. Kalorije in beljakovine se seštevajo samo za pojedeno. Oznake in dodane jedi se vsak ponedeljek same počistijo. Z gumbom Uredi pri obroku spremeniš jedi in količine v jedilniku.</p>';
     if (new Date().getDay() === (S.injDay == null ? 5 : +S.injDay)) h += '<p class="note" style="margin-top:12px"><b>Danes je dan za injekcijo.</b> Mounjaro si daj enkrat na teden, vedno isti dan. Ura in hrana nista pomembni.</p>';
     return h;
   }
@@ -493,6 +545,7 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
       '<li><b>V steklenico</b>, v službi jo daj v hladilnik in pred pitjem pretresi.</li></ol>' +
       '<h3>Med</h3><ul class="tips"><li>Žlička (~7 g) ima ~22 kcal, žlica (~20 g) ~60 kcal.</li><li>1–2 žlički na obrok, največ 3–4 na dan.</li><li>Zrela zamrznjena banana je sama dovolj sladka.</li></ul>' +
       '<h3>Hitreje zjutraj</h3><ul class="tips"><li>Banane olupi, nareži in zamrzni v vrečki. Smoothie bo kremast.</li><li>Mleko in skuto lahko zmiksaš že zvečer.</li><li>Jabolko z lupino dobro operi in nareži na manjše koščke.</li><li>Posodo takoj speri: topla voda, kapljica detergenta, 20 s mešanja.</li></ul>';
+    h += renderRecipes();
     return h;
   }
 
@@ -606,17 +659,18 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
     if (a === 'importData') { $('importFile').click(); return; }
     if (a === 'day') { dayIdx = +b.dataset.i; adder = null; editMeals = {}; render(); return; }
     if (a === 'editMeal') { var mid = b.dataset.m; if (editMeals[mid]) { delete editMeals[mid]; if (!local && saveTimer) { clearTimeout(saveTimer); flush(); } } else { editMeals[mid] = true; if (adder && adder.mealId === mid) adder = null; } render(); return; }
-    if (a === 'skip') { var fs = findItem(id); change(function () { fs.it.skip = !fs.it.skip; }); return; }
+    if (a === 'delRec') { change(function () { S.recipes = S.recipes.filter(function (r) { return r.id !== id; }); }, 'Recept odstranjen'); return; }
+    if (a === 'addRec') { var rid = nid('r'); change(function () { S.recipes.push({ id: rid, n: 'Nov recept', k: 0, p: 0, ing: '', steps: '' }); }); var re = $('rn-' + rid); if (re) { re.focus(); re.select(); } return; }
+    if (a === 'eat') { var fs = findItem(id); var dk = dateOfIdx(dayIdx); change(function () { if (fs.it.eatenOn === dk) delete fs.it.eatenOn; else fs.it.eatenOn = dk; }); return; }
     if (a === 'adderOpen') { adder = { mealId: b.dataset.m, f: '', n: '', k: 0, note: '' }; setFood(adder, 'skuta'); render(); return; }
     if (a === 'adderCancel') { adder = null; render(); return; }
     if (a === 'adderSave') {
       var m = findMeal(adder.mealId);
       if (!adder.f && !(adder.n || '').trim()) { var ne = $('an-new'); if (ne) ne.focus(); return; }
-      var it = { id: nid('i'), extra: true };
+      var it = { id: nid('i'), extra: true, addedOn: dateOfIdx(dayIdx), eatenOn: dateOfIdx(dayIdx) };
       if (adder.f) { it.f = adder.f; it.q = adder.q; it.note = adder.note || ''; } else { it.n = adder.n.trim(); it.k = Math.round(num(adder.k)); it.p = num(adder.p); }
       adder = null; change(function () { m.items.push(it); }); return;
     }
-    if (a === 'resetWeek') { change(function () { S.days.forEach(function (d) { d.meals.forEach(function (mm) { mm.items = mm.items.filter(function (i) { return !i.extra; }); mm.items.forEach(function (i) { delete i.skip; }); }); }); }, 'Oznake in dodane jedi počiščene'); return; }
     if (a === 'tick') { var f = findX(id); change(function () { f.it.done = !f.it.done; }); return; }
     if (a === 'clearShop') { change(function () { S.shop.forEach(function (g) { g.items.forEach(function (i) { i.done = false; }); }); }, 'Kljukice odstranjene'); return; }
     if (a === 'clearStock') { change(function () { S.stock.forEach(function (i) { i.done = false; }); }, 'Kljukice odstranjene'); return; }
@@ -635,6 +689,7 @@ li.skip .lab,li.skip em{text-decoration:line-through;opacity:.5}
     var t = e.target, id = t.dataset.id;
     if (t.dataset.df) { if (!drinkForm) return; if (t.dataset.df === 'save') drinkForm.save = t.checked; else drinkForm[t.dataset.df] = t.value; return; }
     if (t.dataset.inj) { if (e.type !== 'change') return; S.injDay = +t.value; save(); return; }
+    if (t.dataset.rf) { if (e.type === 'change') return; var rr = S.recipes.filter(function (x) { return x.id === id; })[0]; if (!rr) return; var rf = t.dataset.rf; rr[rf] = (rf === 'k' || rf === 'p') ? num(t.value) : t.value; save(); return; }
     if (t.id === 'foodSearch') { if (e.type !== 'input') return; foodQ = t.value; render(); return; }
     if (t.dataset.wg) { if (e.type !== 'change') return; var g = num(t.value); if (g > 0) { S.waterGoal = Math.round(g * 1000); render(); save(); } return; }
     if (t.dataset.p) { // meal item editor or adder
