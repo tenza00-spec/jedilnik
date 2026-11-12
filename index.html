@@ -681,7 +681,7 @@ li.eaten .lab{color:var(--muted)}
     if(it.f && it.f.slice(0,2)==='s:'){
       var sm=S.smoothies.filter(function(s){return 's:'+s.id===it.f;})[0];
       var v=sm?partsNutrient(sm.parts,key):null;
-      return v===null?null:v*(+it.q||0);
+      return v===null?null:v*(+it.q||0)/(Number(sm.servingGrams)||300);
     }
     if(it.f){var fd=food(it.f),v=knownNutrient(fd,key);return fd&&v!==null?v*(+it.q||0)/per(fd.unit):null;}
     return knownNutrient(it,key);
@@ -976,7 +976,7 @@ li.eaten .lab{color:var(--muted)}
       h += '<button type="button" class="add" data-act="suggest" data-m="' + m.id + '">Predlagaj manjši obrok</button>';
       if (mealSuggest === m.id) {
         var opts=suggestionsFor(m);
-        h += '<div class="adder"><b>Manjše alternative</b>' + opts.map(function(i){var x=SMALL_OPTIONS[i], sv=smallTotals(x);return '<div style="border-bottom:1px solid var(--line);padding:8px 0"><div class="mh"><b>' + esc(x[1]) + '</b><span class="kc">~' + sv.k + ' kcal</span></div><p class="note">' + esc(x[2]) + ' · ~' + sv.p + ' g beljakovin</p><button type="button" class="primary" data-act="smallReplace" data-m="' + m.id + '" data-opt="' + i + '"' + (!sv.ready?' disabled':'') + '>Uporabi za ta dan</button></div>';}).join('') + '</div>';
+        h += '<div class="adder"><b>Manjše alternative</b>' + opts.map(function(i){var x=SMALL_OPTIONS[i], sv=smallTotals(x);return '<div style="border-bottom:1px solid var(--line);padding:8px 0"><div class="mh"><b>' + esc(x[1]) + '</b><span class="kc">~' + sv.k + ' kcal</span></div><p class="note">' + esc(ingredientText(smallParts(x))) + ' · ~' + sv.p + ' g beljakovin</p><button type="button" class="primary" data-act="smallReplace" data-m="' + m.id + '" data-opt="' + i + '"' + (!sv.ready?' disabled':'') + '>Uporabi za ta dan</button></div>';}).join('') + '</div>';
       }
       h += '</div>';
     });
@@ -997,6 +997,12 @@ li.eaten .lab{color:var(--muted)}
     s3c:[{f:'mleko',q:250},{f:'skuta',q:100},{f:'banana',q:0.5},{f:'kakav',q:1},{f:'med',q:1}]
   };
   function smallParts(x) { return SMALL_PARTS[SMALL_OPTIONS.indexOf(x)] || []; }
+  function ingredientText(parts){
+    return (parts||[]).map(function(part){
+      var f=food(part.f);
+      return qtyText(part.q,f?f.unit:'g')+' '+(f?f.label:'neznana sestavina');
+    }).join(', ');
+  }
   function smallTotals(x) {
     var parts=smallParts(x);
     if(!parts.length)return {k:'–',p:'–',ready:false};
@@ -1530,7 +1536,7 @@ li.eaten .lab{color:var(--muted)}
     var uncertain=S.foods.filter(function(x){return x.massReview==='approx'||x.massReview==='countApprox';}).length;
     var h='<h2>Živila</h2><p class="note"><b>Količine so v g ali kosih: na 100 g za tehtana živila in na 1 kos za šteta živila.</b> Maščobe/OH/vlaknine so iz deklaracije ali primerljivega referenčnega živila. Znak »–« pomeni neznano, ne 0. Referenčne vrednosti niso zagotovljena sestava tvoje znamke.</p>'
       +'<p class="note">Vpisane maščobe, OH in vlaknine: '+complete+' / '+S.foods.length+' živil. Pri '+uncertain+' živilih je bila masa stare enote ocenjena. Jajca, tortilije, sadje in podobne izdelke štejemo v kosih; meso, sir in druge tehtane izdelke v gramih.</p>';
-    h += '<div class="barcode-actions"><button type="button" class="primary" data-act="barcodeOpen"> <span aria-hidden="true">▥</span> Skeniraj črtno kodo</button><button type="button" class="ghost" data-act="addFood">+ Dodaj ročno</button></div>';
+    h += '<div class="barcode-actions"><button type="button" class="primary" data-act="barcodeOpen"> <span aria-hidden="true">▥</span> Skeniraj črtno kodo</button><button type="button" class="ghost" data-act="addFood">+ Dodaj v g</button><button type="button" class="ghost" data-act="addFoodPiece">+ Dodaj kot kos</button></div>';
     h += barcodePanelHtml();
     if(!editing && S.favoriteFoodIds.length){
       var favorites=S.favoriteFoodIds.map(function(id){return food(id);}).filter(Boolean);
@@ -1891,7 +1897,7 @@ li.eaten .lab{color:var(--muted)}
       var opt=SMALL_OPTIONS[+b.dataset.opt],sel=$('smallMeal'),meal=findMeal(b.dataset.m||(sel&&sel.value));
       if(!opt||!meal)return;
       var val=smallTotals(opt);if(!val.ready){setStatus('Vnesi deklaracijo Battery wheyja pod Smutiji.');return;}
-      var ky=dateOfIdx(dayIdx), it={id:nid('i'),n:opt[1]+' ('+opt[2]+')',k:val.k,p:val.p,note:'',parts:JSON.parse(JSON.stringify(smallParts(opt)))};
+      var ky=dateOfIdx(dayIdx), it={id:nid('i'),n:opt[1]+' ('+ingredientText(smallParts(opt))+')',k:val.k,p:val.p,note:'',parts:JSON.parse(JSON.stringify(smallParts(opt)))};
       change(function(){
         if(a==='smallReplace'){if(!S.daySwaps[ky])S.daySwaps[ky]={};S.daySwaps[ky][meal.id]={items:[it],label:opt[1]};}
         else {it.extra=true;it.addedOn=ky;var currentSwap=activeSwap(meal,dayIdx);(currentSwap?currentSwap.items:meal.items).push(it);}
@@ -1924,7 +1930,7 @@ li.eaten .lab{color:var(--muted)}
       if(foodUsedInStructuredRecipes(id)){setStatus('Živilo je uporabljeno v shranjenem smutiju ali sestavljenem obroku. Najprej popravi ta recept.');return;}
       change(function(){freezeRefs(id);S.foods=S.foods.filter(function(x){return x.id!==id;});S.favoriteFoodIds=S.favoriteFoodIds.filter(function(x){return x!==id;});},'Živilo odstranjeno');return;
     }
-    if (a === 'addFood') { var fid = nid('f'); editing = true; change(function () { S.foods.push({ id: fid, cat: 'Moje', label: 'Novo živilo', unit: 'g', kcal: 0, p: 0, def: 100 }); foodQ = 'Novo živilo'; }); var fl = $('fl-' + fid); if (fl) { fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.focus({ preventScroll: true }); fl.select(); } return; }
+    if (a === 'addFood' || a === 'addFoodPiece') { var fid = nid('f'),counted=a==='addFoodPiece'; editing = true; change(function () { S.foods.push({ id: fid, cat: 'Moje', label: 'Novo živilo', unit: counted?'kos':'g', kcal: 0, p: 0, def: counted?1:100 }); foodQ = 'Novo živilo'; }); var fl = $('fl-' + fid); if (fl) { fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.focus({ preventScroll: true }); fl.select(); } return; }
     if (a === 'delX') { var fx = findX(id); change(function () { fx.list.splice(fx.i, 1); }, 'Izdelek odstranjen'); return; }
     if (a === 'addX') { var xid = nid('x'); change(function () { var list = b.dataset.k === 'stock' ? S.stock : S.shop.filter(function (g) { return g.id === b.dataset.k; })[0].items; list.push({ id: xid, n: '', q: '', u: '', p: 0, done: false }); }); var xe = $('xn-' + xid); if (xe) xe.focus(); return; }
     if (a === 'addG') { var gid = nid('g'); change(function () { S.shop.push({ id: gid, g: 'Nova skupina', items: [] }); }); var ge = $('gn-' + gid); if (ge) ge.focus(); return; }
