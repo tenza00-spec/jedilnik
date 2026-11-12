@@ -1,0 +1,26 @@
+{
+  "name": "Moj jedilnik",
+  "short_name": "Jedilnik",
+  "description": "Osebni jedilnik, dnevnik prehrane in nakupovalni seznam.",
+  "lang": "sl",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf8f6",
+  "theme_color": "#7b7fd4",
+  "icons": [
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
