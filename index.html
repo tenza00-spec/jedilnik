@@ -2096,7 +2096,7 @@ li.eaten .lab{color:var(--muted)}
       var raw=String(t.value||'').trim(),v=raw===''?0:Number(raw.replace(',','.'));
       var spec=shopUnitSpec(entry),canonical=v*spec.factor;
       if(!Number.isFinite(v)||v<0||!Number.isFinite(canonical)||canonical>1000000){setStatus('Vnesi veljavno količino v '+spec.unit+'.');return;}
-      if(!S.pantry[id])S.pantry[id]={q:0,pack:0};
+      if(!S.pantry[id])S.pantry[id]={q:0}; // Ohrani predlagano velikost pakiranja, dokler je uporabnik ne spremeni.
       S.pantry[id][t.dataset.pantry==='pack'?'pack':'q']=Math.round(canonical*1000)/1000;
       render();save();return;
     }
