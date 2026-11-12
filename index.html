@@ -606,7 +606,7 @@ li.eaten .lab{color:var(--muted)}
       h += '<button type="button" class="add" data-act="suggest" data-m="' + m.id + '">Predlagaj manjši obrok</button>';
       if (mealSuggest === m.id) {
         var opts=suggestionsFor(m);
-        h += '<div class="adder"><b>Manjše alternative</b>' + opts.map(function(i){var x=SMALL_OPTIONS[i];return '<div style="border-bottom:1px solid var(--line);padding:8px 0"><div class="mh"><b>' + esc(x[1]) + '</b><span class="kc">~' + x[3] + ' kcal</span></div><p class="note">' + esc(x[2]) + ' · ~' + x[4] + ' g beljakovin</p><button type="button" class="primary" data-act="smallReplace" data-m="' + m.id + '" data-opt="' + i + '">Uporabi za ta dan</button></div>';}).join('') + '</div>';
+        h += '<div class="adder"><b>Manjše alternative</b>' + opts.map(function(i){var x=SMALL_OPTIONS[i], sv=smallTotals(x);return '<div style="border-bottom:1px solid var(--line);padding:8px 0"><div class="mh"><b>' + esc(x[1]) + '</b><span class="kc">~' + sv.k + ' kcal</span></div><p class="note">' + esc(x[2]) + ' · ~' + sv.p + ' g beljakovin</p><button type="button" class="primary" data-act="smallReplace" data-m="' + m.id + '" data-opt="' + i + '"' + (!sv.ready?' disabled':'') + '>Uporabi za ta dan</button></div>';}).join('') + '</div>';
       }
       h += '</div>';
     });
@@ -618,6 +618,15 @@ li.eaten .lab{color:var(--muted)}
   // Orientacijske manjše alternative. Hranilne vrednosti so približki; preveri embalažo.
   var SMALL_OPTIONS = [["Smutiji","Gozdni sadeži + whey","150 g skyra, 25 g whey, 100 g gozdnih sadežev, 100 ml mleka",330,43],["Smutiji","Banana + whey","150 g skyra, 25 g whey, ½ banane, 100 ml mleka",330,43],["Smutiji","Čoko-banana","150 g skyra, 25 g whey, ½ banane, 5 g kakava",300,42],["Smutiji","Kavni proteinski","150 ml hladnega mleka, espresso, 30 g whey, led",190,29],["Smutiji","Arašidov proteinski","150 g skyra, 25 g whey, 15 g arašidovega masla, malo vode",340,45],["Smutiji","Jabolko-cimet","150 g skyra, 25 g whey, ½ jabolka, cimet",265,42],["Smutiji","Jagodni kefir","150 ml kefirja, 25 g whey, 80 g jagod",240,26],["Smutiji","Mini proteinski napitek","30 g whey in 120 ml mleka; po potrebi popij v dveh delih",175,28],["Zajtrki","Skyr + whey krema","170 g skyra, 20 g whey, 10 g arašidovega masla",265,37],["Zajtrki","Mini omleta s sirom","2 jajci, 30 g sira, malo špinače",280,23],["Zajtrki","Skuta s kakavom","150 g skute, 10 g kakava, 10 g arašidovega masla",250,23],["Zajtrki","Proteinski puding + orehi","200 g proteinskega pudinga, 15 g orehov",250,22],["Malice","Skyr in nekaj mandljev","170 g skyra, 20 g mandljev",220,22],["Malice","Mini tuna-sir","½ pločevinke tune, 30 g sira, kumara",185,23],["Malice","Zrnati sir","200 g zrnatega sira z začimbami",195,22],["Malice","Grški jogurt + whey","150 g grškega jogurta 2 %, 20 g whey",180,31],["Malice","Dve jajci + sir","2 kuhani jajci in 25 g trdega sira",245,20],["Kosila","Piščanec in malo riža","150 g pečenih prsi, 80 g kuhanega riža, 1 žlička olja",400,49],["Kosila","Polak s pirejem","180 g polaka, 100 g pireja, 1 žlička olja",320,43],["Kosila","Tunina tortilja","1 manjša tortilja, 100 g tune, 25 g sira, malo zelenjave",415,39],["Kosila","Piščanec z mocarelo","130 g piščančjih prsi, 40 g mocarele, 80 g krompirja",395,50],["Kosila","Govedina z rižem","130 g pripravljenega pustega govejega mesa, 80 g kuhanega riža",370,33],["Večerje","Tuna in skuta","100 g tune, 125 g skute, kumara",280,40],["Večerje","Piščančja tortilja","80 g pečenega piščanca, mala tortilja, 30 g sira",400,37],["Večerje","Jajca in zrnati sir","2 jajci, 150 g zrnatega sira",300,30],["Večerje","Sardine + malo kruha","1 pločevinka sardin in 1 manjša rezina kruha",275,25],["Večerje","Skyr skledica","200 g skyra, 20 g whey, 15 g arašidovega masla",340,46],["Dodatki","Žlička olivnega olja","5 ml olivnega olja kot dodatek obroku",45,0],["Dodatki","Arašidovo maslo","15 g arašidovega masla, če ga dobro prenašaš",90,4],["Dodatki","Parmezan","20 g parmezana na manjši obrok",80,7],["Dodatki","Orehi","20 g orehov v manjših grižljajih",130,3],["Dodatki","Whey z vodo","30 g neokusnega Battery Complete Whey z malo vode",120,23]];
 
+  function smallTotals(x) {
+    var match=x[2].match(/(\d+)\s*g\s*(?:whey|neokusnega Battery)/i);
+    if(!match)return {k:Math.round(x[3]),p:Math.round(x[4]),ready:true};
+    var q=+match[1],w=food('battery_whey');
+    if(!w||!(+w.kcal)||!(+w.p))return {k:'–',p:'–',ready:false};
+    if(x[1]==='Whey z vodo')return {k:Math.round(w.kcal*q/100),p:Math.round(w.p*q/10)/10,ready:true};
+    return {k:Math.max(0,Math.round(x[3]-q*120/28+q*w.kcal/100)),
+      p:Math.max(0,Math.round((x[4]-q*22.8/28+q*w.p/100)*10)/10),ready:true};
+  }
   function suggestionsFor(m) {
     var n=m.name.toLowerCase(), c=n.indexOf('zajtrk')>=0?'Zajtrki':n.indexOf('kosilo')>=0?'Kosila':n.indexOf('večer')>=0?'Večerje':'Malice';
     return SMALL_OPTIONS.map(function(x,i){return {x:x,i:i};}).filter(function(o){return o.x[0]===c;})
@@ -632,15 +641,15 @@ li.eaten .lab{color:var(--muted)}
     return result;
   }
   function renderSmallAppetite() {
-    var d = S.days[dayIdx], h = '<h2>Manjši apetit</h2><p class="note">Izberi manjši obrok z veliko beljakovinami. Vrednosti so okvirne, ne nadomeščajo deklaracij. Ob slabosti raje manjše količine in manj maščob. Whey je v predlogih mišljen kot približno 23 g beljakovin na 28 g (Battery Complete Whey Unflavoured (preveri deklaracijo)).</p>';
+    var d = S.days[dayIdx], h = '<h2>Manjši apetit</h2><p class="note">Izberi manjši obrok z veliko beljakovinami. Vrednosti so okvirne, ne nadomeščajo deklaracij. Ob slabosti raje manjše količine in manj maščob. Za predloge z wheyem moraš v zavihku Smutiji najprej vnesti deklaracijo svojega Battery Complete Whey brez okusa.</p>';
     h += '<div class="card"><label class="note" for="smallDay">Dan</label><select class="field" id="smallDay" style="width:100%">' + S.days.map(function (x, i) { return '<option value="' + i + '"' + (i === dayIdx ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>';
     h += '<label class="note" for="smallMeal">Obrok, ki ga želiš spremeniti</label><select class="field" id="smallMeal" style="width:100%">' + d.meals.map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>'; }).join('') + '</select><p class="subtle">»Zamenjaj« nadomesti načrtovan obrok; »Dodaj« vstavi predlog kot dodaten obrok na izbrano mesto. Obe dejanji lahko takoj razveljaviš.</p></div>';
     var cats = ['Smutiji','Zajtrki','Malice','Kosila','Večerje','Dodatki'];
     cats.forEach(function (cat) {
       var indices = SMALL_OPTIONS.map(function (x,i) { return x[0] === cat ? i : -1; }).filter(function (i) { return i >= 0; });
       h += '<details class="card" ' + (cat === 'Smutiji' ? 'open' : '') + '><summary style="cursor:pointer;font-weight:700">' + esc(cat) + ' (' + indices.length + ')</summary>';
-      indices.forEach(function (i) { var x = SMALL_OPTIONS[i];
-        h += '<div style="padding:12px 0;border-bottom:1px solid var(--line)"><div class="mh"><b>' + esc(x[1]) + '</b><span class="kc">~' + x[3] + ' kcal</span></div><p style="margin:4px 0">' + esc(x[2]) + '</p><span class="pill">~' + x[4] + ' g beljakovin</span><div style="display:flex;gap:8px;margin-top:9px"><button type="button" class="ghost" data-act="smallAdd" data-opt="' + i + '">+ Dodaj</button><button type="button" class="primary" data-act="smallReplace" data-opt="' + i + '">Zamenjaj obrok</button></div></div>';
+      indices.forEach(function (i) { var x = SMALL_OPTIONS[i], sv=smallTotals(x);
+        h += '<div style="padding:12px 0;border-bottom:1px solid var(--line)"><div class="mh"><b>' + esc(x[1]) + '</b><span class="kc">~' + sv.k + ' kcal</span></div><p style="margin:4px 0">' + esc(x[2]) + '</p><span class="pill">~' + sv.p + ' g beljakovin</span><div style="display:flex;gap:8px;margin-top:9px"><button type="button" class="ghost" data-act="smallAdd" data-opt="' + i + '"' + (!sv.ready?' disabled':'') + '>+ Dodaj</button><button type="button" class="primary" data-act="smallReplace" data-opt="' + i + '"' + (!sv.ready?' disabled':'') + '>Zamenjaj obrok</button></div></div>';
       });
       h += '</details>';
     });
@@ -906,7 +915,8 @@ li.eaten .lab{color:var(--muted)}
     if (a === 'smallAdd' || a === 'smallReplace') {
       var opt=SMALL_OPTIONS[+b.dataset.opt],sel=$('smallMeal'),meal=findMeal(b.dataset.m||(sel&&sel.value));
       if(!opt||!meal)return;
-      var ky=dateOfIdx(dayIdx), it={id:nid('i'),n:opt[1]+' ('+opt[2]+')',k:opt[3],p:opt[4],note:''};
+      var val=smallTotals(opt);if(!val.ready){setStatus('Vnesi deklaracijo Battery wheyja pod Smutiji.');return;}
+      var ky=dateOfIdx(dayIdx), it={id:nid('i'),n:opt[1]+' ('+opt[2]+')',k:val.k,p:val.p,note:''};
       change(function(){
         if(a==='smallReplace'){if(!S.daySwaps[ky])S.daySwaps[ky]={};S.daySwaps[ky][meal.id]={items:[it],label:opt[1]};}
         else {it.extra=true;it.addedOn=ky;meal.items.push(it);}
