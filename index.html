@@ -1021,7 +1021,7 @@ li.eaten .lab{color:var(--muted)}
     if(!/^image\//.test(file.type||'')){barcodeError='Izberi fotografijo črtne kode.';render();return;}
     barcodeError='';barcodeCameraLoading=true;
     barcodeCameraStop().then(function(){barcodeCameraLoading=true;render();return barcodeScript();}).then(function(){
-      if(!barcodeOpen||view!=='zivila')return;
+      if(!barcodeOpen||view!=='info')return;
       var reader=barcodeNewReader();barcodeReader=reader;
       return reader.scanFile(file,true).then(function(code){
         barcodeReader=null;reader.clear();
@@ -1033,7 +1033,7 @@ li.eaten .lab{color:var(--muted)}
     }).catch(function(error){
       barcodeError='Na fotografiji ni bilo mogoče prebrati črtne kode. Poskusi bližje ali kodo vnesi ročno.';
       barcodeCameraLoading=false;
-      if(barcodeOpen && view==='zivila')render();
+      if(barcodeOpen && view==='info')render();
     });
   }
   function barcodeLookup(raw) {
@@ -1062,7 +1062,7 @@ li.eaten .lab{color:var(--muted)}
       barcodeError='Podatkov ni bilo mogoče pridobiti ('+(error&&error.name==='AbortError'?'časovna omejitev':'povezava ni uspela')+'). Podatke lahko vneseš ročno s pakiranja.';
     }).finally(function(){
       clearTimeout(timeout);barcodeBusy=false;
-      if(barcodeOpen&&view==='zivila')render();
+      if(barcodeOpen&&view==='info')render();
     });
   }
   function barcodeSaveFood(addMeal) {
