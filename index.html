@@ -177,7 +177,7 @@ li.eaten .lab{color:var(--muted)}
 <script>
 (function () {
   var TARGET_LO = 2000, TARGET_HI = 2200, SCALE = 2700, PROTEIN_TARGET = 150;
-  var UNITS = ['g'];
+  var UNITS = ['g', 'kos'];
   var S = null, view = 'teden', dayIdx = (new Date().getDay() + 6) % 7, editing = false;
   var docRef = null, writing = false, saveTimer = null, undo = null, localRev = 0, savedRev = 0, lastErr = false;
   var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = '', barcodeOpen = false, barcodeInput = '', barcodeResult = null, barcodeBusy = false, barcodeError = '', barcodeReader = null, barcodeCameraActive = false, barcodeCameraToken = 0, barcodeDayIdx = null, barcodeMealId = '', barcodeAmount = 100, barcodeEaten = false, barcodeCameraLoading = false, barcodeRequestSeq = 0, quickFoodId = null, quickMealId = null, quickQty = 100; // {mealId, f, q, note, n, k}
@@ -548,6 +548,72 @@ li.eaten .lab{color:var(--muted)}
     S.migr.push('refMacros139');migratedNow=true;
   }
 
+
+  // Naravno števni izdelki ostanejo v kosih, ostala živila so v gramih.
+  // Enkratna migracija deluje tudi če je uporabnik že odprl vmesno različico z vsemi grami.
+  var PIECE_FOODS=["jajce","banana","jabolko","kruh","tortilja","tuna","sardine","x_topljeni_sir_trikotnik","x_tuna_v_olju_odcejena","x_jajcni_beljak","x_kruh_bel","x_zemlja_bela","x_zemlja_polnozrnata","x_tortilja_polnozrnata","x_tortilja_mala_20_cm","x_rizev_vafelj","x_prepecenec","x_cesen_strok","x_pomaranca","x_mandarina","x_hruska","x_kivi","x_breskev","x_proteinski_napitek_250_ml","x_proteinska_ploscica","x_pica_1_kos","x_kebab_s_piscancem_pita","x_cevapcici_v_lepinji"];
+  var STATIC_PIECES_READY=false;
+  function convertStaticPieces(){
+    if(STATIC_PIECES_READY)return;
+    STATIC_PIECES_READY=true;
+    function conv(parts){
+      (parts||[]).forEach(function(p){
+        if(PIECE_FOODS.indexOf(p.f)>=0){
+          var factor=LEGACY_GRAM_FACTORS[p.f];
+          if(factor>0)p.q=Math.round((Number(p.q)||0)/factor*1e5)/1e5;
+        }
+      });
+    }
+    SMALL_PARTS.forEach(conv);
+    Object.keys(LEGACY_SMOOTHIE_SHOP).forEach(function(id){conv(LEGACY_SMOOTHIE_SHOP[id]);});
+  }
+  function migrateCountedFoods(){
+    convertStaticPieces();
+    if(S.migr.indexOf('countUnitsV1')>=0)return;
+    var changed={};
+    (S.foods||[]).forEach(function(f){
+      if(PIECE_FOODS.indexOf(f.id)<0||f.unit!=='g')return;
+      var factor=Number(f.legacyGramFactor)||LEGACY_GRAM_FACTORS[f.id];
+      if(!Number.isFinite(factor)||factor<=0)return;
+      changed[f.id]=factor;
+      ['kcal','p','fat','carbs','fiber','sugars'].forEach(function(k){
+        if(f[k]!=null&&f[k]!==''){
+          var v=Number(f[k]);
+          if(Number.isFinite(v))f[k]=Math.round(v*factor/100*1e6)/1e6;
+        }
+      });
+      f.def=Math.round((Number(f.def)||factor)/factor*1e5)/1e5;
+      f.unit='kos';f.massReview='countApprox';
+    });
+    function parts(arr){
+      if(!Array.isArray(arr))return;
+      arr.forEach(function(p){
+        var fac=changed[p.f];if(fac)p.q=Math.round((Number(p.q)||0)/fac*1e5)/1e5;
+      });
+    }
+    (S.smoothies||[]).forEach(function(sm){parts(sm.parts);});
+    function item(it){
+      if(!it)return;
+      var fac=changed[it.f];if(fac)it.q=Math.round((Number(it.q)||0)/fac*1e5)/1e5;
+      parts(it.parts);
+    }
+    (S.days||[]).forEach(function(d){(d.meals||[]).forEach(function(meal){(meal.items||[]).forEach(item);});});
+    Object.keys(S.daySwaps||{}).forEach(function(day){
+      Object.keys(S.daySwaps[day]||{}).forEach(function(mid){
+        var swap=S.daySwaps[day][mid];
+        if(swap&&Array.isArray(swap.items))swap.items.forEach(item);
+      });
+    });
+    Object.keys(S.pantry||{}).forEach(function(id){
+      var p=S.pantry[id],fac=changed[id];if(!p||!fac)return;
+      ['q','pack'].forEach(function(k){
+        if(p[k]!=null)p[k]=Math.round((Number(p[k])||0)/fac*1e5)/1e5;
+      });
+    });
+    S.shopAutoState={};
+    S.migr.push('countUnitsV1');migratedNow=true;
+  }
+
   function prep() { if (!S) return; if (!S.foods) S.foods = []; ensureTracking(); addNewFoods(); if(!S.foods.some(function(f){return f.id==='battery_whey';}))S.foods.push({id:'battery_whey',label:'Battery Complete Whey (brez okusa)',cat:'Moje',unit:'g',kcal:0,p:0,def:30}); migrateCooked();
     if(S.migr.indexOf('pastaRaw2')===-1){
       if(!S.foods.some(function(x){return x.id==='testenine_s';}))S.foods.push({id:'testenine_s',cat:'Priloge',label:'Testenine (surove, suha teža)',unit:'g',kcal:356,p:12.5,def:80});
@@ -555,7 +621,7 @@ li.eaten .lab{color:var(--muted)}
     }
     var oldPasta=S.foods.filter(function(x){return x.id==='testenine' && +x.kcal<220 && /surov|suha teža/i.test(x.label);})[0];
     if(oldPasta)oldPasta.label='Testenine (kuhane, stare vrednosti – preveri deklaracijo)';
-    archiveLegacyEntries(); migrateGramUnits(); addReferenceNutrients(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
+    archiveLegacyEntries(); migrateGramUnits(); addReferenceNutrients(); migrateCountedFoods(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
     if (Array.isArray(it.parts) && it.parts.length) {var v=smoothieValues(it.parts);return v.valid?v.p:(+it.p||0);}
@@ -1400,9 +1466,9 @@ li.eaten .lab{color:var(--muted)}
 
   function renderFoods() {
     var complete=S.foods.filter(function(x){return ['fat','carbs','fiber'].every(function(k){return knownNutrient(x,k)!==null;});}).length;
-    var uncertain=S.foods.filter(function(x){return x.massReview==='approx';}).length;
-    var h='<h2>Živila</h2><p class="note"><b>Vse količine so v gramih (g), vrednosti vedno na 100 g.</b> Maščobe/OH/vlaknine so iz deklaracije ali primerljivega referenčnega živila. Znak »–« pomeni neznano, ne 0. Referenčne vrednosti niso zagotovljena sestava tvoje znamke.</p>'
-      +'<p class="note">Vpisane maščobe, OH in vlaknine: '+complete+' / '+S.foods.length+' živil. Za '+uncertain+' živil je stara enota v grame pretvorjena z <b>ocenjeno maso</b>; kadar lahko, preveri dejansko težo.</p>';
+    var uncertain=S.foods.filter(function(x){return x.massReview==='approx'||x.massReview==='countApprox';}).length;
+    var h='<h2>Živila</h2><p class="note"><b>Količine so v g ali kosih: na 100 g za tehtana živila in na 1 kos za šteta živila.</b> Maščobe/OH/vlaknine so iz deklaracije ali primerljivega referenčnega živila. Znak »–« pomeni neznano, ne 0. Referenčne vrednosti niso zagotovljena sestava tvoje znamke.</p>'
+      +'<p class="note">Vpisane maščobe, OH in vlaknine: '+complete+' / '+S.foods.length+' živil. Pri '+uncertain+' živilih je bila masa stare enote ocenjena. Jajca, tortilije, sadje in podobne izdelke štejemo v kosih; meso, sir in druge tehtane izdelke v gramih.</p>';
     h += '<div class="barcode-actions"><button type="button" class="primary" data-act="barcodeOpen"> <span aria-hidden="true">▥</span> Skeniraj črtno kodo</button><button type="button" class="ghost" data-act="addFood">+ Dodaj ročno</button></div>';
     h += barcodePanelHtml();
     if(!editing && S.favoriteFoodIds.length){
@@ -1422,8 +1488,8 @@ li.eaten .lab{color:var(--muted)}
           return '<li><button type="button" class="fav-button'+(S.favoriteFoodIds.indexOf(f.id)>=0?' starred':'')+'" data-act="favoriteToggle" data-id="'+esc(f.id)+'" aria-pressed="'+(S.favoriteFoodIds.indexOf(f.id)>=0)+'" aria-label="Priljubljeno: '+esc(f.label)+'">'+(S.favoriteFoodIds.indexOf(f.id)>=0?'★':'☆')+'</button><span>' + esc(f.label)
             + (f.barcode?'<small class="subtle" style="display:block">EAN '+esc(f.barcode)+' · '+esc(f.source||'')+(f.verified?' · preverjeno na embalaži':' · preveri deklaracijo')+'</small>':'')
             + (f.nutritionReference?'<small class="subtle" style="display:block">Referenca: '+esc(f.nutritionReferenceSource)+' · '+esc(f.nutritionReference)+' (orientacijsko)</small>':'')
-            + (f.massReview==='approx'?'<small class="subtle" style="display:block">⚠ Ocena mase: prej '+esc(f.legacyUnit)+' ≈ '+fmtN(f.legacyGramFactor)+' g; po potrebi preveri na tehtnici</small>':'')
-            + '</span><em class="tnum">' + fmtN(f.kcal) + ' kcal · ' + fmtN(+f.p || 0) + ' g belj. / 100 g'
+            + (f.massReview==='countApprox'?'<small class="subtle" style="display:block">Približno '+fmtN(f.legacyGramFactor)+' g / kos (dejanska masa lahko odstopa)</small>':f.massReview==='approx'?'<small class="subtle" style="display:block">⚠ Ocena mase: prej '+esc(f.legacyUnit)+' ≈ '+fmtN(f.legacyGramFactor)+' g; preveri na tehtnici</small>':'')
+            + '</span><em class="tnum">' + fmtN(f.kcal) + ' kcal · ' + fmtN(+f.p || 0) + ' g belj. / '+(f.unit==='kos'?'1 kos':'100 g')
             + '<small style="display:block;font-style:normal;color:var(--muted)">M '+(f.fat==null?'–':fmtN(f.fat))+' g · OH '+(f.carbs==null?'–':fmtN(f.carbs))+' g · vlaknine '+(f.fiber==null?'–':fmtN(f.fiber))+' g · sladkorji '+(f.sugars==null?'–':fmtN(f.sugars))+' g</small></em></li>';
         }).join('') + '</ul></div>';
       } else {
@@ -1439,7 +1505,7 @@ li.eaten .lab{color:var(--muted)}
         });
       }
     });
-    if (editing) h += '<p class="subtle">Vse vrednosti so na 100 g. Referenčne vrednosti lahko popraviš po deklaraciji. Če kcal/beljakovine ostanejo iz prejšnje različice, morda niso popolnoma usklajene z novimi referenčnimi makri.</p>';
+    if (editing) h += '<p class="subtle">Vrednosti so na 100 g oziroma 1 kos (glej enoto). Pri menjavi enote je treba ustrezno pretvoriti hranila in količine v receptih. Referenčne vrednosti se lahko razlikujejo od deklaracije.</p>';
     h += '<h2>Malica za pisarno</h2><div class="card"><div class="mh"><span class="nm">Skuta 250 g + tuna + banana</span><span class="kc tnum">~530 kcal</span></div>' +
       '<p>~59 g beljakovin, ~2,50 €. Skuto z banano lahko poješ dopoldne, tuno kasneje. Vzemi žlico in vilico, skuto daj v hladilnik.</p></div>' +
       '<h2>Kosila (babica)</h2><ul class="tips"><li>150 g piščanca + 150 g riža ali 200 g krompirja</li><li>Čevapčiči ~200 g + 200 g krompirja. <b>Pogosto so iz mešanega mesa, tudi svinjine.</b> Preveri deklaracijo.</li><li>Goveji zrezki v omaki 150 g + riž ali krompir</li><li>Če si po piščancu lačen, prosi za 200 g piščanca ali 200 g riža.</li></ul>' +
