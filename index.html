@@ -1677,7 +1677,16 @@ li.eaten .lab{color:var(--muted)}
         var legacySafe=!!(seedSm && seedSm.ing===sm.ing);
         var parts=Array.isArray(sm.parts)&&sm.parts.length ? sm.parts : (legacySafe?LEGACY_SMOOTHIE_SHOP[sm.id]:null);
         if(!parts || !parts.length){noteUnknown('Smuti brez strukturiranega recepta: '+sm.n,why);return;}
-        parts.forEach(function(x){addFoodPart(x.f,(+x.q||0)*value,why+' / '+sm.n);});
+        // it.q of a smoothie is the total prepared mass in grams, not servings.
+        // Multiply ingredients by the fraction of one recipe, never by raw grams.
+        var recipeMass=Number(sm.servingGrams);
+        if(!Number.isFinite(recipeMass)||recipeMass<=0){
+          recipeMass=parts.reduce(function(sum,p){return sum+Math.max(0,Number(p.q)||0);},0);
+        }
+        if(!Number.isFinite(recipeMass)||recipeMass<=0){
+          noteUnknown('Ni podatka o masi smutija: '+sm.n,why);return;
+        }
+        parts.forEach(function(x){addFoodPart(x.f,(+x.q||0)*value/recipeMass,why+' / '+sm.n);});
         return;
       }
       // Nakupuješ surove sestavine, medtem ko je del načrta zapisan s kuhano/pečeno težo.
@@ -1734,6 +1743,41 @@ li.eaten .lab{color:var(--muted)}
     return !!(o && o.done && o.key===k);
   }
 
+
+  // Samodejni seznam vodi notranje količine v g/kos, kupovalcu pa jih
+  // prikaže v ustreznih trgovinskih enotah. Primer: 2.060 g mleka = 2 l.
+  var SHOP_LIQUID_DENSITIES={
+    mleko:1.03,x_mleko_1_5:1.03,x_kefir:1.03,
+    x_pomarancni_sok:1.04,x_coca_cola:1.04,x_pivo:1.01,
+    x_sladka_smetana_35:1,x_goveja_juha_bistra:1,
+    olje:0.91,x_oljcno_olje:0.91,
+    x_sojina_omaka:1.15,x_balzamicni_kis:1.01
+  };
+  function shopUnitSpec(x){
+    if(x.unit==='kos')return {unit:'kos',factor:1,decimals:2};
+    var density=SHOP_LIQUID_DENSITIES[x.f];
+    if(density){
+      // Mleko, kefir, sokovi in pijače v litrih, manjše količine olja/omak v ml.
+      var liters=['mleko','x_mleko_1_5','x_kefir','x_pomarancni_sok','x_coca_cola','x_pivo'].indexOf(x.f)>=0;
+      return {unit:liters?'l':'ml',factor:density*(liters?1000:1),decimals:liters?2:0,approx:density!==1};
+    }
+    return x.unit==='g' && x.q>=1000
+      ? {unit:'kg',factor:1000,decimals:2}
+      : {unit:'g',factor:1,decimals:0};
+  }
+  function shopRound(value,digits){
+    var factor=Math.pow(10,digits);
+    return Math.round((Number(value)||0)*factor)/factor;
+  }
+  function shopQtyText(x,value){
+    var spec=shopUnitSpec(x),display=shopRound(value/spec.factor,spec.decimals);
+    return fmtN(display)+' '+spec.unit;
+  }
+  function shopInputAmount(x,value){
+    var spec=shopUnitSpec(x);
+    return fmtN(shopRound(value/spec.factor,spec.unit==='l'||spec.unit==='kg'?3:spec.unit==='kos'?2:1));
+  }
+
   function pantryData(id) {
     var d=S.pantry&&S.pantry[id]||{};
     return {q:Math.max(0,Number(d.q)||0),pack:Math.max(0,Number(d.pack)||0)};
@@ -1762,21 +1806,23 @@ li.eaten .lab{color:var(--muted)}
       if(S.shopAutoOptions.hideDone && autoShopDone(x))return;
       if(S.shopAutoOptions.hideStocked && stillToBuy(x)===0)return;
       if(x.cat!==currCat){currCat=x.cat;h+='<h3>'+esc(currCat)+'</h3>';}
-      var key=shoppingQuantityKey(x), isDone=autoShopDone(x),stock=pantryData(x.f),remaining=stillToBuy(x),packs=packageCount(x);
-      var buyText=remaining===0?'Dovolj na zalogi':'Kupi '+fmtN(remaining)+' '+x.unit+(packs!==null?' → '+packs+' × pakiranje po '+fmtN(stock.pack)+' '+x.unit:'');
+      var key=shoppingQuantityKey(x), isDone=autoShopDone(x),stock=pantryData(x.f),remaining=stillToBuy(x),packs=packageCount(x),spec=shopUnitSpec(x);
+      var buyText=remaining===0?'Dovolj na zalogi':'Kupi '+shopQtyText(x,remaining)+(packs!==null?' → '+packs+' × pakiranje po '+shopQtyText(x,stock.pack):'');
       h+='<div class="row'+(isDone?' done':'')+'"><button type="button" class="cb" data-act="autoTick" data-id="'+esc(x.f)+'" data-key="'+esc(key)+'" role="checkbox" aria-checked="'+isDone+'"'+(remaining===0?' disabled title="Dovolj na zalogi"':'')+' aria-label="Kupljeno: '+esc(x.label)+'">'+(isDone?'✓':'')+'</button>'
-         +'<div class="txt"><b>'+esc(x.label)+'</b><span class="note"> · potrebno '+fmtN(x.q)+' '+esc(x.unit)+'</span>'
+         +'<div class="txt"><b>'+esc(x.label)+'</b><span class="note"> · potrebno '+esc(shopQtyText(x,x.q))+'</span>'
          +'<small><b>'+esc(buyText)+'</b></small><small>'+esc(x.reasons.slice(0,3).join('; '))+(x.reasons.length>3?' in še '+(x.reasons.length-3)+' obrokov':'')+'</small>'
          +'<details style="margin-top:7px"><summary class="subtle" style="cursor:pointer">Zaloga doma / velikost pakiranja</summary>'
-         +'<div class="quick-row"><label class="note">Doma ('+esc(x.unit)+')<input class="field" style="width:100%" type="text" inputmode="decimal" data-pantry="q" data-id="'+esc(x.f)+'" value="'+esc(fmtN(stock.q))+'"></label>'
-         +'<label class="note">Pakiranje ('+esc(x.unit)+')<input class="field" style="width:100%" type="text" inputmode="decimal" data-pantry="pack" data-id="'+esc(x.f)+'" value="'+(stock.pack?esc(fmtN(stock.pack)):'')+'" placeholder="neznano"></label></div></details></div></div>';
+         +'<div class="quick-row"><label class="note">Doma ('+esc(spec.unit)+')<input class="field" style="width:100%" type="text" inputmode="decimal" data-pantry="q" data-id="'+esc(x.f)+'" value="'+esc(shopInputAmount(x,stock.q))+'"></label>'
+         +'<label class="note">Pakiranje ('+esc(spec.unit)+')<input class="field" style="width:100%" type="text" inputmode="decimal" data-pantry="pack" data-id="'+esc(x.f)+'" value="'+(stock.pack?esc(shopInputAmount(x,stock.pack)):'')+'" placeholder="neznano"></label></div>'
+         +(spec.approx?'<small class="subtle">Pretvorba mase v prostornino je približna; preveri gostoto oziroma deklaracijo.</small>':'')
+         +'</details></div></div>';
     });
     if(!items.length)h+='<div class="empty">V izbranih obrokih ni živil za nakup.</div>';
     if(result.unknown.length) {
       h+='<details class="card"><summary><b>Preveri še '+result.unknown.length+' nestrukturiranih obrokov</b></summary><p class="note">Teh ni mogoče varno preračunati v nakupe. Dodaj njihove sestavine v bazo ali jih dopiši v ročni seznam.</p><ul class="tips">'
         +result.unknown.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></details>';
     }
-    h+='<p class="note">Riž, testenine, meso, ribe in krompir so za nakup preračunani v približne surove količine (označeno pri obrokih). Izkoristek kuhanja se razlikuje. Pri večjih pakiranjih, zamrznjenih živilih in odcejeni teži preveri deklaracijo. To so potrebne količine, ne število trgovinskih pakiranj.</p>';
+    h+='<p class="note">Količine so prikazane v kosih, g, kg, ml ali l. Mleko in druge tekočine so iz notranjih gramov pretvorjene v prostornino (orientacijsko). Riž, testenine, meso, ribe in krompir so za nakup preračunani v približne surove količine (označeno pri obrokih). Izkoristek kuhanja se razlikuje. Pri večjih pakiranjih, zamrznjenih živilih in odcejeni teži preveri deklaracijo. To so potrebne količine, ne število trgovinskih pakiranj.</p>';
     return h;
   }
   function renderShop() {
@@ -2042,9 +2088,10 @@ li.eaten .lab{color:var(--muted)}
       var id=t.dataset.id,entry=plannedShoppingItems().items.filter(function(x){return x.f===id;})[0];
       if(!entry)return;
       var raw=String(t.value||'').trim(),v=raw===''?0:Number(raw.replace(',','.'));
-      if(!Number.isFinite(v)||v<0||v>1000000){setStatus('Vnesi količino med 0 in 1.000.000.');return;}
+      var spec=shopUnitSpec(entry),canonical=v*spec.factor;
+      if(!Number.isFinite(v)||v<0||!Number.isFinite(canonical)||canonical>1000000){setStatus('Vnesi veljavno količino v '+spec.unit+'.');return;}
       if(!S.pantry[id])S.pantry[id]={q:0,pack:0};
-      S.pantry[id][t.dataset.pantry==='pack'?'pack':'q']=Math.round(v*100)/100;
+      S.pantry[id][t.dataset.pantry==='pack'?'pack':'q']=Math.round(canonical*1000)/1000;
       render();save();return;
     }
     if(t.dataset.shopopt){
