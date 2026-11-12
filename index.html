@@ -297,7 +297,7 @@ li.eaten .lab{color:var(--muted)}
     if (!Array.isArray(S.weights)) S.weights = [];
     if (!S.targets || typeof S.targets !== 'object') S.targets = {kcal:2000,protein:150};
     if (!S.shopAutoState || typeof S.shopAutoState !== 'object' || Array.isArray(S.shopAutoState)) S.shopAutoState = {};
-    if (!S.shopAutoOptions || typeof S.shopAutoOptions !== 'object') S.shopAutoOptions = {includeLunch:false,includeExtras:false,hideDone:false};
+    if (!S.shopAutoOptions || typeof S.shopAutoOptions !== 'object') S.shopAutoOptions = {includeLunch:false,includeExtras:false,hideDone:false,weekOffset:0};
     if (S.shopMode !== 'manual' && S.shopMode !== 'auto') S.shopMode = 'auto';
   }
   function activeSwap(m, di) {
@@ -897,7 +897,7 @@ li.eaten .lab{color:var(--muted)}
 
 
   function plannedShoppingItems() {
-    var totals={}, unknown=[], options=S.shopAutoOptions||{}, seenUnknown={};
+    var totals={}, unknown=[], options=S.shopAutoOptions||{}, seenUnknown={},nextWeek=+options.weekOffset===1;
     function noteUnknown(label,day) {
       var msg=(day ? day+': ' : '')+label;
       if(!seenUnknown[msg]){unknown.push(msg);seenUnknown[msg]=true;}
@@ -938,7 +938,7 @@ li.eaten .lab{color:var(--muted)}
     S.days.forEach(function(d,di){
       (d.meals||[]).forEach(function(m){
         if(m.lunch && !options.includeLunch)return;
-        visibleMealItems(m,di).forEach(function(it){
+        (nextWeek?m.items.filter(function(it){return !it.extra;}):visibleMealItems(m,di)).forEach(function(it){
           if(it.extra && !options.includeExtras)return;
           var why=d.name.replace(/\s*\(.*\)$/,'')+' / '+m.name;
           if(Array.isArray(it.parts)&&it.parts.length) {
@@ -958,14 +958,20 @@ li.eaten .lab{color:var(--muted)}
     list.sort(function(a,b){var c=catOrder(a.cat)-catOrder(b.cat);return c||a.label.localeCompare(b.label,'sl');});
     return {items:list,unknown:unknown};
   }
-  function shoppingQuantityKey(x){return dateOfIdx(0)+'|'+x.unit+'|'+(Math.round(x.q*10000)/10000);}
+  function selectedShoppingMonday(){
+    var mon=weekMonday();mon.setDate(mon.getDate()+(+S.shopAutoOptions.weekOffset===1?7:0));return dKey(mon);
+  }
+  function shoppingQuantityKey(x){return selectedShoppingMonday()+'|'+x.unit+'|'+(Math.round(x.q*10000)/10000);}
   function autoShopDone(x) {
-    var o=S.shopAutoState[x.f], k=shoppingQuantityKey(x);
+    var k=shoppingQuantityKey(x),o=S.shopAutoState[x.f+'|'+k]||S.shopAutoState[x.f];
     return !!(o && o.done && o.key===k);
   }
   function renderAutoShop() {
     var result=plannedShoppingItems(),items=result.items, done=items.filter(autoShopDone).length;
-    var h='<h2>Samodejni nakupovalni seznam</h2><p class="note">Količine so izračunane iz načrta od ponedeljka ('+esc(dateOfIdx(0))+') do nedelje ('+esc(dateOfIdx(6))+'). Ob spremembi jedilnika se preračunajo. Privzeto brez kosil pri babici in brez dodatnih, že zabeleženih obrokov.</p>';
+    var mon=new Date(weekMonday());mon.setDate(mon.getDate()+(+S.shopAutoOptions.weekOffset===1?7:0));
+    var sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    var h='<h2>Samodejni nakupovalni seznam</h2><div style="display:flex;gap:8px;margin:8px 0"><button class="'+(+S.shopAutoOptions.weekOffset===1?'ghost':'primary')+'" data-act="shopWeek" data-offset="0" style="flex:1">Ta teden</button><button class="'+(+S.shopAutoOptions.weekOffset===1?'primary':'ghost')+'" data-act="shopWeek" data-offset="1" style="flex:1">Naslednji teden</button></div>';
+    h+='<p class="note">Nakupi za obdobje '+esc(dKey(mon))+' do '+esc(dKey(sun))+'. '+(+S.shopAutoOptions.weekOffset===1?'Naslednji teden uporablja ponavljajoči jedilnik; enkratne zamenjave tega tedna se ne prenesejo. ':'')+'Ob spremembi jedilnika se potrebne količine preračunajo.</p>';
     h+='<div class="card"><label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeLunch"'+(S.shopAutoOptions.includeLunch?' checked':'')+'>Vključi kosila pri babici</label>';
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeExtras"'+(S.shopAutoOptions.includeExtras?' checked':'')+'>Vključi tudi dodatno zabeležene obroke</label>';
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="hideDone"'+(S.shopAutoOptions.hideDone?' checked':'')+'>Skrij že kupljeno</label>';
@@ -1013,12 +1019,16 @@ li.eaten .lab{color:var(--muted)}
     var b = e.target.closest('[data-act]'); if (!b) return;
     var a = b.dataset.act, id = b.dataset.id;
     if(a==='shopMode') {S.shopMode=b.dataset.mode==='manual'?'manual':'auto';editing=false;render();save();return;}
+    if(a==='shopWeek'){S.shopAutoOptions.weekOffset=+b.dataset.offset===1?1:0;render();save();return;}
     if(a==='autoTick'){
       var list=plannedShoppingItems().items, it=list.filter(function(x){return x.f===id;})[0];if(!it)return;
       var key=shoppingQuantityKey(it),done=autoShopDone(it);
-      change(function(){S.shopAutoState[id]={key:key,done:!done};});return;
+      change(function(){S.shopAutoState[id+'|'+key]={key:key,done:!done};});return;
     }
-    if(a==='autoClear'){change(function(){S.shopAutoState={};},'Oznake nakupov počistene');return;}
+    if(a==='autoClear'){
+      var list=plannedShoppingItems().items;
+      change(function(){list.forEach(function(x){var k=shoppingQuantityKey(x);delete S.shopAutoState[x.f+'|'+k];if(S.shopAutoState[x.f]&&S.shopAutoState[x.f].key===k)delete S.shopAutoState[x.f];});},'Oznake izbranega tedna počistene');return;
+    }
     if (a === 'drink') { var dd = S.drinks.filter(function (x) { return x.id === id; })[0]; if (dd) logDrink(dd); return; }
     if (a === 'delDrink') { change(function () { S.drinks = S.drinks.filter(function (x) { return x.id !== id; }); }, 'Gumb odstranjen'); return; }
     if (a === 'editDrinks') { editDrinks = !editDrinks; drinkForm = null; render(); return; }
