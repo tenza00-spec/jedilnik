@@ -4,19 +4,33 @@ Prehranski načrtovalnik in dnevnik z jedrom v `index.html` ter dodatnima datote
 
 ## Uporaba
 
-- **Teden:** glavni seštevek ob posameznem obroku in pri dnevih prikazuje **samo dejansko zaužite** kcal/beljakovine. Načrt je naveden ločeno in se **ne šteje** v zaužito. Posamezno živilo je 0 kcal pojedeno, dokler ga ne označiš. Na voljo so deleži 0/25/50/75/100 %, natančni grami/ml, hitri vnos priljubljenih živil in ponavljanje včerajšnjih dejansko zabeleženih jedi. V prihodnjih dneh ni dovoljeno predhodno označevati hrane kot pojedene.
+- **Teden:** glavni seštevek pri obroku in dnevih prikazuje **samo dejansko zaužite** kalorije in beljakovine, načrt pa je prikazan ločeno. Porcije označuješ po 0/25/50/75/100 % ali z natančno maso v gramih pri tehtanih živilih. Pri jajcih, tortilijah, sadju in podobnih živilih uporabljaš enoto **kos**. Na voljo sta hitri vnos priljubljenih živil in ponavljanje včerajšnjih vnosov. Prihodnjih dni ni mogoče predhodno označiti kot pojedene.
 - **Manjši apetit:** 32 alternativ s strukturiranimi sestavinami; izbrane zamenjave veljajo za posamezen dan in ohranijo izhodiščni obrok.
 - **Smutiji:** sestavljalnik, urejanje shranjenih receptov in preračun kalorij, beljakovin ter znanih maščob, OH, vlaknin in sladkorjev iz živil. Za neokusni Battery Complete Whey je treba vnesti deklaracijo na 100 g. Nepoznane vrednosti so prikazane kot »–«, ne kot 0.
-- **Živila:** baza z energijo, beljakovinami in izbirnimi vrednostmi maščob, OH, vlaknin in sladkorjev. Za `g` in `ml` je podatek na 100 enot, za druge enote na kos/žlico/pločevinko. Z zvezdico lahko označiš priljubljena živila. **Skeniraj črtno kodo** omogoča kamero, fotografijo ali ročni EAN/UPC ter neposredno dodajanje v obrok.
+- **Živila:** uporabljaš samo **g** (tehtani izdelki) in **kos** (jajca, tortilije, sadje, žemlje, posamezne ploščice/porcije in konzerve). Hranilne vrednosti veljajo na 100 g ali na 1 kos. Sam izbereš novo živilo v g ali kos; pri spremembi enote obstoječega živila aplikacija vpraša za maso kosa in preračuna recepte. Skeniranje omogoča tudi shranjevanje prepoznanega izdelka kot kos, če vneseš maso enega kosa.
 - **Nakup:** samodejen seznam za ta ali naslednji teden in ločen, nedotaknjen stari ročni seznam. Za posamezno živilo vpišeš zalogo doma v ustrezni merski enoti in po želji velikost pakiranja; aplikacija izračuna preostalo količino za nakup in potrebno število pakiranj. Kljukice se prilagajajo tednu in izračunani količini. Zaloge se ne odštevajo samodejno ob obrokih, ker bi to lahko bilo netočno.
 - **Napredek:** izbirna dnevna evidenca počutja, dejansko zabeležene prehrane, telesne teže, ciljev, 7/14/30-dnevne analitike ter izvoza/uvoza JSON. Povprečja vključujejo le zabeležene dneve; ne vnašajo izmišljenih ničel.
 
 ## Hranila in natančnost
 
-- Pri skeniranih izdelkih se kcal, beljakovine, maščobe, ogljikovi hidrati, vlaknine in sladkorji shranijo na 100 g ali 100 ml, če jih baza vrne.
+- Pri skeniranih izdelkih se hranilne vrednosti z embalaže (na 100 g oziroma 100 ml) prevedejo v **na 100 g** ali **na 1 kos** za shranjevanje. Pri kosu je nujna masa enega kosa v gramih; pri tekočini na 100 ml aplikacija omogoča urediti maso 100 ml (privzeta ocena 100 g lahko odstopa).
 - Pri drugih živilih lahko te vrednosti dopolniš z urejanjem **Živila** po deklaraciji. Prazno polje = **neznano**, vpisana 0 = **dejansko nič**.
 - Seštevki dodatnih hranil so navedeni kot **delni**, če katera od dejansko pojedenih jedi nima deklaracije. Dnevni pregled hranil na zavihku **Teden** ne vključuje pijač.
 - Pri *Ponovi včerajšnje zaužito* se prekopirajo dejansko shranjeni vnosi iz predhodnega dne kot ročno zapisane jedi; če stari vnos nima podrobne deklaracije, se ne ustvarijo izmišljeni makri.
+
+### Spletni viri in zanesljivost makrohranil
+
+Za 139 generičnih živil so bile dodane orientacijske vrednosti maščob, ogljikovih hidratov in vlaknin iz javnih prehranskih referenc. Lokalna datoteka [nutrition-reference.json](./nutrition-reference.json) navaja izhodiščno živilo in izvor. Pri skeniranih izdelkih in tvojih ročno vnesenih podatkih imajo prednost konkretni vnosi; podatki za neznano živilo ne smejo biti predstavljeni kot preverjena deklaracija.
+
+Attribution: **Food nutrition data from TempoLife (tempolife.app), CC-BY-4.0.** Podatki iz zbirke [TempoLife Food Nutrition Dataset](https://github.com/tempolife-app/tempo-food-db) so pod licenco CC-BY-4.0, podlaga USDA SR Legacy pa je javna domena. Referenčno živilo **ni nujno enako** izdelku, ki ga kupiš; kalorije in beljakovine starega jedilnika se pri dodajanju referenčnih makrohranil ne prepisujejo. Manjkajoča polja ostanejo »–«, ne samodejna 0.
+
+### Pretvorba obstoječih enot
+
+- Obstoječi podatki se ob prvem odpiranju varno pretvorijo v **g** ali **kos**. Posebej šteta živila (npr. jajce, tortilija, banana, žemlja, rižev vafelj, beljakovinska ploščica) ostanejo v kosih, meso, sir, salama, krompir, riž, mleko in druge tehtane sestavine pa v gramih.
+- Stare enote **žlica, žlička, rezina, pločevinka in ml** so preslikane na g ali kos s fiksnimi orientacijskimi masami; te niso natančne za vse znamke. Preslikava je enkratna in ima zapisano identifikacijo, zato se ob osvežitvi ne sme ponoviti.
+- Obstoječi kalorijski in beljakovinski seštevki porcij ostanejo enaki. Zabeležene zgodovine v preteklosti ne prepisujemo; podatke iz predhodnih dni je treba interpretirati po njihovem tedanjem zapisu.
+- Urejanje enote med g in kos zahteva **gramov na 1 kos**; aplikacija nato preračuna povezane porcije, smutije, nakupno zalogo in recepte. Nikoli samo ne prepiše oznake enote.
+- Pred prvo uporabo po tej spremembi **izvozi JSON v Datoteke/iCloud Drive**. Rezervna GitHub veja `backup-pred-pretvorbo-v-grame-2026-11-12` ohranja staro različico *kode*, ne tvojih osebnih podatkov.
 
 ## Safari bližnjica, manifest in delovanje brez povezave
 
@@ -26,7 +40,7 @@ Obstoječe ikone iz Safarija **ni treba odstranjevati ali ponovno nameščati**.
 
 1. Odpri **Živila → Skeniraj črtno kodo**. Za kamero mora stran teči prek **HTTPS** (npr. GitHub Pages) in brskalnik mora dovoliti uporabo kamere. Za prepoznavanje EAN-8, EAN-13 in UPC-A aplikacija po izrecnem kliku naloži [html5-qrcode 2.3.8](https://github.com/mebjas/html5-qrcode) prek jsDelivr. Če kamera ni na voljo, uporabi fotografijo ali ročni vnos.
 2. Aplikacija zahteva podatke za črtno kodo iz **[Open Food Facts](https://world.openfoodfacts.org/)** (API v3). Podatki iz skupnostne zbirke so lahko napačni ali nepopolni. Preveri **ime in podatke na 100 g/100 ml** z embalažo; praznih kcal ali beljakovin ni dovoljeno samodejno pretvoriti v ničle.
-3. Po želji popravi vrednosti in označi **Preveril sem hranilne vrednosti na embalaži**. Shrani v **Živila** ali izberi **Dan / Obrok / Količina** in **Shrani in dodaj k obroku**. Če potrdiš **To sem dejansko pojedel**, se kalorije štejejo v *Pojedeno*; sicer so le načrtovane.
+3. Po želji popravi vrednosti, izberi vnos v g ali kos, pri kosu vnesi maso kosa v gramih in označi **Preveril sem hranilne vrednosti na embalaži**, če si jih preveril. Shrani v **Živila** ali izberi **Dan / Obrok / Količina** in **Shrani in dodaj k obroku**. Če potrdiš **To sem dejansko pojedel**, se kalorije štejejo v *Pojedeno*; sicer so le načrtovane.
 4. Če je EAN že v tvoji bazi, aplikacija uporablja obstoječi zapis in ga ne prepiše z novimi spletnimi podatki. Ob neuspešnem iskanju lahko izdelku podatke ročno vneseš z embalaže.
 
 **Zasebnost:** kamera/fotografija se obdeluje v tvojem brskalniku. Na javni API se za iskanje pošlje samo EAN/UPC številka, **ne** dnevnik zaužite hrane ali drugi lokalni zapisi. Samo v času skeniranja se prenese zunanja knjižnica. Hranilni podatki iz Open Food Facts so pod pogoji [ODbL](https://world.openfoodfacts.org/terms-of-use). Uporaba kamere in API-ja potrebuje povezavo in podporo brskalnika. Koda skenerja je preverjena s simulacijo; preizkus dovoljenja za kamero na dejanskem telefonu je še potreben.
@@ -41,7 +55,7 @@ Kadar je jedilnik zapisan s **kuhano ali pečeno težo**, so nakupne količine *
 - kuhane testenine → suhe testenine × 1/2,25;
 - pripravljen krompir → približno enaka teža surovega, olupljenega krompirja.
 
-To **niso univerzalni pretvorbeni faktorji**. Na izplen vplivata voda in način priprave. Kjer sestavin ni mogoče zanesljivo razčleniti, aplikacija pokaže opozorilo, namesto da bi jih ugibala. Ročno urejene stare cene niso preverjene maloprodajne cene; paketne količine in dejanske zaloge se še ne odštevajo.
+To **niso univerzalni pretvorbeni faktorji**. Na izplen vplivata voda in način priprave. Kjer sestavin ni mogoče zanesljivo razčleniti, aplikacija pokaže opozorilo. Ročno urejene stare cene niso preverjene maloprodajne cene; številsko odštevanje zalog in izračun velikosti pakiranj delujeta samo za količine, ki jih vneseš sam.
 
 Pri starejših smutijih se nakupovalni recept uporabi le, če besedilo sestavin še ustreza izhodiščnemu receptu. Novejši shranjeni smutiji uporabljajo seznam strukturiranih sestavin.
 
@@ -65,6 +79,9 @@ Pri starejših smutijih se nakupovalni recept uporabi le, če besedilo sestavin 
 ## Osnovni kontrolni seznam za test
 
 - [ ] Na telefonu osveži stran in preveri vseh šest zavihkov.
+- [ ] Preveri jajce, banano in tortilijo v kosih ter sir, piščanca, skuto in mleko v gramih.
+- [ ] Pri priljubljenem živilu varno pretvori enoto g ↔ kos s težo enega kosa; preveri, da kalorije ostanejo enake in vrednost obstane po osvežitvi.
+- [ ] Skeniraj tortilijo; za vnos kot kos vnesi deklarirano ali izmerjeno maso enega kosa.
 - [ ] Označi nekaj priljubljenih živil v Živilih; v Tednu jih dodaj kot pojedeno ali samo načrtovano.
 - [ ] Dopolni maščobe, OH in vlaknine na konkretnem izdelku; preveri, ali se delni seštevki pravilno prikažejo.
 - [ ] Na Nakupu vnesi zalogo (npr. 500 ml mleka) in velikost pakiranja; preveri odštevanje in možnost skrivanja že založenega.
