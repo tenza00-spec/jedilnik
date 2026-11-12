@@ -493,9 +493,10 @@ li.eaten .lab{color:var(--muted)}
   }
 
   function gaugeHtml(k, pr) {
-    return '<div class="bar"><div class="fill" style="width:' + Math.min(100, k.all / SCALE * 100) + '%"></div><div class="band" style="left:' + (TARGET_LO / SCALE * 100) + '%;width:' + ((TARGET_HI - TARGET_LO) / SCALE * 100) + '%"></div></div>' +
-      '<div class="lbl tnum"><span>Pojedeno <b>~' + k.all + ' kcal</b> · <b>~' + Math.round(pr) + ' g</b> beljakovin</span><span>načrt ~' + k.plan + (k.drinks ? ' · pijače ~' + k.drinks : '') + '</span></div>' +
-      (k.plan < 2000 ? '<div class="lbl" style="color:var(--warn)">Načrt za ta dan je pod ~2000 kcal. Dodaj kaj beljakovinskega (skuta, jajca, mleko).</div>' : '');
+    var goalK=Math.max(1,+S.targets.kcal||2000),goalP=Math.max(1,+S.targets.protein||150);
+    var h='<div class="card" style="margin:8px 0 12px"><div class="meter"><div class="meterhead"><span>Kalorije (pojedeno)</span><span class="tnum">'+Math.round(k.all)+' / '+goalK+' kcal</span></div><div class="metertrack"><div class="meterfill" style="width:'+Math.min(100,Math.max(0,k.all/goalK*100))+'%"></div></div></div>';
+    h+='<div class="meter"><div class="meterhead"><span>Beljakovine (pojedeno)</span><span class="tnum">'+Math.round(pr)+' / '+goalP+' g</span></div><div class="metertrack"><div class="meterfill" style="width:'+Math.min(100,Math.max(0,pr/goalP*100))+'%"></div></div></div>';
+    return h+'<p class="subtle">Načrt: ~'+Math.round(k.plan)+' kcal. Cilja sta orientacijska, ne sili se jesti ob slabosti.</p></div>';
   }
 
   // editor fields for an item-like object; pfx distinguishes the adder ("a") from saved items ("e")
@@ -580,17 +581,17 @@ li.eaten .lab{color:var(--muted)}
     h += '<div class="dayhead"><h2>' + esc(d.name) + '</h2></div><div class="gauge" id="gauge">' + gaugeHtml(dayKD(d), dayP(d)) + '</div>';
     d.meals.forEach(function (m) {
       var me = !!editMeals[m.id];
-      h += '<div class="meal' + (m.lunch ? ' lunch' : '') + '"><div class="mh"><span class="nm">' + esc(m.name) + (m.lunch ? '<span class="tag">babica</span>' : '') + '</span><span class="rt"><span class="kc tnum" id="mk-' + m.id + '">~' + mealK(m) + ' kcal</span>' +
+      h += '<div class="meal' + (m.lunch ? ' lunch' : '') + '"><div class="mh"><span class="nm">' + esc(m.name) + (m.lunch ? '<span class="tag">babica</span>' : '') + '</span><span class="rt"><span class="kc tnum" id="mk-' + m.id + '">~' + mealK(m,dayIdx) + ' kcal</span>' +
         '<button type="button" class="medit" data-act="editMeal" data-m="' + m.id + '" aria-pressed="' + me + '">' + (me ? 'Končano' : 'Uredi') + '</button></span></div>';
       if (!me) {
-        h += '<ul class="items">' + m.items.filter(function (it) { return shown(it, dayIdx); }).map(function (it) {
+        h += '<ul class="items">' + visibleMealItems(m,dayIdx).map(function (it) {
           var fd = it.f ? food(it.f) : null;
           return '<li class="' + (isEaten(it, dayIdx) ? 'eaten' : '') + '"><div class="it"><button type="button" class="tick" data-act="eat" data-id="' + it.id + '" aria-pressed="' + isEaten(it, dayIdx) + '" aria-label="' + (isEaten(it, dayIdx) ? 'Tega nisem jedel' : 'To sem pojedel') + '">' +
             (isEaten(it, dayIdx) ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12.5l4.5 4.5L19 7"/></svg>' : '') + '</button>' +
             '<span class="lab">' + esc(itemLabel(it)) + (it.extra ? '<span class="xtag">dodano</span>' : '') + (fd && it.note ? '<small>' + esc(it.note) + '</small>' : '') + '</span></div>' +
-            '<em class="tnum">' + itemK(it) + ' kcal' + (itemP(it) >= 3 ? '<span class="pg">' + pTxt(itemP(it)) + '</span>' : '') + '</em>' + (it.extra ? '<button type="button" class="mini" data-act="delItem" data-id="' + it.id + '" aria-label="Odstrani">×</button>' : '') + '</li>';
+            '<em class="tnum">' + (isEaten(it,dayIdx) ? Math.round(itemK(it)*portionOf(it,dateOfIdx(dayIdx)))+' od '+itemK(it) : itemK(it)) + ' kcal' + (itemP(it) >= 3 ? '<span class="pg">' + pTxt(isEaten(it,dayIdx)?itemP(it)*portionOf(it,dateOfIdx(dayIdx)):itemP(it)) + '</span>' : '') + '</em>' + '<select class="pillbtn" data-portion="' + esc(it.id) + '" aria-label="Pojedeni delež ' + esc(itemLabel(it)) + '">' + [0,0.25,0.5,0.75,1].map(function(p){return '<option value="'+p+'"'+(portionOf(it,dateOfIdx(dayIdx))===p?' selected':'')+'>'+Math.round(p*100)+'%</option>';}).join('') + '</select>' + (it.extra ? '<button type="button" class="mini" data-act="delItem" data-id="' + it.id + '" aria-label="Odstrani">×</button>' : '') + '</li>';
         }).join('') + '</ul>';
-        if (!m.items.length) h += '<p class="note">Ni jedi.</p>';
+        if (!visibleMealItems(m,dayIdx).length) h += '<p class="note">Ni jedi.</p>';
         if (adder && adder.mealId === m.id) {
           h += '<div class="adder">' + itemEditor(adder, 'a', 'new') +
             '<div class="acts"><button type="button" class="primary" data-act="adderSave">Dodaj</button><button type="button" class="ghost" data-act="adderCancel">Prekliči</button></div></div>';
@@ -598,20 +599,40 @@ li.eaten .lab{color:var(--muted)}
           h += '<button type="button" class="add" data-act="adderOpen" data-m="' + m.id + '">+ Dodaj, kar sem jedel</button>';
         }
       } else {
-        m.items.filter(function (it) { return shown(it, dayIdx); }).forEach(function (it) { h += '<div class="eitem">' + itemEditor(it, 'e', it.id) + '</div>'; });
-        h += '<button type="button" class="add" data-act="addItem" data-m="' + m.id + '">+ Dodaj jed v jedilnik</button>';
+        visibleMealItems(m,dayIdx).forEach(function (it) { h += '<div class="eitem">' + itemEditor(it, 'e', it.id) + '</div>'; });
+        if (!activeSwap(m,dayIdx)) h += '<button type="button" class="add" data-act="addItem" data-m="' + m.id + '">+ Dodaj jed v jedilnik</button>';
+      }
+      if (activeSwap(m,dayIdx)) h += '<button type="button" class="ghost" data-act="swapRevert" data-m="' + m.id + '">Vrni prvotni obrok</button>';
+      h += '<button type="button" class="add" data-act="suggest" data-m="' + m.id + '">Predlagaj manjši obrok</button>';
+      if (mealSuggest === m.id) {
+        var opts=suggestionsFor(m);
+        h += '<div class="adder"><b>Manjše alternative</b>' + opts.map(function(i){var x=SMALL_OPTIONS[i];return '<div style="border-bottom:1px solid var(--line);padding:8px 0"><div class="mh"><b>' + esc(x[1]) + '</b><span class="kc">~' + x[3] + ' kcal</span></div><p class="note">' + esc(x[2]) + ' · ~' + x[4] + ' g beljakovin</p><button type="button" class="primary" data-act="smallReplace" data-m="' + m.id + '" data-opt="' + i + '">Uporabi za ta dan</button></div>';}).join('') + '</div>';
       }
       h += '</div>';
     });
-    h += '<p class="note">Krogec pred jedjo: tapni, ko jed poješ. Kalorije in beljakovine se seštevajo samo za pojedeno. Oznake in dodane jedi se vsak ponedeljek same počistijo. Z gumbom Uredi pri obroku spremeniš jedi in količine v jedilniku.</p>';
+    h += '<p class="note">Krogec pred jedjo: tapni, ko jed poješ. Kalorije in beljakovine se seštevajo samo za pojedeno. Oznake se vsak nov teden ponastavijo, arhiv preteklih dni pa ostane. Z gumbom Uredi pri obroku spremeniš jedi in količine v jedilniku.</p>';
     if (new Date().getDay() === (S.injDay == null ? 5 : +S.injDay)) h += '<p class="note" style="margin-top:12px"><b>Danes je dan za injekcijo.</b> Mounjaro si daj enkrat na teden, vedno isti dan. Ura in hrana nista pomembni.</p>';
     return h;
   }
 
   // Orientacijske manjše alternative. Hranilne vrednosti so približki; preveri embalažo.
-  var SMALL_OPTIONS = [["Smutiji","Gozdni sadeži + whey","150 g skyra, 25 g whey, 100 g gozdnih sadežev, 100 ml mleka",330,43],["Smutiji","Banana + whey","150 g skyra, 25 g whey, ½ banane, 100 ml mleka",330,43],["Smutiji","Čoko-banana","150 g skyra, 25 g whey, ½ banane, 5 g kakava",300,42],["Smutiji","Kavni proteinski","150 ml hladnega mleka, espresso, 30 g whey, led",190,29],["Smutiji","Arašidov proteinski","150 g skyra, 25 g whey, 15 g arašidovega masla, malo vode",340,45],["Smutiji","Jabolko-cimet","150 g skyra, 25 g whey, ½ jabolka, cimet",265,42],["Smutiji","Jagodni kefir","150 ml kefirja, 25 g whey, 80 g jagod",240,26],["Smutiji","Mini proteinski napitek","30 g whey in 120 ml mleka; po potrebi popij v dveh delih",175,28],["Zajtrki","Skyr + whey krema","170 g skyra, 20 g whey, 10 g arašidovega masla",265,37],["Zajtrki","Mini omleta s sirom","2 jajci, 30 g sira, malo špinače",280,23],["Zajtrki","Skuta s kakavom","150 g skute, 10 g kakava, 10 g arašidovega masla",250,23],["Zajtrki","Proteinski puding + orehi","200 g proteinskega pudinga, 15 g orehov",250,22],["Malice","Skyr in nekaj mandljev","170 g skyra, 20 g mandljev",220,22],["Malice","Mini tuna-sir","½ pločevinke tune, 30 g sira, kumara",185,23],["Malice","Zrnati sir","200 g zrnatega sira z začimbami",195,22],["Malice","Grški jogurt + whey","150 g grškega jogurta 2 %, 20 g whey",180,31],["Malice","Dve jajci + sir","2 kuhani jajci in 25 g trdega sira",245,20],["Kosila","Piščanec in malo riža","150 g pečenih prsi, 80 g kuhanega riža, 1 žlička olja",400,49],["Kosila","Polak s pirejem","180 g polaka, 100 g pireja, 1 žlička olja",320,43],["Kosila","Tunina tortilja","1 manjša tortilja, 100 g tune, 25 g sira, malo zelenjave",415,39],["Kosila","Piščanec z mocarelo","130 g piščančjih prsi, 40 g mocarele, 80 g krompirja",395,50],["Kosila","Govedina z rižem","130 g pripravljenega pustega govejega mesa, 80 g kuhanega riža",370,33],["Večerje","Tuna in skuta","100 g tune, 125 g skute, kumara",280,40],["Večerje","Piščančja tortilja","80 g pečenega piščanca, mala tortilja, 30 g sira",400,37],["Večerje","Jajca in zrnati sir","2 jajci, 150 g zrnatega sira",300,30],["Večerje","Sardine + malo kruha","1 pločevinka sardin in 1 manjša rezina kruha",275,25],["Večerje","Skyr skledica","200 g skyra, 20 g whey, 15 g arašidovega masla",340,46],["Dodatki","Žlička olivnega olja","5 ml olivnega olja kot dodatek obroku",45,0],["Dodatki","Arašidovo maslo","15 g arašidovega masla, če ga dobro prenašaš",90,4],["Dodatki","Parmezan","20 g parmezana na manjši obrok",80,7],["Dodatki","Orehi","20 g orehov v manjših grižljajih",130,3],["Dodatki","Whey z vodo","28 g bananinega Whey Deluxe z malo vode",120,23]];
+  var SMALL_OPTIONS = [["Smutiji","Gozdni sadeži + whey","150 g skyra, 25 g whey, 100 g gozdnih sadežev, 100 ml mleka",330,43],["Smutiji","Banana + whey","150 g skyra, 25 g whey, ½ banane, 100 ml mleka",330,43],["Smutiji","Čoko-banana","150 g skyra, 25 g whey, ½ banane, 5 g kakava",300,42],["Smutiji","Kavni proteinski","150 ml hladnega mleka, espresso, 30 g whey, led",190,29],["Smutiji","Arašidov proteinski","150 g skyra, 25 g whey, 15 g arašidovega masla, malo vode",340,45],["Smutiji","Jabolko-cimet","150 g skyra, 25 g whey, ½ jabolka, cimet",265,42],["Smutiji","Jagodni kefir","150 ml kefirja, 25 g whey, 80 g jagod",240,26],["Smutiji","Mini proteinski napitek","30 g whey in 120 ml mleka; po potrebi popij v dveh delih",175,28],["Zajtrki","Skyr + whey krema","170 g skyra, 20 g whey, 10 g arašidovega masla",265,37],["Zajtrki","Mini omleta s sirom","2 jajci, 30 g sira, malo špinače",280,23],["Zajtrki","Skuta s kakavom","150 g skute, 10 g kakava, 10 g arašidovega masla",250,23],["Zajtrki","Proteinski puding + orehi","200 g proteinskega pudinga, 15 g orehov",250,22],["Malice","Skyr in nekaj mandljev","170 g skyra, 20 g mandljev",220,22],["Malice","Mini tuna-sir","½ pločevinke tune, 30 g sira, kumara",185,23],["Malice","Zrnati sir","200 g zrnatega sira z začimbami",195,22],["Malice","Grški jogurt + whey","150 g grškega jogurta 2 %, 20 g whey",180,31],["Malice","Dve jajci + sir","2 kuhani jajci in 25 g trdega sira",245,20],["Kosila","Piščanec in malo riža","150 g pečenih prsi, 80 g kuhanega riža, 1 žlička olja",400,49],["Kosila","Polak s pirejem","180 g polaka, 100 g pireja, 1 žlička olja",320,43],["Kosila","Tunina tortilja","1 manjša tortilja, 100 g tune, 25 g sira, malo zelenjave",415,39],["Kosila","Piščanec z mocarelo","130 g piščančjih prsi, 40 g mocarele, 80 g krompirja",395,50],["Kosila","Govedina z rižem","130 g pripravljenega pustega govejega mesa, 80 g kuhanega riža",370,33],["Večerje","Tuna in skuta","100 g tune, 125 g skute, kumara",280,40],["Večerje","Piščančja tortilja","80 g pečenega piščanca, mala tortilja, 30 g sira",400,37],["Večerje","Jajca in zrnati sir","2 jajci, 150 g zrnatega sira",300,30],["Večerje","Sardine + malo kruha","1 pločevinka sardin in 1 manjša rezina kruha",275,25],["Večerje","Skyr skledica","200 g skyra, 20 g whey, 15 g arašidovega masla",340,46],["Dodatki","Žlička olivnega olja","5 ml olivnega olja kot dodatek obroku",45,0],["Dodatki","Arašidovo maslo","15 g arašidovega masla, če ga dobro prenašaš",90,4],["Dodatki","Parmezan","20 g parmezana na manjši obrok",80,7],["Dodatki","Orehi","20 g orehov v manjših grižljajih",130,3],["Dodatki","Whey z vodo","30 g neokusnega Battery Complete Whey z malo vode",120,23]];
+
+  function suggestionsFor(m) {
+    var n=m.name.toLowerCase(), c=n.indexOf('zajtrk')>=0?'Zajtrki':n.indexOf('kosilo')>=0?'Kosila':n.indexOf('večer')>=0?'Večerje':'Malice';
+    return SMALL_OPTIONS.map(function(x,i){return {x:x,i:i};}).filter(function(o){return o.x[0]===c;})
+      .sort(function(a,b){return b.x[4]/Math.max(1,b.x[3])-a.x[4]/Math.max(1,a.x[3]);})
+      .slice(0,3).map(function(o){return o.i;});
+  }
+  function findVisibleItem(id) {
+    var result=findItem(id);
+    if (result && shown(result.it,dayIdx) && !activeSwap(result.meal,dayIdx)) return result;
+    var ds=S.days[dayIdx];if (!ds) return null;
+    ds.meals.forEach(function(m){var v=activeSwap(m,dayIdx);if(!v)return;v.items.forEach(function(it,j){if(it.id===id)result={it:it,i:j,list:v.items,meal:m};});});
+    return result;
+  }
   function renderSmallAppetite() {
-    var d = S.days[dayIdx], h = '<h2>Manjši apetit</h2><p class="note">Izberi manjši obrok z veliko beljakovinami. Vrednosti so okvirne, ne nadomeščajo deklaracij. Ob slabosti raje manjše količine in manj maščob. Whey je v predlogih mišljen kot približno 23 g beljakovin na 28 g (Whey Deluxe Banana Milkshake).</p>';
+    var d = S.days[dayIdx], h = '<h2>Manjši apetit</h2><p class="note">Izberi manjši obrok z veliko beljakovinami. Vrednosti so okvirne, ne nadomeščajo deklaracij. Ob slabosti raje manjše količine in manj maščob. Whey je v predlogih mišljen kot približno 23 g beljakovin na 28 g (Battery Complete Whey Unflavoured (preveri deklaracijo)).</p>';
     h += '<div class="card"><label class="note" for="smallDay">Dan</label><select class="field" id="smallDay" style="width:100%">' + S.days.map(function (x, i) { return '<option value="' + i + '"' + (i === dayIdx ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>';
     h += '<label class="note" for="smallMeal">Obrok, ki ga želiš spremeniti</label><select class="field" id="smallMeal" style="width:100%">' + d.meals.map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>'; }).join('') + '</select><p class="subtle">»Zamenjaj« nadomesti načrtovan obrok; »Dodaj« vstavi predlog kot dodaten obrok na izbrano mesto. Obe dejanji lahko takoj razveljaviš.</p></div>';
     var cats = ['Smutiji','Zajtrki','Malice','Kosila','Večerje','Dodatki'];
@@ -765,20 +786,26 @@ li.eaten .lab{color:var(--muted)}
       return;
     }
     if (a === 'importData') { $('importFile').click(); return; }
-    if (a === 'smallAdd' || a === 'smallReplace') {
-      var opt = SMALL_OPTIONS[+b.dataset.opt], sel = $('smallMeal'), meal = sel && findMeal(sel.value);
-      if (!opt || !meal) return;
-      change(function () {
-        var item = { id: nid('i'), n: opt[1] + ' (' + opt[2] + ')', k: opt[3], p: opt[4], note: '', extra: true };
-        if (a === 'smallReplace') meal.items = [item]; else meal.items.push(item);
-      }, a === 'smallReplace' ? 'Obrok zamenjan' : 'Predlog dodan v načrt');
-      return;
+    if (a === 'suggest') { mealSuggest=mealSuggest===b.dataset.m?null:b.dataset.m;render();return; }
+    if (a === 'swapRevert') {
+      var original=findMeal(b.dataset.m), ky=dateOfIdx(dayIdx);if(!original||!S.daySwaps[ky])return;
+      change(function(){delete S.daySwaps[ky][original.id];mealSuggest=null;},'Prvotni obrok obnovljen');return;
     }
-    if (a === 'day') { dayIdx = +b.dataset.i; adder = null; editMeals = {}; render(); return; }
+    if (a === 'smallAdd' || a === 'smallReplace') {
+      var opt=SMALL_OPTIONS[+b.dataset.opt],sel=$('smallMeal'),meal=findMeal(b.dataset.m||(sel&&sel.value));
+      if(!opt||!meal)return;
+      var ky=dateOfIdx(dayIdx), it={id:nid('i'),n:opt[1]+' ('+opt[2]+')',k:opt[3],p:opt[4],note:''};
+      change(function(){
+        if(a==='smallReplace'){if(!S.daySwaps[ky])S.daySwaps[ky]={};S.daySwaps[ky][meal.id]={items:[it],label:opt[1]};}
+        else {it.extra=true;it.addedOn=ky;meal.items.push(it);}
+        mealSuggest=null;
+      },a==='smallReplace'?'Alternativa izbrana (le za ta dan)':'Predlog dodan v načrt');return;
+    }
+    if (a === 'day') { dayIdx = +b.dataset.i; adder = null; editMeals = {}; mealSuggest=null; render(); return; }
     if (a === 'editMeal') { var mid = b.dataset.m; if (editMeals[mid]) { delete editMeals[mid]; if (!local && saveTimer) { clearTimeout(saveTimer); flush(); } } else { editMeals[mid] = true; if (adder && adder.mealId === mid) adder = null; } render(); return; }
     if (a === 'delRec') { change(function () { S.recipes = S.recipes.filter(function (r) { return r.id !== id; }); }, 'Recept odstranjen'); return; }
     if (a === 'addRec') { var rid = nid('r'); change(function () { S.recipes.push({ id: rid, n: 'Nov recept', k: 0, p: 0, ing: '', steps: '' }); }); var re = $('rn-' + rid); if (re) { re.focus(); re.select(); } return; }
-    if (a === 'eat') { var fs = findItem(id); var dk = dateOfIdx(dayIdx); change(function () { if (fs.it.eatenOn === dk) delete fs.it.eatenOn; else fs.it.eatenOn = dk; }); return; }
+    if (a === 'eat') { var fs=findVisibleItem(id);if(!fs)return;var dk=dateOfIdx(dayIdx);change(function(){if(fs.it.eatenOn===dk){delete fs.it.eatenOn;delete fs.it.portion;}else{fs.it.eatenOn=dk;fs.it.portion=1;}});return; }
     if (a === 'adderOpen') { adder = { mealId: b.dataset.m, f: '', n: '', k: 0, note: '' }; setFood(adder, 'skuta'); render(); return; }
     if (a === 'adderCancel') { adder = null; render(); return; }
     if (a === 'adderSave') {
@@ -803,7 +830,13 @@ li.eaten .lab{color:var(--muted)}
   });
 
   function onField(e) {
-    var t = e.target, id = t.dataset.id;
+    var t=e.target,id=t.dataset.id;
+    if (t.dataset.portion) {
+      if(e.type!=='change')return;
+      var fs=findVisibleItem(t.dataset.portion);if(!fs)return;
+      var p=Math.max(0,Math.min(1,num(t.value))),key=dateOfIdx(dayIdx);
+      change(function(){if(p>0){fs.it.eatenOn=key;fs.it.portion=p;}else{delete fs.it.eatenOn;delete fs.it.portion;}});return;
+    }
     if (t.dataset.df) { if (!drinkForm) return; if (t.dataset.df === 'save') drinkForm.save = t.checked; else drinkForm[t.dataset.df] = t.value; return; }
     if (t.dataset.inj) { if (e.type !== 'change') return; S.injDay = +t.value; save(); return; }
     if (t.dataset.rf) { if (e.type === 'change') return; var rr = S.recipes.filter(function (x) { return x.id === id; })[0]; if (!rr) return; var rf = t.dataset.rf; rr[rf] = (rf === 'k' || rf === 'p') ? num(t.value) : t.value; save(); return; }
@@ -847,7 +880,7 @@ li.eaten .lab{color:var(--muted)}
   function updateTotals() {
     if (view !== 'teden') return;
     var d = S.days[dayIdx];
-    d.meals.forEach(function (m) { var el = $('mk-' + m.id); if (el) el.textContent = '~' + mealK(m) + ' kcal'; });
+    d.meals.forEach(function(m){var el=$('mk-'+m.id);if(el)el.textContent='~'+mealK(m,dayIdx)+' kcal';});
     var g = $('gauge'); if (g) g.innerHTML = gaugeHtml(dayKD(d), dayP(d));
     var tab = $('tab-' + dayIdx); if (tab) tab.textContent = dayK(d).all;
   }
