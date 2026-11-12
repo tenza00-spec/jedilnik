@@ -343,10 +343,9 @@ li.eaten .lab{color:var(--muted)}
         entries.push({name:itemLabel(it),kcal:k,protein:p,portion:part,meal:m.name});
       });
     });
-    if (hasData || S.history[date]) {
-      var drinks = date === dKey(new Date()) ? sumK(S.drinkLog[date] || []) : (S.history[date] ? (S.history[date].drinks || 0) : 0);
-      S.history[date] = {date:date,kcal:kcal+drinks,protein:Math.round(protein*10)/10,drinks:drinks,items:entries};
-    }
+    var drinks = date === dKey(new Date()) ? sumK(S.drinkLog[date] || []) : (S.history[date] ? (S.history[date].drinks || 0) : 0);
+    if (!hasData && !drinks) { delete S.history[date]; return; }
+    S.history[date] = {date:date,kcal:kcal+drinks,protein:Math.round(protein*10)/10,drinks:drinks,items:entries};
   }
   function snapshotWeek() {
     ensureTracking();
