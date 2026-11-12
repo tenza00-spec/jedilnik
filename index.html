@@ -179,7 +179,7 @@ li.eaten .lab{color:var(--muted)}
   var UNITS = ['g', 'ml', 'kos', 'pločevinka', 'žlica', 'žlička', 'rezina', 'porcija'];
   var S = null, view = 'teden', dayIdx = (new Date().getDay() + 6) % 7, editing = false;
   var docRef = null, writing = false, saveTimer = null, undo = null, localRev = 0, savedRev = 0, lastErr = false;
-  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = ''; // {mealId, f, q, note, n, k}
+  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = ''; // {mealId, f, q, note, n, k}
   var $ = function (id) { return document.getElementById(id); };
   var app = $('app');
   try { var v0 = localStorage.getItem('jed-view'); if (v0 === 'info') v0 = 'zivila'; if (v0) view = v0; } catch (e) {}
@@ -721,8 +721,16 @@ li.eaten .lab{color:var(--muted)}
   function smMacros(s) {
     return s.parts && s.parts.length ? smoothieValues(s.parts) : {k:+s.k||0,p:+s.p||0,valid:true};
   }
+  function smoothieEditableParts(s) {
+    if(Array.isArray(s.parts)&&s.parts.length)return JSON.parse(JSON.stringify(s.parts));
+    var baseline=null;
+    try{baseline=JSON.parse($('seed').textContent).smoothies.filter(function(x){return x.id===s.id;})[0];}catch(e){}
+    if(baseline && s.ing===baseline.ing && LEGACY_SMOOTHIE_SHOP[s.id])
+      return JSON.parse(JSON.stringify(LEGACY_SMOOTHIE_SHOP[s.id]));
+    return null;
+  }
   function renderSmoothieBuilder() {
-    var h='<details class="card" open><summary><b>Sestavljalnik proteinskih smutijev</b></summary>';
+    var h='<details class="card" open><summary><b>'+(smoothieEditId?'Urejanje shranjenega smutija':'Sestavljalnik proteinskih smutijev')+'</b></summary>';
     h+='<p class="note">Količine izberi sam. Vrednosti se računajo iz zavihka Živila. Neokusni Battery whey mora imeti vpisano deklaracijo.</p>';
     var whey=food('battery_whey');
     h+='<div class="adder"><b>Battery Complete Whey – podatki s pakiranja (na 100 g)</b><div style="display:flex;gap:8px">';
@@ -736,14 +744,14 @@ li.eaten .lab{color:var(--muted)}
       var f=food(v.f);
       h+='<div class="smrow"><select class="field" data-bf="food" data-bi="'+i+'" aria-label="Sestavina">'
         +S.foods.slice().sort(function(a,b){return a.label.localeCompare(b.label,'sl');}).map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===v.f?' selected':'')+'>'+esc(x.label)+'</option>';}).join('')+'</select>'
-        +'<input class="field" type="number" min="0" step="1" inputmode="decimal" data-bf="qty" data-bi="'+i+'" value="'+esc(v.q)+'" aria-label="Količina ('+esc(f?f.unit:'g')+')">'
+        +'<input class="field" type="number" min="0" step="any" inputmode="decimal" data-bf="qty" data-bi="'+i+'" value="'+esc(v.q)+'" aria-label="Količina ('+esc(f?f.unit:'g')+')">'
         +'<button type="button" class="x" data-act="smoothRemove" data-bi="'+i+'" aria-label="Odstrani sestavino">×</button></div>';
       h+='<p class="subtle" style="margin:-4px 0 4px 0">'+esc(f?f.unit:'g')+'</p>';
     });
     var calc=smoothieValues(smoothieDraft.parts);
     h+='<div class="totals"><div><small>Kalorije</small><b>~'+calc.k+' kcal</b></div><div><small>Beljakovine</small><b>~'+fmtN(calc.p)+' g</b></div></div>';
     if(!calc.valid)h+='<p class="note" style="color:var(--warn)">Vrednosti niso popolne, dokler ne vneseš deklaracije Battery wheyja.</p>';
-    h+='<div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" class="ghost" data-act="smoothAdd">+ Sestavina</button><button type="button" class="primary" data-act="smoothSave">Shrani kot nov smoothie</button><button type="button" class="ghost" data-act="smoothReset">Ponastavi</button></div></details>';
+    h+='<div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" class="ghost" data-act="smoothAdd">+ Sestavina</button><button type="button" class="primary" data-act="smoothSave">'+(smoothieEditId?'Posodobi ta smoothie':'Shrani kot nov smoothie')+'</button><button type="button" class="ghost" data-act="smoothReset">'+(smoothieEditId?'Prekliči urejanje':'Ponastavi')+'</button></div></details>';
     return h;
   }
   function renderSmoothies() {
@@ -752,7 +760,7 @@ li.eaten .lab{color:var(--muted)}
       if (!editing) {
         var smv=smMacros(s);
         h += '<div class="card"><div class="mh"><span class="nm">' + esc(s.n) + '</span><span class="kc tnum">~' + smv.k + ' kcal</span></div><p>' + esc(s.ing) + '</p>' +
-          '<span class="pill tnum">~' + fmtN(smv.p) + ' g beljakovin</span><span class="pill tnum">~' + eur(s.c) + '</span></div>';
+          '<span class="pill tnum">~' + fmtN(smv.p) + ' g beljakovin</span><span class="pill tnum">~' + eur(s.c) + '</span>'+(smoothieEditableParts(s)?'<button type="button" class="ghost" data-act="smLoad" data-id="'+esc(s.id)+'" style="display:block;margin-top:9px">Uredi v sestavljalniku</button>':'<p class="subtle">Za ta smoothie so sestavine samo besedilo; za preračun izdelaj strukturiran recept.</p>')+'</div>';
       } else {
         h += '<div class="card ed"><div class="two"><input class="field" style="flex:1" id="sn-' + s.id + '" data-sf="n" data-id="' + s.id + '" value="' + esc(s.n) + '" aria-label="Ime">' +
           '<button type="button" class="x" data-act="delSm" data-id="' + s.id + '" aria-label="Odstrani">×</button></div>' +
@@ -1078,13 +1086,26 @@ li.eaten .lab{color:var(--muted)}
     if (a === 'importData') { $('importFile').click(); return; }
     if(a==='smoothAdd') {if(!smoothieDraft)return;smoothieDraft.parts.push({f:'skyr',q:150});render();return;}
     if(a==='smoothRemove'){if(!smoothieDraft)return;smoothieDraft.parts.splice(+b.dataset.bi,1);render();return;}
-    if(a==='smoothReset'){smoothieDraft=null;render();return;}
+    if(a==='smLoad'){
+      var sm=S.smoothies.filter(function(x){return x.id===id;})[0];
+      var parts=sm&&smoothieEditableParts(sm);
+      if(!sm||!parts)return;
+      smoothieEditId=sm.id;smoothieDraft={name:sm.n,parts:parts};view='smutiji';editing=false;
+      render();window.scrollTo(0,0);return;
+    }
+    if(a==='smoothReset'){smoothieDraft=null;smoothieEditId=null;render();return;}
     if(a==='smoothSave'){
       if(!smoothieDraft || !smoothieDraft.parts.length || !smoothieDraft.name.trim()){setStatus('Vnesi ime in vsaj eno sestavino.');return;}
       if(smoothieDraft.parts.some(function(x){return !(+x.q>0) || !food(x.f);}) || !smoothieValues(smoothieDraft.parts).valid){setStatus('Vnesi veljavne količine in deklaracijo Battery wheyja.');return;}
       var calc=smoothieValues(smoothieDraft.parts),parts=JSON.parse(JSON.stringify(smoothieDraft.parts));
       var ing=parts.map(function(x){var ff=food(x.f);return fmtN(x.q)+' '+ff.unit+' '+ff.label;}).join(', ');
-      change(function(){S.smoothies.push({id:nid('s'),n:smoothieDraft.name.trim(),ing:ing,k:calc.k,p:calc.p,c:0,parts:parts});smoothieDraft=null;},'Smoothie shranjen v knjižnico');return;
+      var targetId=smoothieEditId, newName=smoothieDraft.name.trim();
+      change(function(){
+        var old=targetId?S.smoothies.filter(function(x){return x.id===targetId;})[0]:null;
+        if(old){old.n=newName;old.ing=ing;old.k=calc.k;old.p=calc.p;old.parts=parts;}
+        else S.smoothies.push({id:nid('s'),n:newName,ing:ing,k:calc.k,p:calc.p,c:0,parts:parts});
+        smoothieDraft=null;smoothieEditId=null;
+      },targetId?'Smoothie posodobljen':'Smoothie shranjen v knjižnico');return;
     }
     if (a === 'suggest') { mealSuggest=mealSuggest===b.dataset.m?null:b.dataset.m;render();return; }
     if (a === 'swapRevert') {
