@@ -373,7 +373,7 @@ li.eaten .lab{color:var(--muted)}
       m.items.forEach(function (it) { delete it.skip; if (it.eatenOn && it.eatenOn < mon) { delete it.eatenOn; delete it.portion; } });
     }); });
   }
-  function prep() { if (!S) return; if (!S.foods) S.foods = []; ensureTracking(); addNewFoods(); migrateCooked(); archiveLegacyEntries(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
+  function prep() { if (!S) return; if (!S.foods) S.foods = []; ensureTracking(); addNewFoods(); if(!S.foods.some(function(f){return f.id==='battery_whey';}))S.foods.push({id:'battery_whey',label:'Battery Complete Whey (brez okusa)',cat:'Moje',unit:'g',kcal:0,p:0,def:30}); migrateCooked(); archiveLegacyEntries(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
     if (it.f) { var fd = food(it.f); if (!fd) return +it.p || 0; return (+fd.p || 0) * (+it.q || 0) / per(fd.unit); }
@@ -392,7 +392,7 @@ li.eaten .lab{color:var(--muted)}
     if (!f) return null;
     if (f.indexOf('s:') === 0) {
       var sm = S.smoothies.filter(function (x) { return 's:' + x.id === f; })[0];
-      return sm ? { id: f, label: 'Smoothie: ' + sm.n, unit: 'kos', kcal: +sm.k || 0, p: +sm.p || 0, def: 1 } : null;
+      return sm ? { id: f, label: 'Smoothie: ' + sm.n, unit: 'kos', kcal: smMacros(sm).k, p: smMacros(sm).p, def: 1 } : null;
     }
     return (S.foods || []).filter(function (x) { return x.id === f; })[0] || null;
   }
@@ -648,12 +648,53 @@ li.eaten .lab{color:var(--muted)}
     return h;
   }
 
+
+  // Sestavljalnik: vrednosti vedno iz uporabnikove baze živil in v gramih/ml.
+  function smoothieValues(parts) {
+    var kcal=0,protein=0, valid=true;
+    (parts||[]).forEach(function(v){
+      var fd=food(v.f);if(!fd)return;
+      if(v.f==='battery_whey' && (!(+fd.kcal) || !(+fd.p)))valid=false;
+      var q=Math.max(0,+v.q||0), mult=q/per(fd.unit);
+      kcal+=(+fd.kcal||0)*mult;protein+=(+fd.p||0)*mult;
+    });
+    return {k:Math.round(kcal),p:Math.round(protein*10)/10,valid:valid};
+  }
+  function smMacros(s) {
+    return s.parts && s.parts.length ? smoothieValues(s.parts) : {k:+s.k||0,p:+s.p||0,valid:true};
+  }
+  function renderSmoothieBuilder() {
+    var h='<details class="card" open><summary><b>Sestavljalnik proteinskih smutijev</b></summary>';
+    h+='<p class="note">Količine izberi sam. Vrednosti se računajo iz zavihka Živila. Neokusni Battery whey mora imeti vpisano deklaracijo.</p>';
+    var whey=food('battery_whey');
+    h+='<div class="adder"><b>Battery Complete Whey – podatki s pakiranja (na 100 g)</b><div style="display:flex;gap:8px">';
+    h+='<label class="note" style="flex:1">kcal<input class="field" style="width:100%" type="number" inputmode="decimal" min="0" id="bwk" data-bf="wheyK" value="'+esc(whey&&whey.kcal||'')+'" placeholder="vpiši s pakiranja"></label>';
+    h+='<label class="note" style="flex:1">Beljakovine (g)<input class="field" style="width:100%" type="number" min="0" inputmode="decimal" id="bwp" data-bf="wheyP" value="'+esc(whey&&whey.p||'')+'" placeholder="vpiši s pakiranja"></label></div>';
+    if(!(whey&&+whey.kcal&&+whey.p))h+='<p class="subtle">Pred prvim izračunom z wheyem izpolni obe vrednosti.</p>';
+    h+='</div>';
+    if(!smoothieDraft) smoothieDraft={name:'Moj proteinski smoothie',parts:[{f:'mleko',q:150},{f:'skyr',q:150},{f:'battery_whey',q:30},{f:'sadje',q:100}]};
+    h+='<label class="note">Ime smutija<input class="field" style="width:100%" id="smoothName" data-bf="name" value="'+esc(smoothieDraft.name)+'"></label>';
+    smoothieDraft.parts.forEach(function(v,i) {
+      var f=food(v.f);
+      h+='<div class="smrow"><select class="field" data-bf="food" data-bi="'+i+'" aria-label="Sestavina">'
+        +S.foods.slice().sort(function(a,b){return a.label.localeCompare(b.label,'sl');}).map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===v.f?' selected':'')+'>'+esc(x.label)+'</option>';}).join('')+'</select>'
+        +'<input class="field" type="number" min="0" step="1" inputmode="decimal" data-bf="qty" data-bi="'+i+'" value="'+esc(v.q)+'" aria-label="Količina ('+esc(f?f.unit:'g')+')">'
+        +'<button type="button" class="x" data-act="smoothRemove" data-bi="'+i+'" aria-label="Odstrani sestavino">×</button></div>';
+      h+='<p class="subtle" style="margin:-4px 0 4px 0">'+esc(f?f.unit:'g')+'</p>';
+    });
+    var calc=smoothieValues(smoothieDraft.parts);
+    h+='<div class="totals"><div><small>Kalorije</small><b>~'+calc.k+' kcal</b></div><div><small>Beljakovine</small><b>~'+fmtN(calc.p)+' g</b></div></div>';
+    if(!calc.valid)h+='<p class="note" style="color:var(--warn)">Vrednosti niso popolne, dokler ne vneseš deklaracije Battery wheyja.</p>';
+    h+='<div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" class="ghost" data-act="smoothAdd">+ Sestavina</button><button type="button" class="primary" data-act="smoothSave">Shrani kot nov smoothie</button><button type="button" class="ghost" data-act="smoothReset">Ponastavi</button></div></details>';
+    return h;
+  }
   function renderSmoothies() {
-    var h = '<h2>Smutiji</h2>';
+    var h = '<h2>Smutiji</h2>' + renderSmoothieBuilder();
     S.smoothies.forEach(function (s) {
       if (!editing) {
-        h += '<div class="card"><div class="mh"><span class="nm">' + esc(s.n) + '</span><span class="kc tnum">~' + s.k + ' kcal</span></div><p>' + esc(s.ing) + '</p>' +
-          '<span class="pill tnum">~' + fmtN(s.p) + ' g beljakovin</span><span class="pill tnum">~' + eur(s.c) + '</span></div>';
+        var smv=smMacros(s);
+        h += '<div class="card"><div class="mh"><span class="nm">' + esc(s.n) + '</span><span class="kc tnum">~' + smv.k + ' kcal</span></div><p>' + esc(s.ing) + '</p>' +
+          '<span class="pill tnum">~' + fmtN(smv.p) + ' g beljakovin</span><span class="pill tnum">~' + eur(s.c) + '</span></div>';
       } else {
         h += '<div class="card ed"><div class="two"><input class="field" style="flex:1" id="sn-' + s.id + '" data-sf="n" data-id="' + s.id + '" value="' + esc(s.n) + '" aria-label="Ime">' +
           '<button type="button" class="x" data-act="delSm" data-id="' + s.id + '" aria-label="Odstrani">×</button></div>' +
@@ -847,6 +888,16 @@ li.eaten .lab{color:var(--muted)}
       change(function(){S.weights=S.weights.filter(function(x){return x.date!==date;});S.weights.push({date:date,kg:kg});},'Tehtanje shranjeno');return;
     }
     if (a === 'importData') { $('importFile').click(); return; }
+    if(a==='smoothAdd') {if(!smoothieDraft)return;smoothieDraft.parts.push({f:'skyr',q:150});render();return;}
+    if(a==='smoothRemove'){if(!smoothieDraft)return;smoothieDraft.parts.splice(+b.dataset.bi,1);render();return;}
+    if(a==='smoothReset'){smoothieDraft=null;render();return;}
+    if(a==='smoothSave'){
+      if(!smoothieDraft || !smoothieDraft.parts.length || !smoothieDraft.name.trim()){setStatus('Vnesi ime in vsaj eno sestavino.');return;}
+      if(smoothieDraft.parts.some(function(x){return !(+x.q>0) || !food(x.f);}) || !smoothieValues(smoothieDraft.parts).valid){setStatus('Vnesi veljavne količine in deklaracijo Battery wheyja.');return;}
+      var calc=smoothieValues(smoothieDraft.parts),parts=JSON.parse(JSON.stringify(smoothieDraft.parts));
+      var ing=parts.map(function(x){var ff=food(x.f);return fmtN(x.q)+' '+ff.unit+' '+ff.label;}).join(', ');
+      change(function(){S.smoothies.push({id:nid('s'),n:smoothieDraft.name.trim(),ing:ing,k:calc.k,p:calc.p,c:0,parts:parts});smoothieDraft=null;},'Smoothie shranjen v knjižnico');return;
+    }
     if (a === 'suggest') { mealSuggest=mealSuggest===b.dataset.m?null:b.dataset.m;render();return; }
     if (a === 'swapRevert') {
       var original=findMeal(b.dataset.m), ky=dateOfIdx(dayIdx);if(!original||!S.daySwaps[ky])return;
@@ -892,6 +943,21 @@ li.eaten .lab{color:var(--muted)}
 
   function onField(e) {
     var t=e.target,id=t.dataset.id;
+    if(t.dataset.bf){
+      if(!smoothieDraft)return;
+      var bf=t.dataset.bf, bi=+t.dataset.bi;
+      if(bf==='name'){if(e.type==='input')smoothieDraft.name=t.value;return;}
+      if(bf==='wheyK'||bf==='wheyP'){
+        if(e.type!=='change')return;
+        var f=food('battery_whey');if(!f)return;
+        f[bf==='wheyK'?'kcal':'p']=Math.max(0,num(t.value));save();render();return;
+      }
+      if(e.type!=='change')return;
+      if(!smoothieDraft.parts[bi])return;
+      if(bf==='food'){smoothieDraft.parts[bi].f=t.value;var fo=food(t.value);smoothieDraft.parts[bi].q=fo?(fo.def||100):100;}
+      if(bf==='qty')smoothieDraft.parts[bi].q=Math.max(0,num(t.value));
+      render();return;
+    }
     if(t.id==='progressDate') {if(e.type!=='change')return;progressDate=t.value;render();return;}
     if(t.id==='weightDate') {weightDate=t.value;return;}
     if(t.id==='weightKg') {weightInput=t.value;return;}
@@ -925,7 +991,7 @@ li.eaten .lab{color:var(--muted)}
       if (t.dataset.p === 'a') return; // adder is not saved until "Dodaj"
       updateTotals(); save(); return;
     }
-    if (t.dataset.sf) { if (e.type === 'change') return; var s = S.smoothies.filter(function (x) { return x.id === id; })[0]; if (!s) return; var sf = t.dataset.sf; s[sf] = (sf === 'n' || sf === 'ing') ? t.value : num(t.value); save(); return; }
+    if (t.dataset.sf) { if (e.type === 'change') return; var s = S.smoothies.filter(function (x) { return x.id === id; })[0]; if (!s) return; var sf = t.dataset.sf; if(s.parts && (sf==='k'||sf==='p'||sf==='ing')){var calc=smMacros(s);s.k=calc.k;s.p=calc.p;delete s.parts;}s[sf]=(sf === 'n' || sf === 'ing') ? t.value : num(t.value);save();return; }
     if (t.dataset.ff) {
       var fd = S.foods.filter(function (x) { return x.id === id; })[0]; if (!fd) return; var ff = t.dataset.ff;
       if (ff === 'cat') { if (e.type !== 'change') return; fd.cat = t.value; render(); save(); return; }
