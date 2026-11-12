@@ -315,22 +315,30 @@ li.eaten .lab{color:var(--muted)}
   }
   function archiveLegacyEntries() {
     ensureTracking();
-    var byDate = {};
-    (S.days || []).forEach(function(d) { (d.meals || []).forEach(function(m) {
-      (m.items || []).forEach(function(it) {
-        var date = it.eatenOn;
-        if (!date || !/^\d{4}-\d\d-\d\d$/.test(date)) return;
-        if (!byDate[date]) byDate[date] = {date:date, kcal:0, protein:0, items:[]};
-        var p = portionOf(it,date);
-        if (p > 0) {
-          var k = Math.round(itemK(it)*p), pr = Math.round(itemP(it)*p*10)/10;
-          byDate[date].kcal += k; byDate[date].protein += pr;
-          byDate[date].items.push({name:itemLabel(it),kcal:k,protein:pr,portion:p});
-        }
+    var dates={};
+    (S.days||[]).forEach(function(d){(d.meals||[]).forEach(function(m){(m.items||[]).forEach(function(it){
+      if(it.eatenOn && /^\d{4}-\d\d-\d\d$/.test(it.eatenOn))dates[it.eatenOn]=true;
+    });});});
+    Object.keys(S.daySwaps||{}).forEach(function(k){if(/^\d{4}-\d\d-\d\d$/.test(k))dates[k]=true;});
+    Object.keys(S.drinkLog||{}).forEach(function(k){if(/^\d{4}-\d\d-\d\d$/.test(k))dates[k]=true;});
+    Object.keys(dates).forEach(function(key){
+      if(S.history[key])return; // obstoječi dnevni povzetek se ne sme prepisati
+      var y=+key.slice(0,4),mo=+key.slice(5,7),day=+key.slice(8,10);
+      var dt=new Date(y,mo-1,day),di=(dt.getDay()+6)%7;
+      if(dKey(dt)!==key || !S.days[di])return;
+      var entries=[],kcal=0,protein=0;
+      S.days[di].meals.forEach(function(m){
+        var sw=S.daySwaps[key] && S.daySwaps[key][m.id];
+        var items=sw && Array.isArray(sw.items) ? sw.items : m.items;
+        items.forEach(function(it){
+          var fraction=portionOf(it,key);if(!fraction)return;
+          var k=Math.round(itemK(it)*fraction),p=Math.round(itemP(it)*fraction*10)/10;
+          kcal+=k;protein+=p;
+          entries.push({name:itemLabel(it),meal:m.name,kcal:k,protein:p,portion:fraction});
+        });
       });
-    }); });
-    Object.keys(byDate).forEach(function(key) {
-      if (!S.history[key]) S.history[key] = byDate[key];
+      var drinks=sumK((S.drinkLog && S.drinkLog[key])||[]);
+      if(entries.length||drinks)S.history[key]={date:key,kcal:kcal+drinks,protein:Math.round(protein*10)/10,drinks:drinks,items:entries};
     });
   }
   function snapshotDay(di) {
@@ -352,7 +360,12 @@ li.eaten .lab{color:var(--muted)}
   }
   function snapshotWeek() {
     ensureTracking();
-    (S.days || []).forEach(function(d,di) { snapshotDay(di); });
+    var today=dKey(new Date());
+    (S.days||[]).forEach(function(d,di){
+      var key=dateOfIdx(di);
+      if(key<today && S.history[key] && !(di===dayIdx && (view==='teden'||view==='manjsi')))return;
+      snapshotDay(di);
+    });
   }
   function exportBackup() {
     var backup = {format:'jedilnik-backup',version:3,created:new Date().toISOString(),data:S};
@@ -775,7 +788,7 @@ li.eaten .lab{color:var(--muted)}
     h+='<label class="note" style="flex:1">Teža (kg)<input id="weightKg" type="number" min="30" max="400" step="0.1" class="field" value="'+esc(weightInput)+'" placeholder="170,0" style="width:100%"></label></div><button type="button" class="primary" data-act="weightSave" style="margin-top:10px">Shrani tehtanje</button>';
     h+='<div class="note" style="margin-top:10px">'+S.weights.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,6).map(function(x){return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span>'+esc(x.date)+' · '+fmtN(x.kg)+' kg</span><button type="button" class="mini" aria-label="Odstrani tehtanje" data-act="weightDelete" data-date="'+esc(x.date)+'">×</button></div>';}).join('')+'</div></div>';
     var hist=Object.keys(S.history).sort().reverse(), now=new Date(), recent=[];
-    for(var z=0;z<7;z++){var dt=new Date(now.getFullYear(),now.getMonth(),now.getDate()-z), k=dKey(dt);if(S.history[k])recent.push(S.history[k]);}
+    for(var z=0;z<7;z++){var dt=new Date(now.getFullYear(),now.getMonth(),now.getDate()-z), k=dKey(dt);if(S.history[k] && S.history[k].items && S.history[k].items.length)recent.push(S.history[k]);}
     var sum=recent.reduce(function(a,x){a.k+=x.kcal||0;a.p+=x.protein||0;return a;},{k:0,p:0});
     h+='<div class="card"><h3 style="margin-top:0">Zadnjih 7 dni</h3><p>Vpisanih dni: <b>'+recent.length+' / 7</b></p><p>Na dan z vnosom: <b>'+ (recent.length?Math.round(sum.k/recent.length):'–')+' kcal</b> in <b>'+(recent.length?Math.round(sum.p/recent.length):'–')+' g beljakovin</b></p><p class="subtle">Povprečje vključuje samo dneve z zabeleženo hrano, ne manjkajočih dni.</p></div>';
     h+='<h3>Zgodovina zaužite hrane</h3>';
