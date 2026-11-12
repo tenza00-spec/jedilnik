@@ -8,7 +8,7 @@ Prehranski načrtovalnik in dnevnik z jedrom v `index.html` ter dodatnima datote
 - **Manjši apetit:** 32 alternativ s strukturiranimi sestavinami; izbrane zamenjave veljajo za posamezen dan in ohranijo izhodiščni obrok.
 - **Smutiji:** sestavljalnik, urejanje shranjenih receptov in preračun kalorij, beljakovin ter znanih maščob, OH, vlaknin in sladkorjev iz živil. Za neokusni Battery Complete Whey je treba vnesti deklaracijo na 100 g. Nepoznane vrednosti so prikazane kot »–«, ne kot 0.
 - **Živila:** uporabljaš samo **g** (tehtani izdelki) in **kos** (jajca, tortilije, sadje, žemlje, posamezne ploščice/porcije in konzerve). Hranilne vrednosti veljajo na 100 g ali na 1 kos. Sam izbereš novo živilo v g ali kos; pri spremembi enote obstoječega živila aplikacija vpraša za maso kosa in preračuna recepte. Skeniranje omogoča tudi shranjevanje prepoznanega izdelka kot kos, če vneseš maso enega kosa.
-- **Nakup:** samodejen seznam za ta ali naslednji teden in ločen, nedotaknjen stari ročni seznam. Za posamezno živilo vpišeš zalogo doma v ustrezni merski enoti in po želji velikost pakiranja; aplikacija izračuna preostalo količino za nakup in potrebno število pakiranj. Kljukice se prilagajajo tednu in izračunani količini. Zaloge se ne odštevajo samodejno ob obrokih, ker bi to lahko bilo netočno.
+- **Nakup:** samodejen seznam za ta ali naslednji teden in ločen, nedotaknjen ročni seznam. Količine so prikazane kot **litri za mleko in druge pijače, mililitri za manjše tekoče sestavine, kilogrami/grami za tehtano hrano in kosi za štete izdelke**. Zalogo in pakiranja vpišeš v istih prikazanih enotah. Za mleko (1 l), skuto (250 g), jajca (10 kosov) in nekatera druga živila so kot predlog uporabljene običajne embalaže iz ročnega seznama. Zaloge se ne odštevajo samodejno ob obrokih.
 - **Napredek:** izbirna dnevna evidenca počutja, dejansko zabeležene prehrane, telesne teže, ciljev, 7/14/30-dnevne analitike ter izvoza/uvoza JSON. Povprečja vključujejo le zabeležene dneve; ne vnašajo izmišljenih ničel.
 
 ## Hranila in natančnost
@@ -45,6 +45,12 @@ Obstoječe ikone iz Safarija **ni treba odstranjevati ali ponovno nameščati**.
 
 **Zasebnost:** kamera/fotografija se obdeluje v tvojem brskalniku. Na javni API se za iskanje pošlje samo EAN/UPC številka, **ne** dnevnik zaužite hrane ali drugi lokalni zapisi. Samo v času skeniranja se prenese zunanja knjižnica. Hranilni podatki iz Open Food Facts so pod pogoji [ODbL](https://world.openfoodfacts.org/terms-of-use). Uporaba kamere in API-ja potrebuje povezavo in podporo brskalnika. Koda skenerja je preverjena s simulacijo; preizkus dovoljenja za kamero na dejanskem telefonu je še potreben.
 
+## Popravek napihnjenih količin smutijev v nakupih
+
+V prejšnji različici so se sestavine strukturiranih smutijev pri izračunu nakupovalnega seznama pomnožile s **skupno maso smutija (g)** namesto z **deležem recepta**. Zato se je lahko prikazalo več deset kilogramov mleka, sadja ali skute. Popravljeno: količine sestavin se pomnožijo z `masa smutija v načrtu / masa celotnega recepta`. Kalorije v dnevniku in obstoječe porcije niso spreminjane.
+
+Nakupovalni prikaz uporablja kanonično shranjeno maso za izračun, za človeka pa prikaže primerne trgovinske enote: mleko na primer `1,35 l`, skuto `2,55 kg`, banane `14 kosov`. Za pretvorbo mase v prostornino so uporabljene **približne gostote** (mleko ~1,03 kg/l; olje ~0,91 kg/l); to ni natančna deklaracija konkretnega izdelka. Nove vrednosti zalog in velikosti pakiranja vnašaš **v enoti, navedeni ob polju** (npr. `0,5` pomeni 0,5 l mleka, ne 0,5 g). Notranji podatki ostanejo v gramih/kosih in zgodovine zaužitih obrokov ne spreminjamo.
+
 ## Natančnost nakupovalnega seznama
 
 Samodejni seznam bere sestavine tedenskega načrta (in datumske zamenjave v trenutnem tednu) ter jih združi po živilski enoti. Privzeto izloči kosila, ki jih pripravlja druga oseba, in dodatne enkratne vnose. Oboje je mogoče vključiti.
@@ -79,6 +85,8 @@ Pri starejših smutijih se nakupovalni recept uporabi le, če besedilo sestavin 
 ## Osnovni kontrolni seznam za test
 
 - [ ] Na telefonu osveži stran in preveri vseh šest zavihkov.
+- [ ] V samodejnem nakupu preveri približno 1,35 l mleka, 2,55 kg skute in 14 banan na nespremenjenem začetnem načrtu (tvoja prilagojena različica se lahko razlikuje).
+- [ ] V nakupu vpiši 0,5 l zaloge mleka in preveri, da se preostanek zmanjša za 0,5 l; pri mleku s pakiranjem 1 l preveri ustrezno zaokroženo število pakiranj.
 - [ ] Preveri jajce, banano in tortilijo v kosih ter sir, piščanca, skuto in mleko v gramih.
 - [ ] Pri priljubljenem živilu varno pretvori enoto g ↔ kos s težo enega kosa; preveri, da kalorije ostanejo enake in vrednost obstane po osvežitvi.
 - [ ] Skeniraj tortilijo; za vnos kot kos vnesi deklarirano ali izmerjeno maso enega kosa.
