@@ -876,6 +876,21 @@ li.eaten .lab{color:var(--muted)}
         parts.forEach(function(x){addFoodPart(x.f,(+x.q||0)*value,why+' / '+sm.n);});
         return;
       }
+      // Nakupuješ surove sestavine, medtem ko je del načrta zapisan s kuhano/pečeno težo.
+      // Razmerja so orientacijska; realni izkoristek je odvisen od priprave.
+      var conversions={
+        polak:{f:'polak_s',ratio:4/3},
+        piscanec:{f:'piscanec_s',ratio:4/3},
+        riz:{f:'x_riz_suha_teza',ratio:1/3},
+        x_testenine_kuhane:{f:'testenine_s',ratio:1/2.25},
+        krompir:{f:'krompir_s',ratio:1},
+        krompirP:{f:'krompir_s',ratio:1}
+      };
+      var conv=conversions[id];
+      if(conv && food(conv.f)){
+        id=conv.f;value=value*conv.ratio;f=food(id);
+        why+=' (ocena količine pred pripravo)';
+      }
       if(!totals[id])totals[id]={f:id,label:f.label,cat:f.cat||CATMAP[id]||'Moje',unit:f.unit,q:0,reasons:[]};
       totals[id].q+=value;
       if(totals[id].reasons.indexOf(why)===-1)totals[id].reasons.push(why);
@@ -897,6 +912,7 @@ li.eaten .lab{color:var(--muted)}
         });
       });
     });
+    if(totals.pire)noteUnknown('Pire krompir: za pripravo iz surovin preveri količino krompirja, mleka in smetane.', '');
     var list=Object.keys(totals).map(function(id){return totals[id];});
     list.sort(function(a,b){var c=catOrder(a.cat)-catOrder(b.cat);return c||a.label.localeCompare(b.label,'sl');});
     return {items:list,unknown:unknown};
@@ -928,7 +944,7 @@ li.eaten .lab{color:var(--muted)}
       h+='<details class="card"><summary><b>Preveri še '+result.unknown.length+' nestrukturiranih obrokov</b></summary><p class="note">Teh ni mogoče varno preračunati v nakupe. Dodaj njihove sestavine v bazo ali jih dopiši v ročni seznam.</p><ul class="tips">'
         +result.unknown.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></details>';
     }
-    h+='<p class="note">Pri večjih pakiranjih, zamrznjenih živilih in živilih z odcejeno težo preveri deklaracijo. Seznam prikazuje potrebne količine, ne števila trgovinskih pakiranj.</p>';
+    h+='<p class="note">Riž, testenine, meso, ribe in krompir so za nakup preračunani v približne surove količine (označeno pri obrokih). Izkoristek kuhanja se razlikuje. Pri večjih pakiranjih, zamrznjenih živilih in odcejeni teži preveri deklaracijo. To so potrebne količine, ne število trgovinskih pakiranj.</p>';
     return h;
   }
   function renderShop() {
