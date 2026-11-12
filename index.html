@@ -337,8 +337,8 @@ li.eaten .lab{color:var(--muted)}
           entries.push({name:itemLabel(it),meal:m.name,kcal:k,protein:p,portion:fraction});
         });
       });
-      var drinks=sumK((S.drinkLog && S.drinkLog[key])||[]);
-      if(entries.length||drinks)S.history[key]={date:key,kcal:kcal+drinks,protein:Math.round(protein*10)/10,drinks:drinks,items:entries};
+      var logs=(S.drinkLog&&S.drinkLog[key])||[],drinks=sumK(logs),drinkP=sumDrinkProtein(logs);
+      if(entries.length||drinks)S.history[key]={date:key,kcal:kcal+drinks,protein:Math.round((protein+drinkP)*10)/10,drinks:drinks,drinkProtein:drinkP,items:entries};
     });
   }
   function snapshotDay(di) {
@@ -354,9 +354,11 @@ li.eaten .lab{color:var(--muted)}
         entries.push({name:itemLabel(it),kcal:k,protein:p,portion:part,meal:m.name});
       });
     });
-    var drinks = date === dKey(new Date()) ? sumK(S.drinkLog[date] || []) : (S.history[date] ? (S.history[date].drinks || 0) : 0);
-    if (!hasData && !drinks) { delete S.history[date]; return; }
-    S.history[date] = {date:date,kcal:kcal+drinks,protein:Math.round(protein*10)/10,drinks:drinks,items:entries};
+    var logs=(S.drinkLog&&S.drinkLog[date])||[],
+      drinks=logs.length?sumK(logs):(S.history[date]?(S.history[date].drinks||0):0),
+      drinkP=logs.length?sumDrinkProtein(logs):(S.history[date]?(S.history[date].drinkProtein||0):0);
+    if(!hasData&&!drinks){delete S.history[date];return;}
+    S.history[date]={date:date,kcal:kcal+drinks,protein:Math.round((protein+drinkP)*10)/10,drinks:drinks,drinkProtein:drinkP,items:entries};
   }
   function snapshotWeek() {
     ensureTracking();
@@ -426,7 +428,11 @@ li.eaten .lab{color:var(--muted)}
   function shown(it, i) { return !it.extra || it.addedOn === dateOfIdx(i); }
   function mealEK(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemK(it)*portionOf(it,dateOfIdx(i)); },0); }
   function mealEP(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemP(it)*portionOf(it,dateOfIdx(i)); },0); }
-  function dayP(d) { var i = S.days.indexOf(d); return d.meals.reduce(function (a, m) { return a + mealEP(m, i); }, 0); }
+  function dayP(d) {
+    var i=S.days.indexOf(d),key=dateOfIdx(i),base=d.meals.reduce(function(a,m){return a+mealEP(m,i);},0);
+    var logs=(S.drinkLog&&S.drinkLog[key])||[];
+    return base+(logs.length?sumDrinkProtein(logs):((S.history[key]&&S.history[key].drinkProtein)||0));
+  }
   function per(unit) { return unit === 'g' || unit === 'ml' ? 100 : 1; }
   function food(f) {
     if (!f) return null;
@@ -450,7 +456,8 @@ li.eaten .lab{color:var(--muted)}
   function dayKD(d) {
     var i = S.days.indexOf(d), e = 0, plan = dayK(d).all;
     d.meals.forEach(function (m) { e += mealEK(m, i); });
-    var x = i === (new Date().getDay() + 6) % 7 ? drinksTodayK() : 0;
+    var key=dateOfIdx(i),logs=(S.drinkLog&&S.drinkLog[key])||[];
+    var x=logs.length?sumK(logs):((S.history[key]&&S.history[key].drinks)||0);
     return { all: e + x, drinks: x, plan: plan };
   }
   function dayK(d) { var t = 0, l = 0; d.meals.forEach(function (m) { var k = mealK(m,S.days.indexOf(d)); if (m.lunch) l += k; else t += k; }); return { no: t, lunch: l, all: t + l }; }
@@ -570,6 +577,12 @@ li.eaten .lab{color:var(--muted)}
   function logFor(k) { return S.drinkLog[k] || []; }
   function sumMl(list) { return list.reduce(function (a, e) { return a + (+e.ml || 0); }, 0); }
   function sumK(list) { return list.reduce(function (a, e) { return a + (+e.k || 0); }, 0); }
+  function drinkProtein(e) {
+    if(e.p!=null)return Math.max(0,+e.p||0);
+    if(e.n==='Mleko' && food('mleko'))return (+food('mleko').p||0)*(+e.ml||0)/100;
+    return 0;
+  }
+  function sumDrinkProtein(list){return list.reduce(function(a,e){return a+drinkProtein(e);},0);}
   function drinksTodayK() { return sumK(logFor(dKey(new Date()))); }
   function renderWater() {
     var key = dKey(new Date()), list = logFor(key), ml = sumMl(list), dk = sumK(list), goal = +S.waterGoal || 3000, pct = Math.min(100, ml / goal * 100);
