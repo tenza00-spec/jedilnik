@@ -1306,6 +1306,18 @@ li.eaten .lab{color:var(--muted)}
   app.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]'); if (!b) return;
     var a = b.dataset.act, id = b.dataset.id;
+    if(a==='barcodeOpen'){
+      barcodeOpen=true;barcodeError='';barcodeDayIdx=dayIdx;barcodeMealId=S.days[dayIdx].meals[0].id;render();return;
+    }
+    if(a==='barcodeClose'){
+      barcodeCameraStop();barcodeOpen=false;barcodeResult=null;barcodeError='';barcodeBusy=false;render();return;
+    }
+    if(a==='barcodeStart'){barcodeStartCamera();return;}
+    if(a==='barcodeStop'){barcodeCameraStop();barcodeError='Kamera ustavljena.';render();return;}
+    if(a==='barcodePhoto'){var fileInput=$('barcodePhotoInput');if(fileInput)fileInput.click();return;}
+    if(a==='barcodeLookup'){barcodeLookup($('barcodeInput')?$('barcodeInput').value:barcodeInput);return;}
+    if(a==='barcodeSave'){barcodeSaveFood(false);return;}
+    if(a==='barcodeSaveMeal'){barcodeSaveFood(true);return;}
     if(a==='shopMode') {S.shopMode=b.dataset.mode==='manual'?'manual':'auto';editing=false;render();save();return;}
     if(a==='shopWeek'){S.shopAutoOptions.weekOffset=+b.dataset.offset===1?1:0;render();save();return;}
     if(a==='autoTick'){
@@ -1423,6 +1435,34 @@ li.eaten .lab{color:var(--muted)}
 
   function onField(e) {
     var t=e.target,id=t.dataset.id;
+    if(t.dataset.bcode){barcodeInput=t.value;return;}
+    if(t.dataset.bcf){
+      if(!barcodeResult)return;
+      var property=t.dataset.bcf;
+      if(property==='name'||property==='brand')barcodeResult[property]=String(t.value).slice(0,180);
+      else if(property==='unit'){
+        if(e.type!=='change')return;
+        barcodeResult.unit=t.value==='ml'?'ml':'g';
+      }else if(['kcal','protein','fat','carbs','fiber','sugars'].indexOf(property)>=0) {
+        barcodeResult[property]=t.value===''?null:num(t.value);
+      }
+      var preview=$('barcodePreview');if(preview)preview.textContent=barcodePreview();
+      return;
+    }
+    if(t.dataset.bcverify){barcodeResult.verification=!!t.checked;return;}
+    if(t.dataset.bca){
+      if(t.dataset.bca==='day'){
+        if(e.type!=='change')return;
+        var idx=Number(t.value);if(!Number.isInteger(idx)||idx<0||idx>6)return;
+        barcodeDayIdx=idx;barcodeMealId=S.days[idx].meals[0].id;render();return;
+      }
+      if(t.dataset.bca==='meal'){barcodeMealId=t.value;return;}
+      if(t.dataset.bca==='quantity'){
+        barcodeAmount=num(t.value);
+        var pr=$('barcodePreview');if(pr)pr.textContent=barcodePreview();return;
+      }
+      if(t.dataset.bca==='eaten'){barcodeEaten=!!t.checked;return;}
+    }
     if(t.dataset.target){
       if(e.type!=='change')return;
       var goal=Math.round(num(t.value)), kind=t.dataset.target;
@@ -1505,6 +1545,10 @@ li.eaten .lab{color:var(--muted)}
     if (t.dataset.xf) { var x = findX(id); if (!x) return; x.it[t.dataset.xf] = t.dataset.xf === 'p' ? num(t.value) : t.value; save(); return; }
     if (t.dataset.gf) { var g = S.shop.filter(function (x) { return x.id === id; })[0]; if (g) { g.g = t.value; save(); } }
   }
+  app.addEventListener('change', function(e){
+    if(e.target.id!=='barcodePhotoInput'||!e.target.files||!e.target.files[0])return;
+    barcodePhotoLookup(e.target.files[0]);
+  });
   app.addEventListener('change', function (e) {
     if (e.target.id !== 'importFile' || !e.target.files[0]) return;
     var file=e.target.files[0];
@@ -1541,9 +1585,9 @@ li.eaten .lab{color:var(--muted)}
   }
   $('editBtn').addEventListener('click', function () { editing = !editing; adder = null; if(!editing && view==='info')foodQ=''; if (!local && !editing && saveTimer) { clearTimeout(saveTimer); flush(); } render(); });
   document.querySelectorAll('nav button').forEach(function (b) {
-    b.addEventListener('click', function () { view = b.dataset.v; editing = false; adder = null; editMeals = {}; try { localStorage.setItem('jed-view', view); } catch (e) {} render(); window.scrollTo(0, 0); });
+    b.addEventListener('click', function () { if(barcodeCameraActive||barcodeCameraLoading)barcodeCameraStop();barcodeOpen=false;view = b.dataset.v; editing = false; adder = null; editMeals = {}; try { localStorage.setItem('jed-view', view); } catch (e) {} render(); window.scrollTo(0, 0); });
   });
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden' && saveTimer && !local) { clearTimeout(saveTimer); flush(); } });
+  document.addEventListener('visibilitychange', function () { if(document.visibilityState==='hidden')barcodeCameraStop();if (document.visibilityState === 'hidden' && saveTimer && !local) { clearTimeout(saveTimer); flush(); } });
 
   // ---------- boot ----------
   function showEmpty(msg) { app.innerHTML = '<div class="empty">' + msg + '</div>'; }
