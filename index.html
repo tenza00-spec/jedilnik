@@ -585,7 +585,7 @@ li.eaten .lab{color:var(--muted)}
   function sumDrinkProtein(list){return list.reduce(function(a,e){return a+drinkProtein(e);},0);}
   function drinksTodayK() { return sumK(logFor(dKey(new Date()))); }
   function renderWater() {
-    var key = dKey(new Date()), list = logFor(key), ml = sumMl(list), dk = sumK(list), goal = +S.waterGoal || 3000, pct = Math.min(100, ml / goal * 100);
+    var key = dKey(new Date()), list = logFor(key), ml = sumMl(list), dk = sumK(list), dp=sumDrinkProtein(list), goal = +S.waterGoal || 3000, pct = Math.min(100, ml / goal * 100);
     var h = '<div class="water"><div class="mh"><span class="nm">Tekočina danes</span><span class="kc tnum">' + fmtL(ml) + ' / ' + fmtL(goal) + '</span></div>' +
       '<div class="wbar"><div class="wfill" style="width:' + pct + '%"></div></div>' +
       '<div class="wbtns">' + S.drinks.map(function (d) {
@@ -597,15 +597,15 @@ li.eaten .lab{color:var(--muted)}
     if (drinkForm) {
       h += '<div class="adder"><input class="field" id="dfN" data-df="n" value="' + esc(drinkForm.n) + '" placeholder="pijača (npr. Monster Ultra)" aria-label="Pijača">' +
         '<div class="two"><input class="field tnum" style="flex:1" id="dfMl" data-df="ml" value="' + esc(drinkForm.ml || '') + '" inputmode="numeric" placeholder="ml" aria-label="Količina v ml"><span class="unit">ml</span>' +
-        '<input class="field tnum" style="flex:1" id="dfK" data-df="k" value="' + esc(drinkForm.k || '') + '" inputmode="numeric" placeholder="kcal" aria-label="Kalorije"><span class="unit">kcal</span></div>' +
+        '<input class="field tnum" style="flex:1" id="dfK" data-df="k" value="' + esc(drinkForm.k || '') + '" inputmode="numeric" placeholder="kcal" aria-label="Kalorije"><span class="unit">kcal</span></div>' + '<div class="two"><input class="field tnum" style="flex:1" id="dfP" data-df="p" value="' + esc(drinkForm.p || '') + '" inputmode="decimal" placeholder="beljakovine (g)" aria-label="Beljakovine v gramih"><span class="unit">g beljakovin</span></div>' +
         '<label class="note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="dfSave" data-df="save"' + (drinkForm.save ? ' checked' : '') + '> Shrani kot hitri gumb</label>' +
         '<div class="acts"><button type="button" class="primary" data-act="drinkFormSave">Dodaj</button><button type="button" class="ghost" data-act="drinkFormCancel">Prekliči</button></div></div>';
     }
     if (list.length) {
       h += '<ul class="items dlog">' + list.map(function (e) {
-        return '<li><span>' + esc(e.t || '') + ' ' + esc(e.n) + ' · ' + e.ml + ' ml</span><em class="tnum">' + (e.k ? e.k + ' kcal' : '') + '</em><button type="button" class="mini" data-act="delLog" data-id="' + esc(e.id) + '" aria-label="Odstrani">×</button></li>';
+        return '<li><span>' + esc(e.t || '') + ' ' + esc(e.n) + ' · ' + e.ml + ' ml</span><em class="tnum">' + (e.k ? e.k + ' kcal' : '') + (drinkProtein(e)>=1?' · '+fmtN(drinkProtein(e))+' g belj.':'') + '</em><button type="button" class="mini" data-act="delLog" data-id="' + esc(e.id) + '" aria-label="Odstrani">×</button></li>';
       }).join('') + '</ul>';
-      if (dk) h += '<p class="subtle">Pijače danes: ~' + dk + ' kcal (prišteto k današnjemu dnevu v jedilniku).</p>';
+      if (dk || dp) h += '<p class="subtle">Pijače danes: ~' + dk + ' kcal in ~' + fmtN(dp) + ' g beljakovin (prišteto k dnevu).</p>';
     }
     h += '<div class="two" style="margin-top:10px"><span class="note">Dnevni cilj</span><input class="field tnum" style="width:62px;text-align:right" id="wGoal" data-wg="1" value="' + esc(fmtN(goal / 1000)) + '" inputmode="decimal" aria-label="Dnevni cilj v litrih"><span class="note">l</span></div>';
     var days = [], d0 = new Date();
@@ -621,7 +621,7 @@ li.eaten .lab{color:var(--muted)}
   function logDrink(d) {
     var now = new Date(), t = ('0' + now.getHours()).slice(-2) + ':' + ('0' + now.getMinutes()).slice(-2);
     change(function () {
-      todayLog().push({ id: nid('l'), n: d.n, ml: Math.round(+d.ml || 0), k: Math.round(+d.k || 0), t: t });
+      todayLog().push({ id: nid('l'), n: d.n, ml: Math.round(+d.ml || 0), k: Math.round(+d.k || 0), p:drinkProtein(d), t: t });
       var cut = dKey(new Date(Date.now() - 60 * 86400000));
       Object.keys(S.drinkLog).forEach(function (k) { if (k < cut) delete S.drinkLog[k]; });
     });
@@ -1073,9 +1073,9 @@ li.eaten .lab{color:var(--muted)}
       var f = drinkForm, mlv = Math.round(num(f.ml));
       if (!f.n.trim()) { $('dfN').focus(); return; }
       if (!mlv) { $('dfMl').focus(); return; }
-      var dObj = { n: f.n.trim(), ml: mlv, k: Math.round(num(f.k)) };
+      var dObj = { n: f.n.trim(), ml: mlv, k: Math.max(0,Math.round(num(f.k))), p:Math.max(0,num(f.p)) };if(!dObj.p && dObj.n==='Mleko')dObj.p=drinkProtein({n:'Mleko',ml:mlv});
       drinkForm = null;
-      if (f.save) S.drinks.push({ id: nid('dr'), n: dObj.n, ml: dObj.ml, k: dObj.k });
+      if (f.save) S.drinks.push({ id: nid('dr'), n: dObj.n, ml: dObj.ml, k: dObj.k, p:dObj.p });
       logDrink(dObj); return;
     }
     if (a === 'delLog') { change(function () { var L = todayLog(); for (var i = 0; i < L.length; i++) if (L[i].id === id) { L.splice(i, 1); break; } }, 'Pijača odstranjena'); return; }
