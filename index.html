@@ -403,6 +403,8 @@ li.eaten .lab{color:var(--muted)}
       if(!S.foods.some(function(x){return x.id==='testenine_s';}))S.foods.push({id:'testenine_s',cat:'Priloge',label:'Testenine (surove, suha teža)',unit:'g',kcal:356,p:12.5,def:80});
       S.migr.push('pastaRaw2');
     }
+    var oldPasta=S.foods.filter(function(x){return x.id==='testenine' && +x.kcal<220 && /surov|suha teža/i.test(x.label);})[0];
+    if(oldPasta)oldPasta.label='Testenine (kuhane, stare vrednosti – preveri deklaracijo)';
     archiveLegacyEntries(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
@@ -1005,8 +1007,20 @@ li.eaten .lab{color:var(--muted)}
   function findItem(id) { var r = null; S.days.forEach(function (d) { d.meals.forEach(function (m) { m.items.forEach(function (it, i) { if (it.id === id) r = { list: m.items, i: i, it: it, meal: m }; }); }); }); return r; }
   function findMeal(id) { var r = null; S.days.forEach(function (d) { d.meals.forEach(function (m) { if (m.id === id) r = m; }); }); return r; }
   function findX(id) { var r = null; S.shop.concat([{ items: S.stock }]).forEach(function (g) { g.items.forEach(function (it, i) { if (it.id === id) r = { list: g.items, i: i, it: it }; }); }); return r; }
-  function freezeRefs(f) { // turn items that use a removed food/smoothie into manual items
-    S.days.forEach(function (d) { d.meals.forEach(function (m) { m.items.forEach(function (it) { if (it.f === f) { it.k = itemK(it); it.p = Math.round(itemP(it)); it.n = itemLabel(it); delete it.f; delete it.q; } }); }); });
+  function foodUsedInStructuredRecipes(fid) {
+    var inParts=function(it){return Array.isArray(it.parts) && it.parts.some(function(p){return p.f===fid;});};
+    if(S.smoothies.some(inParts))return true;
+    if(S.days.some(function(d){return d.meals.some(function(m){return m.items.some(inParts);});}))return true;
+    return Object.keys(S.daySwaps||{}).some(function(day){return Object.keys(S.daySwaps[day]||{}).some(function(mid){
+      var swap=S.daySwaps[day][mid];return swap && Array.isArray(swap.items) && swap.items.some(inParts);
+    });});
+  }
+  function freezeRefs(f) {
+    function freeze(it){if(it.f===f){it.k=itemK(it);it.p=Math.round(itemP(it)*10)/10;it.n=itemLabel(it);delete it.f;delete it.q;}}
+    S.days.forEach(function(d){d.meals.forEach(function(m){m.items.forEach(freeze);});});
+    Object.keys(S.daySwaps||{}).forEach(function(date){Object.keys(S.daySwaps[date]||{}).forEach(function(mid){
+      var sw=S.daySwaps[date][mid];if(sw && Array.isArray(sw.items))sw.items.forEach(freeze);
+    });});
   }
   function setFood(o, f) {
     if (f && !food(f)) f = '';
@@ -1110,7 +1124,10 @@ li.eaten .lab{color:var(--muted)}
     if (a === 'addItem') { var nidv = nid('i'); change(function () { var mm = findMeal(b.dataset.m); var o = { id: nidv, note: '' }; setFood(o, 'skuta'); mm.items.push(o); }); return; }
     if (a === 'delSm') { change(function () { freezeRefs('s:' + id); S.smoothies = S.smoothies.filter(function (s) { return s.id !== id; }); }, 'Smoothie odstranjen'); return; }
     if (a === 'addSm') { var sid = nid('s'); change(function () { S.smoothies.push({ id: sid, n: 'Nov smoothie', ing: '', k: 0, p: 0, c: 0 }); }); var se = $('sn-' + sid); if (se) se.focus(); return; }
-    if (a === 'delFood') { change(function () { freezeRefs(id); S.foods = S.foods.filter(function (x) { return x.id !== id; }); }, 'Živilo odstranjeno'); return; }
+    if (a === 'delFood') {
+      if(foodUsedInStructuredRecipes(id)){setStatus('Živilo je uporabljeno v shranjenem smutiju ali sestavljenem obroku. Najprej popravi ta recept.');return;}
+      change(function(){freezeRefs(id);S.foods=S.foods.filter(function(x){return x.id!==id;});},'Živilo odstranjeno');return;
+    }
     if (a === 'addFood') { var fid = nid('f'); editing = true; change(function () { S.foods.push({ id: fid, cat: 'Moje', label: 'Novo živilo', unit: 'g', kcal: 0, p: 0, def: 100 }); foodQ = 'Novo živilo'; }); var fl = $('fl-' + fid); if (fl) { fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.focus({ preventScroll: true }); fl.select(); } return; }
     if (a === 'delX') { var fx = findX(id); change(function () { fx.list.splice(fx.i, 1); }, 'Izdelek odstranjen'); return; }
     if (a === 'addX') { var xid = nid('x'); change(function () { var list = b.dataset.k === 'stock' ? S.stock : S.shop.filter(function (g) { return g.id === b.dataset.k; })[0].items; list.push({ id: xid, n: '', q: '', u: '', p: 0, done: false }); }); var xe = $('xn-' + xid); if (xe) xe.focus(); return; }
@@ -1250,8 +1267,6 @@ li.eaten .lab{color:var(--muted)}
     try { S = saved || JSON.parse($('seed').textContent); } catch (e) { S = null; }
     if (!S || !S.days) { showEmpty('Jedilnika ni bilo mogoče naložiti.'); return; }
     prep();
-    var oldPasta=S.foods.filter(function(x){return x.id==='testenine' && x.kcal < 220 && /surov|suha teža/i.test(x.label);})[0];
-    if(oldPasta){oldPasta.label='Testenine (kuhane, stare vrednosti – preveri deklaracijo)';}
     if (migratedNow) { try { localStorage.setItem(LKEY, JSON.stringify(S)); } catch (e) {} }
     $('nav').hidden = false;
     if (msg) { $('mode').textContent = msg; $('mode').hidden = false; }
