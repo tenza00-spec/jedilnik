@@ -377,13 +377,76 @@ li.eaten .lab{color:var(--muted)}
       snapshotDay(di);
     });
   }
+
+  // Neodvisna dodatna lokalna kopija v IndexedDB. Ni sinhronizacije z oblakom.
+  var mirrorDBPromise=null,mirrorTimer=null,mirrorDeclined=false;
+  function mirrorDB() {
+    if(!window.indexedDB)return Promise.resolve(null);
+    if(mirrorDBPromise)return mirrorDBPromise;
+    mirrorDBPromise=new Promise(function(resolve){
+      var req;
+      try{req=window.indexedDB.open('moj-jedilnik-mirror',1);}catch(e){resolve(null);return;}
+      req.onupgradeneeded=function(){if(!req.result.objectStoreNames.contains('backup'))req.result.createObjectStore('backup');};
+      req.onsuccess=function(){resolve(req.result);};
+      req.onerror=function(){resolve(null);};
+      req.onblocked=function(){resolve(null);};
+    });
+    return mirrorDBPromise;
+  }
+  function scheduleMirror(json) {
+    if(!window.indexedDB || mirrorDeclined)return;
+    clearTimeout(mirrorTimer);
+    mirrorTimer=setTimeout(function(){
+      mirrorDB().then(function(db){
+        if(!db)return;
+        try{
+          var transaction=db.transaction('backup','readwrite');
+          transaction.objectStore('backup').put({json:json,savedAt:new Date().toISOString()},'latest');
+        }catch(e){}
+      }).catch(function(){});
+    },500);
+  }
+  function readMirror() {
+    return mirrorDB().then(function(db){
+      if(!db)return null;
+      return new Promise(function(resolve){
+        try{
+          var tx=db.transaction('backup','readonly'),req=tx.objectStore('backup').get('latest');
+          req.onsuccess=function(){resolve(req.result||null);};
+          req.onerror=function(){resolve(null);};
+          tx.onerror=function(){resolve(null);};
+        }catch(e){resolve(null);}
+      });
+    }).catch(function(){return null;});
+  }
+  function recoverMirrorIfNeeded(){
+    readMirror().then(function(result){
+      if(!result || !result.json || localRev!==0 || mirrorDeclined)return;
+      var saved=null;
+      try{saved=JSON.parse(result.json);}catch(e){}
+      if(!isValidBackup(saved))return;
+      if(!window.confirm('Našel sem dodatno lokalno kopijo podatkov v tem brskalniku ('+String(result.savedAt||'datum neznan')+'). Želiš obnoviti to kopijo namesto začetnega jedilnika?')){
+        mirrorDeclined=true;return;
+      }
+      S=saved;prep();render();save();setStatus('Obnovljena lokalna kopija iz rezervnega pomnilnika.');
+    });
+  }
+  function backupReminderText() {
+    if(!S.lastExportAt)return 'Še nimaš zabeleženega izvoza datoteke JSON. Predlagam, da ga narediš zdaj in shraniš v Datoteke/iCloud Drive.';
+    var elapsed=Date.now()-new Date(S.lastExportAt).getTime(),days=Number.isFinite(elapsed)?Math.floor(elapsed/86400000):null;
+    if(days===null)return 'Datum zadnjega izvoza ni veljaven; priporočam novo kopijo JSON.';
+    return 'Zadnji sproženi izvoz: '+S.lastExportAt.slice(0,10)+(days>=7?' · minilo je '+days+' dni, priporočam novo kopijo.':' · naslednjo kopijo naredi približno po enem tednu.');
+  }
+
   function exportBackup() {
-    var backup = {format:'jedilnik-backup',version:3,created:new Date().toISOString(),data:S};
+    snapshotWeek();S.lastExportAt=new Date().toISOString();
+    var backup = {format:'jedilnik-backup',version:4,created:S.lastExportAt,data:S};
     var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
     var url=URL.createObjectURL(blob),link=document.createElement('a');
     link.href=url;link.download='moj-jedilnik-varnostna-kopija-'+dKey(new Date())+'.json';
     document.body.appendChild(link);link.click();link.remove();
     setTimeout(function(){URL.revokeObjectURL(url);},1000);
+    save();
   }
   function isValidBackup(d) {
     if(!d || typeof d!=='object' || !Array.isArray(d.days) || d.days.length!==7 ||
@@ -547,7 +610,8 @@ li.eaten .lab{color:var(--muted)}
         snapshotWeek();
         var previous=localStorage.getItem(LKEY);
         if (previous) {try{localStorage.setItem(LKEY+'-backup',previous);}catch(e){/* Primarni zapis ima prednost pred rezervnim. */}}
-        localStorage.setItem(LKEY, JSON.stringify(S)); setStatus('Shranjeno na tej napravi');
+        var payload=JSON.stringify(S);
+        localStorage.setItem(LKEY,payload);scheduleMirror(payload);setStatus('Shranjeno na tej napravi');
       }
       catch (e) { setStatus('Ni shranjeno: brskalnik ne dovoli shranjevanja (zasebni način?).'); }
       setTimeout(function () { if (/^Shranjeno/.test($('status').textContent)) setStatus(''); }, 1500);
@@ -996,7 +1060,7 @@ li.eaten .lab{color:var(--muted)}
         +items.map(function(it){return '<li>'+esc(it.name)+' · '+Math.round(it.kcal||0)+' kcal · '+fmtN(it.protein||0)+' g · '+Math.round((it.portion||0)*100)+' %</li>';}).join('')
         +(d.drinks?'<li>Pijače: ~'+Math.round(d.drinks)+' kcal</li>':'')+'</ul></details>';
     });
-    h+='<h3>Varnostne kopije</h3><div class="card"><p class="note">Podatki so shranjeni samo na tej napravi. Rezervna kopija v istem brskalniku ni nadomestilo za preneseno datoteko. Redno izvozi JSON in ga shrani na varno.</p><div style="display:flex;gap:8px;flex-wrap:wrap">'
+    h+='<h3>Varnostne kopije</h3><div class="card"><p class="note">'+esc(backupReminderText())+'</p><p class="note">Podatki ostanejo v tem brskalniku. Dodatna lokalna kopija v IndexedDB ni nadomestilo za JSON, shranjen v Datoteke/iCloud Drive. Izvoz lahko vsebuje tudi občutljive podatke o počutju; ne objavljaj ga na javnem GitHubu.</p><div style="display:flex;gap:8px;flex-wrap:wrap">'
       +'<button type="button" class="primary" data-act="exportData">Izvozi kopijo JSON</button><button type="button" class="ghost" data-act="importData">Uvozi kopijo</button><button type="button" class="ghost" data-act="restoreLocal">Obnovi prejšnjo lokalno različico</button></div><input type="file" id="importFile" accept=".json,application/json" hidden></div>';
     return h;
   }
@@ -1837,10 +1901,11 @@ li.eaten .lab{color:var(--muted)}
     try { S = saved || JSON.parse($('seed').textContent); } catch (e) { S = null; }
     if (!S || !S.days) { showEmpty('Jedilnika ni bilo mogoče naložiti.'); return; }
     prep();
-    if (migratedNow) { try { localStorage.setItem(LKEY, JSON.stringify(S)); } catch (e) {} }
+    if (migratedNow && saved) { try { localStorage.setItem(LKEY, JSON.stringify(S)); } catch (e) {} }
     $('nav').hidden = false;
     if (msg) { $('mode').textContent = msg; $('mode').hidden = false; }
     render();
+    if(!saved)recoverMirrorIfNeeded();
   }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
   localMode('');
