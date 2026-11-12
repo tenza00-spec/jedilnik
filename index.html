@@ -50,7 +50,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .edit-toggle[aria-pressed="true"]{background:var(--soft);color:var(--accent);border-color:var(--accent)}
 .medit{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;font-size:13px;font-weight:600;color:var(--accent)}
 .medit[aria-pressed="true"]{background:var(--soft);border-color:var(--accent)}
-.mh .rt{display:flex;align-items:center;gap:8px}.meal-totals{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}.meal-totals .subtle{font-size:11px;white-space:nowrap}.item-energy{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.item-energy small{font-size:11px;color:var(--muted)}
+.mh .rt{display:flex;align-items:center;gap:8px}.meal-totals{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}.meal-totals .subtle{font-size:11px;white-space:nowrap}.item-energy{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.item-energy small{font-size:11px;color:var(--muted)}.barcode-reader{width:100%;min-height:40px;border-radius:12px;overflow:hidden}.barcode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.barcode-grid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}.barcode-grid input,.barcode-grid select{width:100%;min-width:0}.barcode-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.barcode-actions button{flex:1 1 138px}.barcode-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}.barcode-status{font-size:12px;line-height:1.5;color:var(--muted)}
 .strip{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none;margin:0 -4px;padding-inline:4px}
 .strip::-webkit-scrollbar{display:none}
 .strip button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;align-items:center;min-width:56px}
@@ -179,7 +179,7 @@ li.eaten .lab{color:var(--muted)}
   var UNITS = ['g', 'ml', 'kos', 'pločevinka', 'žlica', 'žlička', 'rezina', 'porcija'];
   var S = null, view = 'teden', dayIdx = (new Date().getDay() + 6) % 7, editing = false;
   var docRef = null, writing = false, saveTimer = null, undo = null, localRev = 0, savedRev = 0, lastErr = false;
-  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = ''; // {mealId, f, q, note, n, k}
+  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = '', barcodeOpen = false, barcodeInput = '', barcodeResult = null, barcodeBusy = false, barcodeError = '', barcodeReader = null, barcodeCameraActive = false, barcodeCameraToken = 0, barcodeDayIdx = null, barcodeMealId = '', barcodeAmount = 100, barcodeEaten = false, barcodeCameraLoading = false; // {mealId, f, q, note, n, k}
   var $ = function (id) { return document.getElementById(id); };
   var app = $('app');
   try { var v0 = localStorage.getItem('jed-view'); if (v0 === 'info') v0 = 'zivila'; if (v0) view = v0; } catch (e) {}
@@ -857,9 +857,254 @@ li.eaten .lab{color:var(--muted)}
       +'<button type="button" class="primary" data-act="exportData">Izvozi kopijo JSON</button><button type="button" class="ghost" data-act="importData">Uvozi kopijo</button><button type="button" class="ghost" data-act="restoreLocal">Obnovi prejšnjo lokalno različico</button></div><input type="file" id="importFile" accept=".json,application/json" hidden></div>';
     return h;
   }
+
+  // Skeniranje: kamera se aktivira samo po kliku in se izklopi ob zaprtju ali preklopu zavihka.
+  function barcodeGTIN(raw) {
+    var code=String(raw||'').trim();
+    if(!/^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(code))return false;
+    var digits=code.split('').map(Number), check=digits.pop(), total=0;
+    for(var i=digits.length-1,m=3;i>=0;i--,m=(m===3?1:3))total+=digits[i]*m;
+    return (10-total%10)%10===check;
+  }
+  function barcodeFinite(v,max) {
+    if(v==null || v==='')return null;
+    var n=Number(v);
+    return Number.isFinite(n)&&n>=0&&n<=max?n:null;
+  }
+  function barcodeNormalize(response,code) {
+    var p=response&&response.product;
+    if(!p || typeof p!=='object')return null;
+    var n=p.nutriments||{},ag=p.nutrition&&p.nutrition.aggregated_set&&p.nutrition.aggregated_set.nutrients||{};
+    function nutrient(field,max) {
+      var key=field+'_100g', nvalue=barcodeFinite(n[key],max);
+      if(nvalue!==null)return nvalue;
+      var entry=ag[field];
+      if(entry && entry.value!=null && entry.unit && (entry.unit==='g'||field.indexOf('energy')===0)) {
+        var parsed=barcodeFinite(entry.value,max);
+        if(parsed!==null)return parsed;
+      }
+      return null;
+    }
+    var kcal=nutrient('energy-kcal',1000),protein=nutrient('proteins',100),
+        fat=nutrient('fat',100),carbs=nutrient('carbohydrates',100),
+        fiber=nutrient('fiber',100),sugars=nutrient('sugars',100);
+    if(kcal===null) {
+      var kj=nutrient('energy-kj',4184);
+      if(kj!==null)kcal=Math.round(kj/4.184*10)/10;
+    }
+    var quantity=String(p.quantity||'').slice(0,100);
+    var unit=(p.product_quantity_unit==='ml'||(/\b\d+\s?(ml|l)\b/i).test(quantity))?'ml':'g';
+    return {
+      code:code,
+      name:String(p.product_name_sl||p.product_name||p.product_name_en||'').slice(0,180),
+      brand:String(p.brands||'').slice(0,120),
+      quantity:quantity,
+      kcal:kcal,protein:protein,fat:fat,carbs:carbs,fiber:fiber,sugars:sugars,
+      unit:unit,cat:'Moje',origin:'Open Food Facts',verification:false
+    };
+  }
+  function barcodeManualProduct(code) {
+    return {code:code,name:'',brand:'',quantity:'',kcal:null,protein:null,fat:null,
+      carbs:null,fiber:null,sugars:null,unit:'g',cat:'Moje',origin:'Ročno iz embalaže',verification:false};
+  }
+  function barcodeNutritionOK(v) {
+    return !!v && String(v.name||'').trim().length>1 &&
+      barcodeFinite(v.kcal,1000)!==null && barcodeFinite(v.protein,100)!==null &&
+      (v.unit==='g'||v.unit==='ml');
+  }
+  function barcodeExisting() {
+    return barcodeResult && S.foods.filter(function(f){return f.barcode===barcodeResult.code;})[0] || null;
+  }
+  function barcodePreview() {
+    if(!barcodeResult || !barcodeNutritionOK(barcodeResult))return 'Vnesi ime, kalorije in beljakovine na 100 g oziroma 100 ml.';
+    var k=Math.round(barcodeResult.kcal*(barcodeAmount||0)/100),
+        p=Math.round(barcodeResult.protein*(barcodeAmount||0)/10)/10;
+    return fmtN(barcodeAmount)+' '+barcodeResult.unit+' → ~'+k+' kcal · '+fmtN(p)+' g beljakovin';
+  }
+  function barcodePanelHtml() {
+    if(!barcodeOpen)return '';
+    var h='<div class="barcode-card"><h3 style="margin-top:0">Iskanje po črtni kodi</h3>'
+      +'<p class="barcode-status">Skeniraj EAN/UPC kodo ali jo vnesi ročno. Kamera deluje na HTTPS in zahteva dovoljenje brskalnika. Iskanje potrebuje internet; na Open Food Facts se pošlje samo črtna koda.</p>';
+    h+='<div class="barcode-actions"><button type="button" class="ghost" data-act="barcodeStart">📷 Vklopi kamero</button>'
+      +'<button type="button" class="ghost" data-act="barcodeStop">Ustavi kamero</button>'
+      +'<button type="button" class="ghost" data-act="barcodePhoto">Slikaj kodo</button>'
+      +'<button type="button" class="ghost" data-act="barcodeClose">Zapri</button></div>';
+    h+='<div id="barcode-reader" class="barcode-reader" aria-label="Predogled skeniranja črtne kode"></div>'
+      +'<input type="file" id="barcodePhotoInput" accept="image/*" capture="environment" hidden>';
+    h+='<div class="two" style="display:flex;gap:8px;align-items:center"><input class="field" id="barcodeInput" data-bcode="1" inputmode="numeric" autocomplete="off" placeholder="EAN / UPC (8, 12, 13, 14 mest)" value="'+esc(barcodeInput)+'" style="min-width:0;flex:1">'
+      +'<button type="button" class="primary" data-act="barcodeLookup"'+(barcodeBusy?' disabled':'')+'>Poišči</button></div>';
+    if(barcodeBusy||barcodeCameraLoading)h+='<p class="barcode-status">Nalagam '+(barcodeBusy?'podatke izdelka':'skener kamere')+' …</p>';
+    if(barcodeError)h+='<p class="note" role="status">'+esc(barcodeError)+'</p>';
+    if(barcodeResult){
+      var b=barcodeResult,existing=barcodeExisting(), idx=barcodeDayIdx==null?dayIdx:barcodeDayIdx;
+      var d=S.days[idx]||S.days[dayIdx];if(!d) return h+'</div>';
+      if(!barcodeMealId || !d.meals.some(function(m){return m.id===barcodeMealId;}))barcodeMealId=d.meals[0].id;
+      h+='<h3>'+esc(b.origin==='Open Food Facts'?'Podatki iz Open Food Facts':'Ročni vnos z embalaže')+'</h3>';
+      if(b.quantity)h+='<p class="barcode-status">Pakiranje: '+esc(b.quantity)+'</p>';
+      h+='<div class="barcode-grid">'
+        +'<label>Ime izdelka<input class="field" data-bcf="name" value="'+esc(b.name)+'" placeholder="Točno ime s pakiranja"></label>'
+        +'<label>Znamka<input class="field" data-bcf="brand" value="'+esc(b.brand)+'" placeholder="Proizvajalec"></label>'
+        +'<label>Kalorije na 100<input class="field" data-bcf="kcal" type="number" inputmode="decimal" min="0" max="1000" step="any" value="'+(b.kcal==null?'':esc(b.kcal))+'" placeholder="kcal"></label>'
+        +'<label>Beljakovine na 100<input class="field" data-bcf="protein" type="number" inputmode="decimal" min="0" max="100" step="any" value="'+(b.protein==null?'':esc(b.protein))+'" placeholder="g"></label>'
+        +'<label>Maščobe (g/100)<input class="field" data-bcf="fat" type="number" min="0" max="100" step="any" value="'+(b.fat==null?'':esc(b.fat))+'"></label>'
+        +'<label>Ogljikovi hidrati (g/100)<input class="field" data-bcf="carbs" type="number" min="0" max="100" step="any" value="'+(b.carbs==null?'':esc(b.carbs))+'"></label>'
+        +'<label>Vlaknine (g/100)<input class="field" data-bcf="fiber" type="number" min="0" max="100" step="any" value="'+(b.fiber==null?'':esc(b.fiber))+'"></label>'
+        +'<label>Sladkorji (g/100)<input class="field" data-bcf="sugars" type="number" min="0" max="100" step="any" value="'+(b.sugars==null?'':esc(b.sugars))+'"></label>'
+        +'<label>Merska enota<select class="field" data-bcf="unit"><option value="g"'+(b.unit==='g'?' selected':'')+'>na 100 g</option><option value="ml"'+(b.unit==='ml'?' selected':'')+'>na 100 ml</option></select></label>'
+        +'<label>Količina, ki jo želiš dodati<input class="field" type="number" min="0" max="10000" step="any" data-bca="quantity" value="'+esc(barcodeAmount)+'"></label>'
+        +'</div>';
+      h+='<p id="barcodePreview" class="note"><b>'+esc(barcodePreview())+'</b></p>';
+      h+='<p class="barcode-status">Vir: '+esc(b.origin)+'. Podatki iz spletne baze niso nujno pravilni; primerjaj vrednosti na embalaži. '+(existing?'Ta črtna koda je že shranjena pod imenom »'+esc(existing.label)+'«. Obstoječega živila ne bom prepisal.':'')+'</p>';
+      h+='<label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" data-bcverify="1"'+(b.verification?' checked':'')+'> Preveril sem hranilne vrednosti na embalaži</label>';
+      h+='<div class="barcode-grid"><label>Dan<select class="field" data-bca="day">'
+        +S.days.map(function(x,i){return '<option value="'+i+'"'+(i===idx?' selected':'')+'>'+esc(x.name)+'</option>';}).join('')+'</select></label>'
+        +'<label>Obrok<select class="field" data-bca="meal">'
+        +d.meals.map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===barcodeMealId?' selected':'')+'>'+esc(m.name)+'</option>';}).join('')+'</select></label></div>';
+      h+='<label style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-bca="eaten"'+(barcodeEaten?' checked':'')+'> To sem dejansko pojedel (samo danes ali za nazaj v tem tednu)</label>';
+      h+='<div class="barcode-actions"><button type="button" class="ghost" data-act="barcodeSave">'+(existing?'Že v Živilih':'Shrani v Živila')+'</button>'
+        +'<button type="button" class="primary" data-act="barcodeSaveMeal">Shrani in dodaj k obroku</button></div>';
+    }
+    return h+'<p class="barcode-status">Podatki: <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener noreferrer">Open Food Facts</a> (ODbL). Iskanje ne spreminja tvoje baze, dokler ne potrdiš shranjevanja.</p></div>';
+  }
+  function barcodeCameraStop() {
+    barcodeCameraToken++;
+    barcodeCameraActive=false;barcodeCameraLoading=false;
+    var reader=barcodeReader;barcodeReader=null;
+    if(!reader)return Promise.resolve();
+    return Promise.resolve().then(function(){return reader.stop();}).catch(function(){})
+      .then(function(){return reader.clear();}).catch(function(){});
+  }
+  function barcodeScript() {
+    if(window.Html5Qrcode && window.Html5QrcodeSupportedFormats)return Promise.resolve();
+    if(barcodeScript.loading)return barcodeScript.loading;
+    barcodeScript.loading=new Promise(function(resolve,reject){
+      var script=document.createElement('script');
+      script.src='https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js';
+      script.async=true;
+      script.onload=function(){if(window.Html5Qrcode)resolve();else reject(new Error('Knjižnice ni mogoče zagnati.'));};
+      script.onerror=function(){reject(new Error('Skeniranja ni mogoče naložiti.'));};
+      document.head.appendChild(script);
+    }).catch(function(error){barcodeScript.loading=null;throw error;});
+    return barcodeScript.loading;
+  }
+  function barcodeNewReader() {
+    var F=window.Html5QrcodeSupportedFormats;
+    return new window.Html5Qrcode('barcode-reader',{
+      formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E],verbose:false
+    });
+  }
+  function barcodeStartCamera() {
+    if(!barcodeOpen || barcodeCameraLoading || barcodeCameraActive)return;
+    if(!window.isSecureContext){barcodeError='Za kamero odpri aplikacijo prek HTTPS (npr. GitHub Pages). Kodo lahko tudi vtipkaš.';render();return;}
+    barcodeCameraLoading=true;barcodeError='';render();
+    var token=++barcodeCameraToken;
+    barcodeScript().then(function(){
+      if(token!==barcodeCameraToken || !barcodeOpen || view!=='zivila')return;
+      barcodeReader=barcodeNewReader();
+      return barcodeReader.start({facingMode:'environment'},{fps:8},function(code){
+        if(token!==barcodeCameraToken || barcodeBusy || !barcodeOpen)return;
+        if(!barcodeGTIN(code))return;
+        barcodeInput=String(code);barcodeCameraStop();barcodeLookup(code);
+      },function(){});
+    }).then(function(){
+      if(token!==barcodeCameraToken){if(barcodeReader)barcodeCameraStop();return;}
+      barcodeCameraLoading=false;barcodeCameraActive=true;
+      var status=$('barcodeInput');if(status)status.setAttribute('aria-label','Kamera je aktivna. Črtno kodo postavi na sredino.');
+    }).catch(function(error){
+      if(token!==barcodeCameraToken)return;
+      barcodeCameraStop();barcodeError='Kamera ni na voljo: '+String(error&&error.message||error)+'. Uporabi fotografijo ali ročni vnos.';
+      if(barcodeOpen&&view==='zivila')render();
+    });
+  }
+  function barcodePhotoLookup(file) {
+    if(!file||!barcodeOpen)return;
+    if(!/^image\//.test(file.type||'')){barcodeError='Izberi fotografijo črtne kode.';render();return;}
+    barcodeError='';barcodeCameraLoading=true;
+    barcodeCameraStop().then(function(){barcodeCameraLoading=true;render();return barcodeScript();}).then(function(){
+      if(!barcodeOpen||view!=='zivila')return;
+      var reader=barcodeNewReader();barcodeReader=reader;
+      return reader.scanFile(file,true).then(function(code){
+        barcodeReader=null;reader.clear();
+        barcodeInput=String(code);barcodeLookup(code);
+      }).catch(function(e){
+        barcodeReader=null;try{reader.clear();}catch(err){}
+        throw e;
+      });
+    }).catch(function(error){
+      barcodeError='Na fotografiji ni bilo mogoče prebrati črtne kode. Poskusi bližje ali kodo vnesi ročno.';
+      barcodeCameraLoading=false;
+      if(barcodeOpen && view==='zivila')render();
+    });
+  }
+  function barcodeLookup(raw) {
+    var code=String(raw==null?barcodeInput:raw).replace(/\s+/g,'');
+    barcodeInput=code;
+    if(!barcodeGTIN(code)){barcodeError='Vnesi veljavno EAN/UPC kodo z 8, 12, 13 ali 14 številkami (s pravilno kontrolno števko).';render();return;}
+    if(barcodeBusy)return;
+    barcodeBusy=true;barcodeError='';barcodeResult=null;barcodeAmount=100;barcodeEaten=false;
+    barcodeCameraStop();render();
+    var url='https://world.openfoodfacts.org/api/v3/product/'+encodeURIComponent(code)+'?fields=code,product_name,product_name_sl,product_name_en,brands,quantity,product_quantity_unit,nutriments,nutrition_data_per,nutrition&lc=sl';
+    var controller=typeof AbortController==='function'?new AbortController():null;
+    var options={headers:{'Accept':'application/json'}};
+    if(controller)options.signal=controller.signal;
+    var timeout=setTimeout(function(){if(controller)controller.abort();},12000);
+    return fetch(url,options).then(function(resp){
+      if(resp.status===404)return null;
+      if(!resp.ok)throw new Error('HTTP '+resp.status);
+      return resp.json();
+    }).then(function(json){
+      if(!barcodeOpen)return;
+      barcodeResult=barcodeNormalize(json,code) || barcodeManualProduct(code);
+      barcodeError=barcodeResult.origin==='Open Food Facts'?'Izdelek najden. Preveri in po potrebi popravi podatke.':'Izdelka ni v bazi; vnesi podatke z embalaže.';
+    }).catch(function(error){
+      if(!barcodeOpen)return;
+      barcodeResult=barcodeManualProduct(code);
+      barcodeError='Podatkov ni bilo mogoče pridobiti ('+(error&&error.name==='AbortError'?'časovna omejitev':'povezava ni uspela')+'). Podatke lahko vneseš ročno s pakiranja.';
+    }).finally(function(){
+      clearTimeout(timeout);barcodeBusy=false;
+      if(barcodeOpen&&view==='zivila')render();
+    });
+  }
+  function barcodeSaveFood(addMeal) {
+    if(!barcodeResult || !barcodeNutritionOK(barcodeResult)) {
+      barcodeError='Pred shranjevanjem vnesi ime, kcal in beljakovine na 100 g/ml ter preveri enoto.';render();return;
+    }
+    var amount=Number(barcodeAmount);
+    if(addMeal && (!Number.isFinite(amount)||amount<=0||amount>10000)){
+      barcodeError='Vnesi veljavno količino med 0 in 10.000 g/ml.';render();return;
+    }
+    var idx=barcodeDayIdx==null?dayIdx:barcodeDayIdx,day=S.days[idx],meal=day&&day.meals.filter(function(m){return m.id===barcodeMealId;})[0];
+    if(addMeal && !meal){barcodeError='Izberi obrok.';render();return;}
+    if(addMeal && barcodeEaten && dateOfIdx(idx)>dKey(new Date())) {
+      barcodeError='Pri prihodnjem dnevu lahko živilo samo načrtuješ, ne pa že označiš kot pojedeno.';render();return;
+    }
+    var existing=barcodeExisting(),b=barcodeResult,unit=b.unit,quantity=Math.round(amount*100)/100;
+    var displayName=String(b.name).trim(),brand=String(b.brand||'').trim();
+    if(brand && displayName.toLowerCase().indexOf(brand.toLowerCase())===-1)displayName=brand+' – '+displayName;
+    var fId=existing?existing.id:nid('f'), date=dateOfIdx(idx);
+    change(function(){
+      if(!existing){
+        S.foods.push({id:fId,barcode:b.code,label:displayName,cat:b.cat||'Moje',
+          unit:unit,kcal:Number(b.kcal),p:Number(b.protein),def:100,
+          fat:b.fat,carbs:b.carbs,fiber:b.fiber,sugars:b.sugars,
+          brand:brand,source:b.origin,verified:!!b.verification});
+      }
+      if(addMeal) {
+        var item={id:nid('i'),extra:true,addedOn:date,f:fId,q:quantity,note:'Skenirana črtna koda '+b.code};
+        if(barcodeEaten)item.eatenOn=date;
+        var swap=S.daySwaps&&S.daySwaps[date]&&S.daySwaps[date][meal.id];
+        (swap?swap.items:meal.items).push(item);
+      }
+      barcodeResult=null;barcodeInput='';barcodeError='';barcodeOpen=false;barcodeCameraStop();
+      if(addMeal){dayIdx=idx;view='teden';editing=false;}else{view='zivila';foodQ=displayName;editing=false;}
+    },addMeal?'Živilo dodano k obroku':'Živilo shranjeno');
+  }
+
   function renderFoods() {
     var h = '<h2>Živila</h2><p class="note">Iz teh vrednosti se računajo kalorije in beljakovine v jedilniku. Če spremeniš vrednost, se preračunajo vse jedi s tem živilom. Za g in ml velja na 100, za ostale enote na kos, žlico ...</p>';
-    h += '<button type="button" class="primary" data-act="addFood" style="width:100%;margin:4px 0 10px">+ Dodaj novo živilo</button>' + (!editing ? '<p class="subtle">Novo živilo lahko dodaš neposredno. Za urejanje obstoječih izberi »Uredi«.</p>' : '');
+    h += '<div class="barcode-actions"><button type="button" class="primary" data-act="barcodeOpen"> <span aria-hidden="true">▥</span> Skeniraj črtno kodo</button><button type="button" class="ghost" data-act="addFood">+ Dodaj ročno</button></div>';
+    h += barcodePanelHtml();
+    if(!editing)h += '<p class="subtle">Izdelek lahko dodaš s črtno kodo ali ročno. Za urejanje obstoječih izberi »Uredi«.</p>';
     var groups = groupedFoods(foodQ), n = groups.reduce(function (a, g) { return a + g.items.length; }, 0);
     h += '<input class="field" style="width:100%;margin:4px 0 6px" id="foodSearch" type="search" value="' + esc(foodQ) + '" placeholder="Išči živilo (' + (S.foods || []).length + ')" aria-label="Išči živilo">';
     if (!n) h += '<p class="note">Ni zadetkov. Z gumbom zgoraj lahko dodaš novo živilo.</p>';
