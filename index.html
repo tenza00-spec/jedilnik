@@ -182,7 +182,7 @@ li.eaten .lab{color:var(--muted)}
   var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = '', barcodeOpen = false, barcodeInput = '', barcodeResult = null, barcodeBusy = false, barcodeError = '', barcodeReader = null, barcodeCameraActive = false, barcodeCameraToken = 0, barcodeDayIdx = null, barcodeMealId = '', barcodeAmount = 100, barcodeEaten = false, barcodeCameraLoading = false; // {mealId, f, q, note, n, k}
   var $ = function (id) { return document.getElementById(id); };
   var app = $('app');
-  try { var v0 = localStorage.getItem('jed-view'); if (v0 === 'info') v0 = 'zivila'; if (v0) view = v0; } catch (e) {}
+  try { var v0 = localStorage.getItem('jed-view'); if (v0 === 'zivila') v0 = 'info'; if (v0) view = v0; } catch (e) {}
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function nid(p) { return p + Math.random().toString(36).slice(2, 9); }
@@ -878,7 +878,7 @@ li.eaten .lab{color:var(--muted)}
     function nutrient(field,max) {
       var key=field+'_100g', nvalue=barcodeFinite(n[key],max);
       if(nvalue!==null)return nvalue;
-      var entry=ag[field];
+      var entry=(p.nutrition&&p.nutrition.aggregated_set && /^(100g|100ml)$/.test(p.nutrition.aggregated_set.per||''))?ag[field]:null;
       if(entry && entry.value!=null && entry.unit && (entry.unit==='g'||field.indexOf('energy')===0)) {
         var parsed=barcodeFinite(entry.value,max);
         if(parsed!==null)return parsed;
@@ -999,7 +999,7 @@ li.eaten .lab{color:var(--muted)}
     barcodeCameraLoading=true;barcodeError='';render();
     var token=++barcodeCameraToken;
     barcodeScript().then(function(){
-      if(token!==barcodeCameraToken || !barcodeOpen || view!=='zivila')return;
+      if(token!==barcodeCameraToken || !barcodeOpen || view!=='info')return;
       barcodeReader=barcodeNewReader();
       return barcodeReader.start({facingMode:'environment'},{fps:8},function(code){
         if(token!==barcodeCameraToken || barcodeBusy || !barcodeOpen)return;
@@ -1013,7 +1013,7 @@ li.eaten .lab{color:var(--muted)}
     }).catch(function(error){
       if(token!==barcodeCameraToken)return;
       barcodeCameraStop();barcodeError='Kamera ni na voljo: '+String(error&&error.message||error)+'. Uporabi fotografijo ali ročni vnos.';
-      if(barcodeOpen&&view==='zivila')render();
+      if(barcodeOpen&&view==='info')render();
     });
   }
   function barcodePhotoLookup(file) {
@@ -1096,7 +1096,7 @@ li.eaten .lab{color:var(--muted)}
         (swap?swap.items:meal.items).push(item);
       }
       barcodeResult=null;barcodeInput='';barcodeError='';barcodeOpen=false;barcodeCameraStop();
-      if(addMeal){dayIdx=idx;view='teden';editing=false;}else{view='zivila';foodQ=displayName;editing=false;}
+      if(addMeal){dayIdx=idx;view='teden';editing=false;}else{view='info';foodQ=displayName;editing=false;}
     },addMeal?'Živilo dodano k obroku':'Živilo shranjeno');
   }
 
