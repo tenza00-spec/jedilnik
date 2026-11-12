@@ -551,6 +551,7 @@ li.eaten .lab{color:var(--muted)}
 
   function renderFoods() {
     var h = '<h2>Živila</h2><p class="note">Iz teh vrednosti se računajo kalorije in beljakovine v jedilniku. Če spremeniš vrednost, se preračunajo vse jedi s tem živilom. Za g in ml velja na 100, za ostale enote na kos, žlico ...</p>';
+    h += '<button type="button" class="primary" data-act="addFood" style="width:100%;margin:4px 0 10px">+ Dodaj novo živilo</button>' + (!editing ? '<p class="subtle">Novo živilo lahko dodaš neposredno. Za urejanje obstoječih izberi »Uredi«.</p>' : '');
     var groups = groupedFoods(foodQ), n = groups.reduce(function (a, g) { return a + g.items.length; }, 0);
     h += '<input class="field" style="width:100%;margin:4px 0 6px" id="foodSearch" type="search" value="' + esc(foodQ) + '" placeholder="Išči živilo (' + (S.foods || []).length + ')" aria-label="Išči živilo">';
     if (!n) h += '<p class="note">Ni zadetkov. Dodaj ga z »Uredi« → »+ Dodaj živilo«.</p>';
@@ -571,7 +572,7 @@ li.eaten .lab{color:var(--muted)}
         });
       }
     });
-    if (editing) h += '<button type="button" class="add" data-act="addFood">+ Dodaj živilo</button>';
+    if (editing) h += '<p class="subtle">Spremembe živil se sproti shranjujejo v tem brskalniku.</p>';
     h += '<h2>Malica za pisarno</h2><div class="card"><div class="mh"><span class="nm">Skuta 250 g + tuna + banana</span><span class="kc tnum">~530 kcal</span></div>' +
       '<p>~59 g beljakovin, ~2,50 €. Skuto z banano lahko poješ dopoldne, tuno kasneje. Vzemi žlico in vilico, skuto daj v hladilnik.</p></div>' +
       '<h2>Kosila (babica)</h2><ul class="tips"><li>150 g piščanca + 150 g riža ali 200 g krompirja</li><li>Čevapčiči ~200 g + 200 g krompirja. <b>Pogosto so iz mešanega mesa, tudi svinjine.</b> Preveri deklaracijo.</li><li>Goveji zrezki v omaki 150 g + riž ali krompir</li><li>Če si po piščancu lačen, prosi za 200 g piščanca ali 200 g riža.</li></ul>' +
@@ -679,7 +680,7 @@ li.eaten .lab{color:var(--muted)}
     if (a === 'delSm') { change(function () { freezeRefs('s:' + id); S.smoothies = S.smoothies.filter(function (s) { return s.id !== id; }); }, 'Smoothie odstranjen'); return; }
     if (a === 'addSm') { var sid = nid('s'); change(function () { S.smoothies.push({ id: sid, n: 'Nov smoothie', ing: '', k: 0, p: 0, c: 0 }); }); var se = $('sn-' + sid); if (se) se.focus(); return; }
     if (a === 'delFood') { change(function () { freezeRefs(id); S.foods = S.foods.filter(function (x) { return x.id !== id; }); }, 'Živilo odstranjeno'); return; }
-    if (a === 'addFood') { var fid = nid('f'); change(function () { S.foods.push({ id: fid, cat: 'Moje', label: 'Novo živilo', unit: 'g', kcal: 0, p: 0, def: 100 }); foodQ = ''; }); var fl = $('fl-' + fid); if (fl) { fl.focus(); fl.select(); } return; }
+    if (a === 'addFood') { var fid = nid('f'); editing = true; change(function () { S.foods.push({ id: fid, cat: 'Moje', label: 'Novo živilo', unit: 'g', kcal: 0, p: 0, def: 100 }); foodQ = 'Novo živilo'; }); var fl = $('fl-' + fid); if (fl) { fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.focus({ preventScroll: true }); fl.select(); } return; }
     if (a === 'delX') { var fx = findX(id); change(function () { fx.list.splice(fx.i, 1); }, 'Izdelek odstranjen'); return; }
     if (a === 'addX') { var xid = nid('x'); change(function () { var list = b.dataset.k === 'stock' ? S.stock : S.shop.filter(function (g) { return g.id === b.dataset.k; })[0].items; list.push({ id: xid, n: '', q: '', u: '', p: 0, done: false }); }); var xe = $('xn-' + xid); if (xe) xe.focus(); return; }
     if (a === 'addG') { var gid = nid('g'); change(function () { S.shop.push({ id: gid, g: 'Nova skupina', items: [] }); }); var ge = $('gn-' + gid); if (ge) ge.focus(); return; }
