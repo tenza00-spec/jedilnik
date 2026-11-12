@@ -1000,14 +1000,18 @@ li.eaten .lab{color:var(--muted)}
     var token=++barcodeCameraToken;
     barcodeScript().then(function(){
       if(token!==barcodeCameraToken || !barcodeOpen || view!=='info')return;
-      barcodeReader=barcodeNewReader();
-      return barcodeReader.start({facingMode:'environment'},{fps:8},function(code){
+      var reader=barcodeNewReader();barcodeReader=reader;
+      return reader.start({facingMode:'environment'},{fps:8},function(code){
         if(token!==barcodeCameraToken || barcodeBusy || !barcodeOpen)return;
         if(!barcodeGTIN(code))return;
         barcodeInput=String(code);barcodeCameraStop();barcodeLookup(code);
-      },function(){});
+      },function(){}).then(function(){
+        if(token!==barcodeCameraToken || !barcodeOpen || view!=='info'){
+          return Promise.resolve(reader.stop()).catch(function(){}).then(function(){return reader.clear();}).catch(function(){});
+        }
+      });
     }).then(function(){
-      if(token!==barcodeCameraToken){if(barcodeReader)barcodeCameraStop();return;}
+      if(token!==barcodeCameraToken)return;
       barcodeCameraLoading=false;barcodeCameraActive=true;
       var status=$('barcodeInput');if(status)status.setAttribute('aria-label','Kamera je aktivna. Črtno kodo postavi na sredino.');
     }).catch(function(error){
@@ -1590,7 +1594,7 @@ li.eaten .lab{color:var(--muted)}
   }
   $('editBtn').addEventListener('click', function () { editing = !editing; adder = null; if(!editing && view==='info')foodQ=''; if (!local && !editing && saveTimer) { clearTimeout(saveTimer); flush(); } render(); });
   document.querySelectorAll('nav button').forEach(function (b) {
-    b.addEventListener('click', function () { barcodeRequestSeq++;if(barcodeCameraActive||barcodeCameraLoading)barcodeCameraStop();barcodeOpen=false;barcodeBusy=false;view = b.dataset.v; editing = false; adder = null; editMeals = {}; try { localStorage.setItem('jed-view', view); } catch (e) {} render(); window.scrollTo(0, 0); });
+    b.addEventListener('click', function () { barcodeRequestSeq++;if(barcodeCameraActive||barcodeCameraLoading)barcodeCameraStop();barcodeOpen=false;barcodeBusy=false;barcodeResult=null;barcodeError='';barcodeInput='';view = b.dataset.v; editing = false; adder = null; editMeals = {}; try { localStorage.setItem('jed-view', view); } catch (e) {} render(); window.scrollTo(0, 0); });
   });
   document.addEventListener('visibilitychange', function () { if(document.visibilityState==='hidden')barcodeCameraStop();if (document.visibilityState === 'hidden' && saveTimer && !local) { clearTimeout(saveTimer); flush(); } });
 
