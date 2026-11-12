@@ -990,7 +990,7 @@ li.eaten .lab{color:var(--muted)}
   function barcodeNewReader() {
     var F=window.Html5QrcodeSupportedFormats;
     return new window.Html5Qrcode('barcode-reader',{
-      formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E],verbose:false
+      formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A],verbose:false
     });
   }
   function barcodeStartCamera() {
