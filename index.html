@@ -179,7 +179,7 @@ li.eaten .lab{color:var(--muted)}
   var UNITS = ['g', 'ml', 'kos', 'pločevinka', 'žlica', 'žlička', 'rezina', 'porcija'];
   var S = null, view = 'teden', dayIdx = (new Date().getDay() + 6) % 7, editing = false;
   var docRef = null, writing = false, saveTimer = null, undo = null, localRev = 0, savedRev = 0, lastErr = false;
-  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, mealSuggest = null; // {mealId, f, q, note, n, k}
+  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = ''; // {mealId, f, q, note, n, k}
   var $ = function (id) { return document.getElementById(id); };
   var app = $('app');
   try { var v0 = localStorage.getItem('jed-view'); if (v0 === 'info') v0 = 'zivila'; if (v0) view = v0; } catch (e) {}
@@ -677,6 +677,57 @@ li.eaten .lab{color:var(--muted)}
     return h;
   }
 
+
+  function renderWeightGraph() {
+    var list=S.weights.slice().sort(function(a,b){return a.date.localeCompare(b.date);}).slice(-16);
+    if(!list.length)return '<p class="note">Še ni tehtanj. Začetno težo lahko vneseš spodaj; ničesar ne bom vpisal samodejno.</p>';
+    var vals=list.map(function(x){return +x.kg;});
+    var low=Math.min.apply(null,vals), high=Math.max.apply(null,vals);
+    var span=Math.max(2,high-low), mid=(high+low)/2, bottom=mid-span/2, top=mid+span/2;
+    var coords=list.map(function(x,i){return [(24+i*252/Math.max(1,list.length-1)).toFixed(1),(94-74*(x.kg-bottom)/(top-bottom)).toFixed(1)];});
+    var path=coords.map(function(p){return p.join(',');}).join(' ');
+    var dots=coords.map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="var(--accent)"/>';}).join('');
+    return '<div class="chartwrap"><svg viewBox="0 0 300 125" width="100%" role="img" aria-label="Graf telesne teže">'
+      +'<path d="M24 20H276M24 57H276M24 94H276" stroke="var(--line)" fill="none"/>'
+      +(coords.length>1?'<polyline points="'+path+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>':'')
+      +dots+'<text x="0" y="20" fill="var(--muted)" font-size="10">'+fmtN(top)+'</text>'
+      +'<text x="0" y="96" fill="var(--muted)" font-size="10">'+fmtN(bottom)+'</text>'
+      +'<text x="24" y="115" fill="var(--muted)" font-size="10">'+esc(list[0].date.slice(5))+'</text>'
+      +'<text x="276" y="115" text-anchor="end" fill="var(--muted)" font-size="10">'+esc(list[list.length-1].date.slice(5))+'</text></svg></div>'
+      +'<p class="note">Od prvega vnosa: '+fmtN(vals[vals.length-1]-vals[0])+' kg. Posamezne meritve lahko nihajo.</p>';
+  }
+  function renderProgress() {
+    var key=progressDate||dKey(new Date()), w=S.wellness[key]||{}, h='<h2>Napredek</h2>';
+    h+='<div class="card"><h3 style="margin-top:0">Dnevnik apetita in Mounjara</h3><label class="note">Datum</label><input class="field" type="date" id="progressDate" value="'+esc(key)+'" style="width:100%">';
+    h+='<label class="note">Apetit (1 = zelo majhen, 5 = običajen)</label><select class="field" data-well="appetite" style="width:100%"><option value="">Ni vnosa</option>'
+      +[1,2,3,4,5].map(function(n){return '<option value="'+n+'"'+(String(w.appetite||'')===String(n)?' selected':'')+'>'+n+'</option>';}).join('')+'</select>';
+    h+='<p class="note">Označi samo simptome, ki jih imaš:</p>';
+    [['nausea','Slabost'],['bloating','Napihnjenost'],['constipation','Zaprtje'],['diarrhea','Driska'],['vomiting','Bruhanje']].forEach(function(o){
+      h+='<label style="display:flex;gap:8px;align-items:center;margin:7px 0"><input type="checkbox" data-well="'+o[0]+'"'+(w[o[0]]?' checked':'')+'>'+o[1]+'</label>';
+    });
+    h+='<label style="display:flex;gap:8px;align-items:center;margin:12px 0"><input type="checkbox" data-well="injection"'+(w.injection?' checked':'')+'>Ta dan sem si dal injekcijo</label>';
+    h+='<label class="note">Odmerek (mg; samo dejansko uporabljeni odmerek)</label><input class="field" style="width:100%" inputmode="decimal" data-well="dose" value="'+esc(w.dose||'')+'" placeholder="npr. 2,5">';
+    h+='<label class="note">Opombe (počutje, kaj si lahko pojedel)</label><textarea class="field" rows="3" style="width:100%" data-well="notes" placeholder="Neobvezno">'+esc(w.notes||'')+'</textarea>';
+    h+='<p class="subtle">Vnosi se shranjujejo lokalno. Ob trdovratnem bruhanju, nezmožnosti pitja ali močni bolečini poišči zdravniško pomoč.</p></div>';
+    h+='<div class="card"><h3 style="margin-top:0">Telesna teža</h3>'+renderWeightGraph();
+    h+='<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><label class="note" style="flex:1">Datum<input id="weightDate" type="date" class="field" value="'+esc(weightDate||dKey(new Date()))+'" style="width:100%"></label>';
+    h+='<label class="note" style="flex:1">Teža (kg)<input id="weightKg" type="number" min="30" max="400" step="0.1" class="field" value="'+esc(weightInput)+'" placeholder="170,0" style="width:100%"></label></div><button type="button" class="primary" data-act="weightSave" style="margin-top:10px">Shrani tehtanje</button>';
+    h+='<div class="note" style="margin-top:10px">'+S.weights.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,6).map(function(x){return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span>'+esc(x.date)+' · '+fmtN(x.kg)+' kg</span><button type="button" class="mini" aria-label="Odstrani tehtanje" data-act="weightDelete" data-date="'+esc(x.date)+'">×</button></div>';}).join('')+'</div></div>';
+    var hist=Object.keys(S.history).sort().reverse(), now=new Date(), recent=[];
+    for(var z=0;z<7;z++){var dt=new Date(now.getFullYear(),now.getMonth(),now.getDate()-z), k=dKey(dt);if(S.history[k])recent.push(S.history[k]);}
+    var sum=recent.reduce(function(a,x){a.k+=x.kcal||0;a.p+=x.protein||0;return a;},{k:0,p:0});
+    h+='<div class="card"><h3 style="margin-top:0">Zadnjih 7 dni</h3><p>Vpisanih dni: <b>'+recent.length+' / 7</b></p><p>Na dan z vnosom: <b>'+ (recent.length?Math.round(sum.k/recent.length):'–')+' kcal</b> in <b>'+(recent.length?Math.round(sum.p/recent.length):'–')+' g beljakovin</b></p><p class="subtle">Povprečje vključuje samo dneve z zabeleženo hrano, ne manjkajočih dni.</p></div>';
+    h+='<h3>Zgodovina zaužite hrane</h3>';
+    if(!hist.length)h+='<p class="note">Zgodovina se začne zbirati, ko označiš dejansko zaužito hrano.</p>';
+    hist.slice(0,45).forEach(function(k){var d=S.history[k], items=Array.isArray(d.items)?d.items:[];
+      h+='<details class="card rec"><summary><span>'+esc(k)+'</span><span class="kc">'+Math.round(d.kcal||0)+' kcal · '+Math.round(d.protein||0)+' g</span></summary><ul class="tips">'
+        +items.map(function(it){return '<li>'+esc(it.name)+' · '+Math.round(it.kcal||0)+' kcal · '+fmtN(it.protein||0)+' g · '+Math.round((it.portion||0)*100)+' %</li>';}).join('')
+        +(d.drinks?'<li>Pijače: ~'+Math.round(d.drinks)+' kcal</li>':'')+'</ul></details>';
+    });
+    h+='<h3>Varnostne kopije</h3><div class="card"><p class="note">Podatki so shranjeni samo na tej napravi. Rezervna kopija v istem brskalniku ni nadomestilo za preneseno datoteko. Redno izvozi JSON in ga shrani na varno.</p><div style="display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button type="button" class="primary" data-act="exportData">Izvozi kopijo JSON</button><button type="button" class="ghost" data-act="importData">Uvozi kopijo</button><button type="button" class="ghost" data-act="restoreLocal">Obnovi prejšnjo lokalno različico</button></div><input type="file" id="importFile" accept=".json,application/json" hidden></div>';
+    return h;
+  }
   function renderFoods() {
     var h = '<h2>Živila</h2><p class="note">Iz teh vrednosti se računajo kalorije in beljakovine v jedilniku. Če spremeniš vrednost, se preračunajo vse jedi s tem živilom. Za g in ml velja na 100, za ostale enote na kos, žlico ...</p>';
     h += '<button type="button" class="primary" data-act="addFood" style="width:100%;margin:4px 0 10px">+ Dodaj novo živilo</button>' + (!editing ? '<p class="subtle">Novo živilo lahko dodaš neposredno. Za urejanje obstoječih izberi »Uredi«.</p>' : '');
@@ -778,12 +829,22 @@ li.eaten .lab{color:var(--muted)}
       logDrink(dObj); return;
     }
     if (a === 'delLog') { change(function () { var L = todayLog(); for (var i = 0; i < L.length; i++) if (L[i].id === id) { L.splice(i, 1); break; } }, 'Pijača odstranjena'); return; }
-    if (a === 'exportData') {
-      var blob = new Blob([JSON.stringify(S)], { type: 'application/json' });
-      var url = URL.createObjectURL(blob), lnk = document.createElement('a');
-      lnk.href = url; lnk.download = 'jedilnik-' + new Date().toISOString().slice(0, 10) + '.json';
-      document.body.appendChild(lnk); lnk.click(); lnk.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-      return;
+    if (a === 'exportData') { exportBackup(); return; }
+    if (a === 'restoreLocal') {
+      var old=null;try { old=JSON.parse(localStorage.getItem(LKEY+'-backup')||'null'); }catch(e){}
+      if (!isValidBackup(old)) {setStatus('Ni veljavne predhodne lokalne kopije.');return;}
+      if (!window.confirm('Obnovim prejšnjo lokalno različico? Trenutno stanje lahko najprej izvoziš.')) return;
+      undo=JSON.stringify(S);S=old;prep();render();save();toast('Prejšnja lokalna različica obnovljena');return;
+    }
+    if (a === 'weightDelete') {
+      var ky=b.dataset.date;
+      change(function(){S.weights=S.weights.filter(function(x){return x.date!==ky;});},'Tehtanje odstranjeno');return;
+    }
+    if (a === 'weightSave') {
+      var inp=$('weightKg'),dt=$('weightDate'),kg=num(inp&&inp.value),date=dt&&dt.value;
+      if(!date||!/^\d{4}-\d\d-\d\d$/.test(date)||kg<30||kg>400){setStatus('Vnesi veljaven datum in težo med 30 in 400 kg.');return;}
+      weightDate=date;weightInput='';
+      change(function(){S.weights=S.weights.filter(function(x){return x.date!==date;});S.weights.push({date:date,kg:kg});},'Tehtanje shranjeno');return;
     }
     if (a === 'importData') { $('importFile').click(); return; }
     if (a === 'suggest') { mealSuggest=mealSuggest===b.dataset.m?null:b.dataset.m;render();return; }
@@ -831,6 +892,17 @@ li.eaten .lab{color:var(--muted)}
 
   function onField(e) {
     var t=e.target,id=t.dataset.id;
+    if(t.id==='progressDate') {if(e.type!=='change')return;progressDate=t.value;render();return;}
+    if(t.id==='weightDate') {weightDate=t.value;return;}
+    if(t.id==='weightKg') {weightInput=t.value;return;}
+    if(t.dataset.well) {
+      if(e.type==='change' && t.type!=='checkbox' && t.tagName!=='SELECT')return;
+      if(e.type==='input' && (t.type==='checkbox' || t.tagName==='SELECT'))return;
+      var date=progressDate||dKey(new Date());
+      if(!S.wellness[date])S.wellness[date]={};
+      S.wellness[date][t.dataset.well]=t.type==='checkbox'?!!t.checked:t.value;
+      save();return;
+    }
     if (t.dataset.portion) {
       if(e.type!=='change')return;
       var fs=findVisibleItem(t.dataset.portion);if(!fs)return;
@@ -869,7 +941,10 @@ li.eaten .lab{color:var(--muted)}
     if (e.target.id !== 'importFile' || !e.target.files[0]) return;
     var r = new FileReader();
     r.onload = function () {
-      try { var d = JSON.parse(r.result); if (!d.days || !d.shop) throw 0; undo = JSON.stringify(S); S = d; prep(); render(); save(); toast('Kopija uvožena'); }
+      try { var raw=JSON.parse(r.result), d=raw && raw.format==='jedilnik-backup'?raw.data:raw;
+        if(!isValidBackup(d))throw Error('Neveljavna struktura');
+        if(!window.confirm('Uvoz bo zamenjal tvoje trenutne lokalne podatke. Želiš nadaljevati?'))return;
+        undo=JSON.stringify(S);S=d;prep();render();save();toast('Kopija uvožena'); }
       catch (err) { setStatus('Ta datoteka ni veljavna kopija jedilnika.'); }
     };
     r.readAsText(e.target.files[0]);
