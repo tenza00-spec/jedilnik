@@ -50,7 +50,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .edit-toggle[aria-pressed="true"]{background:var(--soft);color:var(--accent);border-color:var(--accent)}
 .medit{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;font-size:13px;font-weight:600;color:var(--accent)}
 .medit[aria-pressed="true"]{background:var(--soft);border-color:var(--accent)}
-.mh .rt{display:flex;align-items:center;gap:8px}.meal-totals{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}.meal-totals .subtle{font-size:11px;white-space:nowrap}.item-energy{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.item-energy small{font-size:11px;color:var(--muted)}.barcode-reader{width:100%;min-height:40px;border-radius:12px;overflow:hidden}.barcode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.barcode-grid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}.barcode-grid input,.barcode-grid select{width:100%;min-width:0}.barcode-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.barcode-actions button{flex:1 1 138px}.barcode-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}.barcode-status{font-size:12px;line-height:1.5;color:var(--muted)}
+.mh .rt{display:flex;align-items:center;gap:8px}.meal-totals{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}.meal-totals .subtle{font-size:11px;white-space:nowrap}.item-energy{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.item-energy small{font-size:11px;color:var(--muted)}.macro-box summary{cursor:pointer}.macro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding-top:12px}.macro-grid div{display:flex;flex-direction:column;gap:3px}.macro-grid small{font-size:11px;color:var(--muted)}.macro-grid b{font-size:13px}.fav-button{border:1px solid var(--line);background:var(--chip);border-radius:8px;padding:5px 9px;cursor:pointer}.fav-button.starred{color:#bb8125;border-color:#bb8125}.quick-row{display:flex;gap:8px;flex-wrap:wrap}.quick-row select,.quick-row input{min-width:0;flex:1 1 110px}.quick-row button{flex:1 1 130px}.analytics-row{display:grid;grid-template-columns:64px 1fr 62px;gap:6px;align-items:center;margin:7px 0;font-size:12px}.analytics-row .barline{margin:0}.analytics-row small{color:var(--muted)}.barcode-reader{width:100%;min-height:40px;border-radius:12px;overflow:hidden}.barcode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.barcode-grid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}.barcode-grid input,.barcode-grid select{width:100%;min-width:0}.barcode-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.barcode-actions button{flex:1 1 138px}.barcode-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}.barcode-status{font-size:12px;line-height:1.5;color:var(--muted)}
 .strip{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none;margin:0 -4px;padding-inline:4px}
 .strip::-webkit-scrollbar{display:none}
 .strip button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;align-items:center;min-width:56px}
@@ -295,6 +295,11 @@ li.eaten .lab{color:var(--muted)}
     if (!S.daySwaps || typeof S.daySwaps !== 'object') S.daySwaps = {};
     if (!S.wellness || typeof S.wellness !== 'object') S.wellness = {};
     if (!Array.isArray(S.weights)) S.weights = [];
+    if(!Array.isArray(S.favoriteFoodIds))S.favoriteFoodIds=[];
+    S.favoriteFoodIds=S.favoriteFoodIds.filter(function(id){return typeof id==='string' && S.foods.some(function(f){return f.id===id;});});
+    if(!S.pantry || typeof S.pantry!=='object' || Array.isArray(S.pantry))S.pantry={};
+    if(!Array.isArray(S.recentFoodIds))S.recentFoodIds=[];
+    if(!S.analyticsRange || [7,14,30].indexOf(+S.analyticsRange)<0)S.analyticsRange=7;
     if (!S.targets || typeof S.targets !== 'object') S.targets = {kcal:2000,protein:150};
     if (!S.shopAutoState || typeof S.shopAutoState !== 'object' || Array.isArray(S.shopAutoState)) S.shopAutoState = {};
     if (!S.shopAutoOptions || typeof S.shopAutoOptions !== 'object') S.shopAutoOptions = {includeLunch:false,includeExtras:false,hideDone:false,weekOffset:0};
@@ -351,14 +356,17 @@ li.eaten .lab{color:var(--muted)}
         hasData=true;
         var k=Math.round(itemK(it)*part), p=Math.round(itemP(it)*part*10)/10;
         kcal+=k; protein+=p;
-        entries.push({name:itemLabel(it),kcal:k,protein:p,portion:part,meal:m.name});
+        var e={name:itemLabel(it),kcal:k,protein:p,portion:part,meal:m.name};
+        NUTRIENT_KEYS.forEach(function(key){var value=itemNutrient(it,key);e[key]=value===null?null:Math.round(value*part*10)/10;});
+        entries.push(e);
       });
     });
     var logs=(S.drinkLog&&S.drinkLog[date])||[],
       drinks=logs.length?sumK(logs):(S.history[date]?(S.history[date].drinks||0):0),
       drinkP=logs.length?sumDrinkProtein(logs):(S.history[date]?(S.history[date].drinkProtein||0):0);
     if(!hasData&&!drinks){delete S.history[date];return;}
-    S.history[date]={date:date,kcal:kcal+drinks,protein:Math.round((protein+drinkP)*10)/10,drinks:drinks,drinkProtein:drinkP,items:entries};
+    var nutrients=dayNutrients(di);
+    S.history[date]={date:date,kcal:kcal+drinks,protein:Math.round((protein+drinkP)*10)/10,drinks:drinks,drinkProtein:drinkP,items:entries,nutrients:nutrients};
   }
   function snapshotWeek() {
     ensureTracking();
@@ -443,6 +451,65 @@ li.eaten .lab{color:var(--muted)}
     }
     return (S.foods || []).filter(function (x) { return x.id === f; })[0] || null;
   }
+
+  // Neznanih hranil NE štejemo kot nič. Vrednosti živil so na 100 g/ml oziroma na enoto.
+  var NUTRIENT_KEYS=['fat','carbs','fiber','sugars'];
+  function knownNutrient(obj,key) {
+    if(!obj || obj[key]===null || obj[key]===undefined || obj[key]==='')return null;
+    var n=Number(obj[key]);return Number.isFinite(n)&&n>=0?n:null;
+  }
+  function partsNutrient(parts,key) {
+    if(!Array.isArray(parts)||!parts.length)return null;
+    var total=0;
+    for(var i=0;i<parts.length;i++){
+      var p=parts[i],f=food(p.f),v=knownNutrient(f,key),qty=Number(p.q);
+      if(!f||v===null||!Number.isFinite(qty)||qty<0)return null;
+      total+=v*qty/per(f.unit);
+    }
+    return total;
+  }
+  function itemNutrient(it,key) {
+    if(!it)return null;
+    if(Array.isArray(it.parts)&&it.parts.length)return partsNutrient(it.parts,key);
+    if(it.f && it.f.slice(0,2)==='s:'){
+      var sm=S.smoothies.filter(function(s){return 's:'+s.id===it.f;})[0];
+      var v=sm?partsNutrient(sm.parts,key):null;
+      return v===null?null:v*(+it.q||0);
+    }
+    if(it.f){var fd=food(it.f),v=knownNutrient(fd,key);return fd&&v!==null?v*(+it.q||0)/per(fd.unit):null;}
+    return knownNutrient(it,key);
+  }
+  function summarizeNutrients(entries,date) {
+    var o={count:0,known:{},totals:{},untracked:0};
+    NUTRIENT_KEYS.forEach(function(k){o.known[k]=0;o.totals[k]=0;});
+    (entries||[]).forEach(function(it){
+      var portion=portionOf(it,date);if(portion<=0)return;
+      o.count++;
+      NUTRIENT_KEYS.forEach(function(k){
+        var n=itemNutrient(it,k);
+        if(n!==null){o.totals[k]+=n*portion;o.known[k]++;}
+      });
+    });
+    return o;
+  }
+  function dayNutrients(di) {
+    var all=[];S.days[di].meals.forEach(function(m){all=all.concat(visibleMealItems(m,di));});
+    return summarizeNutrients(all,dateOfIdx(di));
+  }
+  function macroText(o,k) {
+    if(!o || !o.count || !o.known || !o.known[k])return '– (ni podatkov)';
+    return fmtN(Math.round(o.totals[k]*10)/10)+' g'+(o.known[k]<o.count?' (delno: '+o.known[k]+'/'+o.count+' jedi)':'');
+  }
+  function renderMacroSummary(di) {
+    var n=dayNutrients(di);
+    return '<details class="card macro-box"><summary><b>Maščobe, OH in vlaknine</b> <span class="subtle">(dejansko pojedena hrana)</span></summary>'
+      +'<div class="macro-grid"><div><small>Maščobe</small><b>'+esc(macroText(n,'fat'))+'</b></div>'
+      +'<div><small>Ogljikovi hidrati</small><b>'+esc(macroText(n,'carbs'))+'</b></div>'
+      +'<div><small>Vlaknine</small><b>'+esc(macroText(n,'fiber'))+'</b></div>'
+      +'<div><small>Sladkorji</small><b>'+esc(macroText(n,'sugars'))+'</b></div></div>'
+      +'<p class="subtle">Neznane vrednosti niso ničle. Delni seštevek vključuje samo živila z vpisano deklaracijo; pijače niso vključene.</p></details>';
+  }
+
   function itemK(it) {
     if (Array.isArray(it.parts) && it.parts.length) {var v=smoothieValues(it.parts);return v.valid?v.k:(+it.k||0);}
     if (it.f) { var fd = food(it.f); if (!fd) return Math.round(+it.k || 0); return Math.round((+fd.kcal || 0) * (+it.q || 0) / per(fd.unit)); }
@@ -633,7 +700,7 @@ li.eaten .lab{color:var(--muted)}
       return '<button type="button" role="tab" data-act="day" data-i="' + i + '" class="' + (i === dayIdx ? 'on' : '') + (i === today ? ' today' : '') + '" aria-selected="' + (i === dayIdx) + '"><b>' + short[i] + '</b><small class="tnum" id="tab-' + i + '" title="Dejansko zaužito">' + Math.round(dayKD(d).all) + ' kcal</small></button>';
     }).join('') + '</div>';
     var d = S.days[dayIdx];
-    h += '<div class="dayhead"><h2>' + esc(d.name) + '</h2></div><div class="gauge" id="gauge">' + gaugeHtml(dayKD(d), dayP(d)) + '</div>';
+    h += '<div class="dayhead"><h2>' + esc(d.name) + '</h2></div><div class="gauge" id="gauge">' + gaugeHtml(dayKD(d), dayP(d)) + '</div>' + renderMacroSummary(dayIdx);
     d.meals.forEach(function (m) {
       var me = !!editMeals[m.id];
       h += '<div class="meal' + (m.lunch ? ' lunch' : '') + '"><div class="mh"><span class="nm">' + esc(m.name) + (m.lunch ? '<span class="tag">babica</span>' : '') + '</span><span class="rt"><span class="meal-totals"><span id="mk-' + m.id + '">' + mealActuallyEatenHtml(m,dayIdx) + '</span><small class="subtle tnum" id="mp-' + m.id + '">Načrt: ~' + mealK(m,dayIdx) + ' kcal</small></span>' +
