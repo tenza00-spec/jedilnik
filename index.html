@@ -50,7 +50,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .edit-toggle[aria-pressed="true"]{background:var(--soft);color:var(--accent);border-color:var(--accent)}
 .medit{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;font-size:13px;font-weight:600;color:var(--accent)}
 .medit[aria-pressed="true"]{background:var(--soft);border-color:var(--accent)}
-.mh .rt{display:flex;align-items:center;gap:8px}.meal-totals{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}.meal-totals .subtle{font-size:11px;white-space:nowrap}.item-energy{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.item-energy small{font-size:11px;color:var(--muted)}.macro-box summary{cursor:pointer}.macro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding-top:12px}.macro-grid div{display:flex;flex-direction:column;gap:3px}.macro-grid small{font-size:11px;color:var(--muted)}.macro-grid b{font-size:13px}.fav-button{border:1px solid var(--line);background:var(--chip);border-radius:8px;padding:5px 9px;cursor:pointer}.fav-button.starred{color:#bb8125;border-color:#bb8125}.quick-row{display:flex;gap:8px;flex-wrap:wrap}.quick-row select,.quick-row input{min-width:0;flex:1 1 110px}.quick-row button{flex:1 1 130px}.analytics-row{display:grid;grid-template-columns:64px 1fr 62px;gap:6px;align-items:center;margin:7px 0;font-size:12px}.analytics-row .barline{margin:0}.analytics-row small{color:var(--muted)}.barcode-reader{width:100%;min-height:40px;border-radius:12px;overflow:hidden}.barcode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.barcode-grid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}.barcode-grid input,.barcode-grid select{width:100%;min-width:0}.barcode-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.barcode-actions button{flex:1 1 138px}.barcode-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}.barcode-status{font-size:12px;line-height:1.5;color:var(--muted)}
+.mh .rt{display:flex;align-items:center;gap:8px}.meal-totals{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}.meal-totals .subtle{font-size:11px;white-space:nowrap}.item-energy{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.item-energy small{font-size:11px;color:var(--muted)}.fav-button{border:1px solid var(--line);background:var(--chip);border-radius:8px;padding:5px 9px;cursor:pointer}.fav-button.starred{color:#bb8125;border-color:#bb8125}.quick-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.quick-row select,.quick-row input{min-width:0;flex:1 1 110px}.quick-row button{flex:1 1 130px}.analytics-row{display:grid;grid-template-columns:64px 1fr 66px;gap:6px;align-items:center;margin:7px 0;font-size:12px}.analytics-row .barline{margin:0}.analytics-row small{color:var(--muted)}.macro-box summary{cursor:pointer}.macro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding-top:12px}.macro-grid div{display:flex;flex-direction:column;gap:3px}.macro-grid small{font-size:11px;color:var(--muted)}.macro-grid b{font-size:13px}.fav-button{border:1px solid var(--line);background:var(--chip);border-radius:8px;padding:5px 9px;cursor:pointer}.fav-button.starred{color:#bb8125;border-color:#bb8125}.quick-row{display:flex;gap:8px;flex-wrap:wrap}.quick-row select,.quick-row input{min-width:0;flex:1 1 110px}.quick-row button{flex:1 1 130px}.analytics-row{display:grid;grid-template-columns:64px 1fr 62px;gap:6px;align-items:center;margin:7px 0;font-size:12px}.analytics-row .barline{margin:0}.analytics-row small{color:var(--muted)}.barcode-reader{width:100%;min-height:40px;border-radius:12px;overflow:hidden}.barcode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.barcode-grid label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}.barcode-grid input,.barcode-grid select{width:100%;min-width:0}.barcode-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.barcode-actions button{flex:1 1 138px}.barcode-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}.barcode-status{font-size:12px;line-height:1.5;color:var(--muted)}
 .strip{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none;margin:0 -4px;padding-inline:4px}
 .strip::-webkit-scrollbar{display:none}
 .strip button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;align-items:center;min-width:56px}
@@ -179,7 +179,7 @@ li.eaten .lab{color:var(--muted)}
   var UNITS = ['g', 'ml', 'kos', 'pločevinka', 'žlica', 'žlička', 'rezina', 'porcija'];
   var S = null, view = 'teden', dayIdx = (new Date().getDay() + 6) % 7, editing = false;
   var docRef = null, writing = false, saveTimer = null, undo = null, localRev = 0, savedRev = 0, lastErr = false;
-  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = '', barcodeOpen = false, barcodeInput = '', barcodeResult = null, barcodeBusy = false, barcodeError = '', barcodeReader = null, barcodeCameraActive = false, barcodeCameraToken = 0, barcodeDayIdx = null, barcodeMealId = '', barcodeAmount = 100, barcodeEaten = false, barcodeCameraLoading = false, barcodeRequestSeq = 0; // {mealId, f, q, note, n, k}
+  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = '', barcodeOpen = false, barcodeInput = '', barcodeResult = null, barcodeBusy = false, barcodeError = '', barcodeReader = null, barcodeCameraActive = false, barcodeCameraToken = 0, barcodeDayIdx = null, barcodeMealId = '', barcodeAmount = 100, barcodeEaten = false, barcodeCameraLoading = false, barcodeRequestSeq = 0, quickFoodId = null, quickMealId = null, quickQty = 100; // {mealId, f, q, note, n, k}
   var $ = function (id) { return document.getElementById(id); };
   var app = $('app');
   try { var v0 = localStorage.getItem('jed-view'); if (v0 === 'zivila') v0 = 'info'; if (v0) view = v0; } catch (e) {}
@@ -1171,6 +1171,7 @@ li.eaten .lab{color:var(--muted)}
         var swap=S.daySwaps&&S.daySwaps[date]&&S.daySwaps[date][meal.id];
         (swap?swap.items:meal.items).push(item);
       }
+      S.recentFoodIds=[fId].concat(S.recentFoodIds.filter(function(x){return x!==fId;})).slice(0,12);
       barcodeResult=null;barcodeInput='';barcodeError='';barcodeOpen=false;barcodeRequestSeq++;barcodeCameraStop();
       if(addMeal){dayIdx=idx;view='teden';editing=false;}else{view='info';foodQ=existing?existing.label:displayName;editing=false;}
     },addMeal?'Živilo dodano k obroku':'Živilo shranjeno');
@@ -1180,6 +1181,12 @@ li.eaten .lab{color:var(--muted)}
     var h = '<h2>Živila</h2><p class="note">Iz teh vrednosti se računajo kalorije in beljakovine v jedilniku. Če spremeniš vrednost, se preračunajo vse jedi s tem živilom. Za g in ml velja na 100, za ostale enote na kos, žlico ...</p>';
     h += '<div class="barcode-actions"><button type="button" class="primary" data-act="barcodeOpen"> <span aria-hidden="true">▥</span> Skeniraj črtno kodo</button><button type="button" class="ghost" data-act="addFood">+ Dodaj ročno</button></div>';
     h += barcodePanelHtml();
+    if(!editing && S.favoriteFoodIds.length){
+      var favorites=S.favoriteFoodIds.map(function(id){return food(id);}).filter(Boolean);
+      h+='<h3>★ Priljubljena živila ('+favorites.length+')</h3><div class="card">'
+        +favorites.map(function(x){return '<div style="padding:7px 0;border-bottom:1px solid var(--line)"><b>'+esc(x.label)+'</b> · '+fmtN(x.kcal)+' kcal / '+(per(x.unit)===100?'100 ':'1 ')+esc(x.unit)+'</div>';}).join('')
+        +'<p class="subtle">Priljubljena živila najdeš tudi v hitrem vnosu na zavihku Teden.</p></div>';
+    }
     if(!editing)h += '<p class="subtle">Izdelek lahko dodaš s črtno kodo ali ročno. Za urejanje obstoječih izberi »Uredi«.</p>';
     var groups = groupedFoods(foodQ), n = groups.reduce(function (a, g) { return a + g.items.length; }, 0);
     h += '<input class="field" style="width:100%;margin:4px 0 6px" id="foodSearch" type="search" value="' + esc(foodQ) + '" placeholder="Išči živilo (' + (S.foods || []).length + ')" aria-label="Išči živilo">';
@@ -1188,14 +1195,16 @@ li.eaten .lab{color:var(--muted)}
       h += '<h3>' + esc(g.c) + '</h3>';
       if (!editing) {
         h += '<div class="card"><ul class="items">' + g.items.map(function (f) {
-          return '<li><span>' + esc(f.label) + (f.barcode?'<small class="subtle" style="display:block">EAN '+esc(f.barcode)+' · '+esc(f.source||'')+(f.verified?' · preverjeno na embalaži':' · preveri deklaracijo')+'</small>':'') + '</span><em class="tnum">' + fmtN(f.kcal) + ' kcal · ' + fmtN(+f.p || 0) + ' g belj. / ' + (per(f.unit) === 100 ? '100 ' + esc(f.unit) : '1 ' + esc(f.unit)) + (f.barcode?'<small style="display:block;font-style:normal;color:var(--muted)">'+(f.fat==null?'':'M: '+fmtN(f.fat)+' g ')+(f.carbs==null?'':'OH: '+fmtN(f.carbs)+' g ')+(f.fiber==null?'':'Vlaknine: '+fmtN(f.fiber)+' g')+'</small>':'')+'</em></li>';
+          return '<li><button type="button" class="fav-button'+(S.favoriteFoodIds.indexOf(f.id)>=0?' starred':'')+'" data-act="favoriteToggle" data-id="'+esc(f.id)+'" aria-pressed="'+(S.favoriteFoodIds.indexOf(f.id)>=0)+'" aria-label="Priljubljeno: '+esc(f.label)+'">'+(S.favoriteFoodIds.indexOf(f.id)>=0?'★':'☆')+'</button><span>' + esc(f.label) + (f.barcode?'<small class="subtle" style="display:block">EAN '+esc(f.barcode)+' · '+esc(f.source||'')+(f.verified?' · preverjeno na embalaži':' · preveri deklaracijo')+'</small>':'') + '</span><em class="tnum">' + fmtN(f.kcal) + ' kcal · ' + fmtN(+f.p || 0) + ' g belj. / ' + (per(f.unit) === 100 ? '100 ' + esc(f.unit) : '1 ' + esc(f.unit)) + (f.barcode?'<small style="display:block;font-style:normal;color:var(--muted)">'+(f.fat==null?'':'M: '+fmtN(f.fat)+' g ')+(f.carbs==null?'':'OH: '+fmtN(f.carbs)+' g ')+(f.fiber==null?'':'Vlaknine: '+fmtN(f.fiber)+' g')+'</small>':'')+'</em></li>';
         }).join('') + '</ul></div>';
       } else {
         g.items.forEach(function (f) {
         h += '<div class="card ed"><div class="two"><input class="field" style="flex:1" id="fl-' + f.id + '" data-ff="label" data-id="' + f.id + '" value="' + esc(f.label) + '" aria-label="Živilo">' +
           '<button type="button" class="x" data-act="delFood" data-id="' + f.id + '" aria-label="Odstrani">×</button></div>' +
           '<div class="two"><input class="field tnum" style="width:90px;text-align:right" id="fk-' + f.id + '" data-ff="kcal" data-id="' + f.id + '" value="' + esc(fmtN(f.kcal)) + '" inputmode="decimal" aria-label="kcal">' +
-          '<span class="unit">kcal</span><input class="field tnum" style="width:70px;text-align:right" id="fp-' + f.id + '" data-ff="p" data-id="' + f.id + '" value="' + esc(fmtN(+f.p || 0)) + '" inputmode="decimal" aria-label="Beljakovine v gramih"><span class="unit">g belj.</span></div><div class="two"><span class="unit">na</span><select class="field" style="flex:1" id="fu-' + f.id + '" data-ff="unit" data-id="' + f.id + '" aria-label="Enota">' +
+          '<span class="unit">kcal</span><input class="field tnum" style="width:70px;text-align:right" id="fp-' + f.id + '" data-ff="p" data-id="' + f.id + '" value="' + esc(fmtN(+f.p || 0)) + '" inputmode="decimal" aria-label="Beljakovine v gramih"><span class="unit">g belj.</span></div>' +
+          '<div class="macro-grid">' + NUTRIENT_KEYS.map(function(k){return '<label class="note">'+({fat:'Maščobe',carbs:'Ogljikovi hidrati',fiber:'Vlaknine',sugars:'Sladkorji'}[k])+' (g)<input class="field" type="number" min="0" max="100" step="any" data-ff="'+k+'" data-id="'+esc(f.id)+'" value="'+(f[k]==null?'':esc(fmtN(f[k])))+'" placeholder="Neznano" style="width:100%"></label>';}).join('') + '</div>' +
+          '<div class="two"><span class="unit">na</span><select class="field" style="flex:1" id="fu-' + f.id + '" data-ff="unit" data-id="' + f.id + '" aria-label="Enota">' +
           UNITS.map(function (u) { return '<option value="' + u + '"' + (u === f.unit ? ' selected' : '') + '>' + (per(u) === 100 ? '100 ' + u : '1 ' + u) + '</option>'; }).join('') + '</select></div>' +
           '<div class="two"><span class="unit">skupina</span><select class="field" style="flex:1" id="fc-' + f.id + '" data-ff="cat" data-id="' + f.id + '" aria-label="Skupina">' + CATS.map(function (c) { return '<option' + (c === (f.cat || 'Moje') ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>';
         });
@@ -1394,6 +1403,10 @@ li.eaten .lab{color:var(--muted)}
     if(a==='barcodeLookup'){barcodeLookup($('barcodeInput')?$('barcodeInput').value:barcodeInput);return;}
     if(a==='barcodeSave'){barcodeSaveFood(false);return;}
     if(a==='barcodeSaveMeal'){barcodeSaveFood(true);return;}
+    if(a==='favoriteToggle'){
+      if(!S.foods.some(function(f){return f.id===id;}))return;
+      change(function(){var i=S.favoriteFoodIds.indexOf(id);if(i>=0)S.favoriteFoodIds.splice(i,1);else S.favoriteFoodIds.unshift(id);},'Priljubljena živila posodobljena');return;
+    }
     if(a==='shopMode') {S.shopMode=b.dataset.mode==='manual'?'manual':'auto';editing=false;render();save();return;}
     if(a==='shopWeek'){S.shopAutoOptions.weekOffset=+b.dataset.offset===1?1:0;render();save();return;}
     if(a==='autoTick'){
@@ -1501,7 +1514,7 @@ li.eaten .lab{color:var(--muted)}
     if (a === 'addSm') { var sid = nid('s'); change(function () { S.smoothies.push({ id: sid, n: 'Nov smoothie', ing: '', k: 0, p: 0, c: 0 }); }); var se = $('sn-' + sid); if (se) se.focus(); return; }
     if (a === 'delFood') {
       if(foodUsedInStructuredRecipes(id)){setStatus('Živilo je uporabljeno v shranjenem smutiju ali sestavljenem obroku. Najprej popravi ta recept.');return;}
-      change(function(){freezeRefs(id);S.foods=S.foods.filter(function(x){return x.id!==id;});},'Živilo odstranjeno');return;
+      change(function(){freezeRefs(id);S.foods=S.foods.filter(function(x){return x.id!==id;});S.favoriteFoodIds=S.favoriteFoodIds.filter(function(x){return x!==id;});},'Živilo odstranjeno');return;
     }
     if (a === 'addFood') { var fid = nid('f'); editing = true; change(function () { S.foods.push({ id: fid, cat: 'Moje', label: 'Novo živilo', unit: 'g', kcal: 0, p: 0, def: 100 }); foodQ = 'Novo živilo'; }); var fl = $('fl-' + fid); if (fl) { fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.focus({ preventScroll: true }); fl.select(); } return; }
     if (a === 'delX') { var fx = findX(id); change(function () { fx.list.splice(fx.i, 1); }, 'Izdelek odstranjen'); return; }
@@ -1614,8 +1627,13 @@ li.eaten .lab{color:var(--muted)}
       var fd = S.foods.filter(function (x) { return x.id === id; })[0]; if (!fd) return; var ff = t.dataset.ff;
       if (ff === 'cat') { if (e.type !== 'change') return; fd.cat = t.value; render(); save(); return; }
       if (ff === 'unit') { if (e.type !== 'change') return; fd.unit = t.value; fd.def = per(t.value) === 100 ? 100 : 1; save(); return; }
-      if (e.type === 'change') return;
-      fd[ff]=(ff==='kcal'||ff==='p')?Math.max(0,num(t.value)):t.value;save();return;
+      if(e.type==='change')return;
+      if(NUTRIENT_KEYS.indexOf(ff)>=0){
+        var v=String(t.value||'').trim(),n=Number(v.replace(',','.'));
+        if(v!==''&&(!Number.isFinite(n)||n<0||n>100)){setStatus('Hranilo mora biti od 0 do 100 g.');return;}
+        fd[ff]=v===''?null:n;
+      } else fd[ff]=(ff==='kcal'||ff==='p')?Math.max(0,num(t.value)):t.value;
+      save();return;
     }
     if (e.type === 'change') return;
     if (t.dataset.xf) { var x = findX(id); if (!x) return; x.it[t.dataset.xf] = t.dataset.xf === 'p' ? num(t.value) : t.value; save(); return; }
