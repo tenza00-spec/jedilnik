@@ -70,7 +70,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .mh .nm{font-weight:700}.mh .kc{font-weight:700;color:var(--accent);white-space:nowrap;font-size:14px}
 .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-left:6px}
 .items{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
-.items li{display:flex;justify-content:space-between;gap:10px;font-size:15px}
+.items li{display:flex;justify-content:space-between;gap:8px;font-size:15px;flex-wrap:wrap;align-items:center}.items li .it{flex:1 1 160px}.actualqty{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted)}.actualqty input{width:72px;padding:5px 6px;text-align:right}
 .items li span{min-width:0}.items li em{font-style:normal;color:var(--muted);white-space:nowrap;font-size:14px}
 .erow{display:flex;gap:6px;align-items:center;margin-top:6px}
 .erow input,.erow textarea,.field{min-width:0;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:8px 10px;font:inherit;font-size:16px}
@@ -606,7 +606,8 @@ li.eaten .lab{color:var(--muted)}
           return '<li class="' + (isEaten(it, dayIdx) ? 'eaten' : '') + '"><div class="it"><button type="button" class="tick" data-act="eat" data-id="' + it.id + '" aria-pressed="' + isEaten(it, dayIdx) + '" aria-label="' + (isEaten(it, dayIdx) ? 'Tega nisem jedel' : 'To sem pojedel') + '">' +
             (isEaten(it, dayIdx) ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12.5l4.5 4.5L19 7"/></svg>' : '') + '</button>' +
             '<span class="lab">' + esc(itemLabel(it)) + (it.extra ? '<span class="xtag">dodano</span>' : '') + (fd && it.note ? '<small>' + esc(it.note) + '</small>' : '') + '</span></div>' +
-            '<em class="tnum">' + (isEaten(it,dayIdx) ? Math.round(itemK(it)*portionOf(it,dateOfIdx(dayIdx)))+' od '+itemK(it) : itemK(it)) + ' kcal' + (itemP(it) >= 3 ? '<span class="pg">' + pTxt(isEaten(it,dayIdx)?itemP(it)*portionOf(it,dateOfIdx(dayIdx)):itemP(it)) + '</span>' : '') + '</em>' + '<select class="pillbtn" data-portion="' + esc(it.id) + '" aria-label="Pojedeni delež ' + esc(itemLabel(it)) + '">' + [0,0.25,0.5,0.75,1].map(function(p){return '<option value="'+p+'"'+(portionOf(it,dateOfIdx(dayIdx))===p?' selected':'')+'>'+Math.round(p*100)+'%</option>';}).join('') + '</select>' + (it.extra ? '<button type="button" class="mini" data-act="delItem" data-id="' + it.id + '" aria-label="Odstrani">×</button>' : '') + '</li>';
+            '<em class="tnum">' + (isEaten(it,dayIdx) ? Math.round(itemK(it)*portionOf(it,dateOfIdx(dayIdx)))+' od '+itemK(it) : itemK(it)) + ' kcal' + (itemP(it) >= 3 ? '<span class="pg">' + pTxt(isEaten(it,dayIdx)?itemP(it)*portionOf(it,dateOfIdx(dayIdx)):itemP(it)) + '</span>' : '') + '</em>' + '<select class="pillbtn" data-portion="' + esc(it.id) + '" aria-label="Pojedeni delež ' + esc(itemLabel(it)) + '">' + [0,0.25,0.5,0.75,1].map(function(p){return '<option value="'+p+'"'+(portionOf(it,dateOfIdx(dayIdx))===p?' selected':'')+'>'+Math.round(p*100)+'%</option>';}).join('') + '</select>' +
+             ((fd && (fd.unit==='g'||fd.unit==='ml')) ? '<label class="actualqty"><input type="text" inputmode="decimal" class="field tnum" data-actualq="' + esc(it.id) + '" value="' + (isEaten(it,dayIdx)?esc(fmtN((+it.q||0)*portionOf(it,dateOfIdx(dayIdx)))):'') + '" placeholder="0" aria-label="Dejansko pojedeno v ' + esc(fd.unit) + '"> ' + esc(fd.unit) + '</label>' : '') + (it.extra ? '<button type="button" class="mini" data-act="delItem" data-id="' + it.id + '" aria-label="Odstrani">×</button>' : '') + '</li>';
         }).join('') + '</ul>';
         if (!visibleMealItems(m,dayIdx).length) h += '<p class="note">Ni jedi.</p>';
         if (adder && adder.mealId === m.id) {
@@ -772,6 +773,7 @@ li.eaten .lab{color:var(--muted)}
   }
   function renderProgress() {
     var key=progressDate||dKey(new Date()), w=S.wellness[key]||{}, h='<h2>Napredek</h2>';
+    h+='<div class="card"><h3 style="margin-top:0">Dnevna prehranska cilja</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="note" style="flex:1">Energija (kcal)<input class="field" type="number" min="1000" max="6000" step="50" data-target="kcal" value="'+esc(S.targets.kcal||2000)+'" style="width:100%"></label><label class="note" style="flex:1">Beljakovine (g)<input class="field" type="number" min="30" max="350" step="5" data-target="protein" value="'+esc(S.targets.protein||150)+'" style="width:100%"></label></div><p class="subtle">Vnesi cilj, dogovorjen z zdravnikom ali dietetikom. Ob slabosti ga ne poskušaj doseči na silo.</p></div>';
     h+='<div class="card"><h3 style="margin-top:0">Dnevnik apetita in Mounjara</h3><label class="note">Datum</label><input class="field" type="date" id="progressDate" value="'+esc(key)+'" style="width:100%">';
     h+='<label class="note">Apetit (1 = zelo majhen, 5 = običajen)</label><select class="field" data-well="appetite" style="width:100%"><option value="">Ni vnosa</option>'
       +[1,2,3,4,5].map(function(n){return '<option value="'+n+'"'+(String(w.appetite||'')===String(n)?' selected':'')+'>'+n+'</option>';}).join('')+'</select>';
@@ -1046,7 +1048,7 @@ li.eaten .lab{color:var(--muted)}
       var ky=dateOfIdx(dayIdx), it={id:nid('i'),n:opt[1]+' ('+opt[2]+')',k:val.k,p:val.p,note:'',parts:JSON.parse(JSON.stringify(smallParts(opt)))};
       change(function(){
         if(a==='smallReplace'){if(!S.daySwaps[ky])S.daySwaps[ky]={};S.daySwaps[ky][meal.id]={items:[it],label:opt[1]};}
-        else {it.extra=true;it.addedOn=ky;meal.items.push(it);}
+        else {it.extra=true;it.addedOn=ky;var currentSwap=activeSwap(meal,dayIdx);(currentSwap?currentSwap.items:meal.items).push(it);}
         mealSuggest=null;
       },a==='smallReplace'?'Alternativa izbrana (le za ta dan)':'Predlog dodan v načrt');return;
     }
@@ -1062,12 +1064,12 @@ li.eaten .lab{color:var(--muted)}
       if (!adder.f && !(adder.n || '').trim()) { var ne = $('an-new'); if (ne) ne.focus(); return; }
       var it = { id: nid('i'), extra: true, addedOn: dateOfIdx(dayIdx), eatenOn: dateOfIdx(dayIdx) };
       if (adder.f) { it.f = adder.f; it.q = adder.q; it.note = adder.note || ''; } else { it.n = adder.n.trim(); it.k = Math.round(num(adder.k)); it.p = num(adder.p); }
-      adder = null; change(function () { m.items.push(it); }); return;
+      adder = null; change(function () { var active=activeSwap(m,dayIdx);(active?active.items:m.items).push(it); }); return;
     }
     if (a === 'tick') { var f = findX(id); change(function () { f.it.done = !f.it.done; }); return; }
     if (a === 'clearShop') { change(function () { S.shop.forEach(function (g) { g.items.forEach(function (i) { i.done = false; }); }); }, 'Kljukice odstranjene'); return; }
     if (a === 'clearStock') { change(function () { S.stock.forEach(function (i) { i.done = false; }); }, 'Kljukice odstranjene'); return; }
-    if (a === 'delItem') { var fi = findItem(id); change(function () { fi.list.splice(fi.i, 1); }, 'Jed odstranjena'); return; }
+    if (a === 'delItem') { var fi=findVisibleItem(id);if(!fi)return;change(function(){fi.list.splice(fi.i,1);},'Jed odstranjena');return; }
     if (a === 'addItem') { var nidv = nid('i'); change(function () { var mm = findMeal(b.dataset.m); var o = { id: nidv, note: '' }; setFood(o, 'skuta'); mm.items.push(o); }); return; }
     if (a === 'delSm') { change(function () { freezeRefs('s:' + id); S.smoothies = S.smoothies.filter(function (s) { return s.id !== id; }); }, 'Smoothie odstranjen'); return; }
     if (a === 'addSm') { var sid = nid('s'); change(function () { S.smoothies.push({ id: sid, n: 'Nov smoothie', ing: '', k: 0, p: 0, c: 0 }); }); var se = $('sn-' + sid); if (se) se.focus(); return; }
@@ -1080,6 +1082,24 @@ li.eaten .lab{color:var(--muted)}
 
   function onField(e) {
     var t=e.target,id=t.dataset.id;
+    if(t.dataset.target){
+      if(e.type!=='change')return;
+      var goal=Math.round(num(t.value)), kind=t.dataset.target;
+      if(kind==='kcal' && (goal<1000||goal>6000)){setStatus('Vnesi energijski cilj med 1000 in 6000 kcal.');return;}
+      if(kind==='protein' && (goal<30||goal>350)){setStatus('Vnesi beljakovinski cilj med 30 in 350 g.');return;}
+      if(kind==='kcal'||kind==='protein'){S.targets[kind]=goal;render();save();}
+      return;
+    }
+    if(t.dataset.actualq) {
+      if(e.type!=='change')return;
+      var fs=findVisibleItem(t.dataset.actualq),v=num(t.value);
+      if(!fs||!fs.it.f)return;
+      var fd=food(fs.it.f);
+      if(!fd || (fd.unit!=='g' && fd.unit!=='ml'))return;
+      if(!isFinite(v)||v<0||v>(+fs.it.q||0)){setStatus('Količina mora biti med 0 in načrtovanimi '+fmtN(fs.it.q)+' '+fd.unit+'. Za več uporabi »Dodaj, kar sem jedel«.');return;}
+      var date=dateOfIdx(dayIdx),fraction=(+fs.it.q||0)>0?v/(+fs.it.q):0;
+      change(function(){if(fraction>0){fs.it.eatenOn=date;fs.it.portion=fraction;}else{delete fs.it.eatenOn;delete fs.it.portion;}});return;
+    }
     if(t.dataset.shopopt){
       if(e.type!=='change')return;
       S.shopAutoOptions[t.dataset.shopopt]=!!t.checked;render();save();return;
@@ -1123,11 +1143,11 @@ li.eaten .lab{color:var(--muted)}
     if (t.id === 'foodSearch') { if (e.type !== 'input') return; foodQ = t.value; render(); return; }
     if (t.dataset.wg) { if (e.type !== 'change') return; var g = num(t.value); if (g > 0) { S.waterGoal = Math.round(g * 1000); render(); save(); } return; }
     if (t.dataset.p) { // meal item editor or adder
-      var o = t.dataset.p === 'a' ? adder : (findItem(id) || {}).it;
+      var o = t.dataset.p === 'a' ? adder : (findVisibleItem(id) || {}).it;
       if (!o) return;
       var k = t.dataset.k;
       if (k === 'f') { if (e.type !== 'change') return; setFood(o, t.value); if (t.dataset.p === 'e') { render(); save(); } else render(); return; }
-      if (k === 'q') o.q = num(t.value); else if (k === 'k') o.k = Math.round(num(t.value)); else if (k === 'p') o.p = num(t.value); else o[k] = t.value;
+      if(k==='q')o.q=Math.max(0,num(t.value));else if(k==='k')o.k=Math.max(0,Math.round(num(t.value)));else if(k==='p')o.p=Math.max(0,num(t.value));else o[k]=t.value;
       var kv = $(t.dataset.p + 'kv-' + id); if (kv) kv.textContent = kvTxt(o);
       if (t.dataset.p === 'a') return; // adder is not saved until "Dodaj"
       updateTotals(); save(); return;
@@ -1138,7 +1158,7 @@ li.eaten .lab{color:var(--muted)}
       if (ff === 'cat') { if (e.type !== 'change') return; fd.cat = t.value; render(); save(); return; }
       if (ff === 'unit') { if (e.type !== 'change') return; fd.unit = t.value; fd.def = per(t.value) === 100 ? 100 : 1; save(); return; }
       if (e.type === 'change') return;
-      fd[ff] = (ff === 'kcal' || ff === 'p') ? num(t.value) : t.value; save(); return;
+      fd[ff]=(ff==='kcal'||ff==='p')?Math.max(0,num(t.value)):t.value;save();return;
     }
     if (e.type === 'change') return;
     if (t.dataset.xf) { var x = findX(id); if (!x) return; x.it[t.dataset.xf] = t.dataset.xf === 'p' ? num(t.value) : t.value; save(); return; }
@@ -1166,7 +1186,7 @@ li.eaten .lab{color:var(--muted)}
     var g = $('gauge'); if (g) g.innerHTML = gaugeHtml(dayKD(d), dayP(d));
     var tab = $('tab-' + dayIdx); if (tab) tab.textContent = dayK(d).all;
   }
-  $('editBtn').addEventListener('click', function () { editing = !editing; adder = null; if (!local && !editing && saveTimer) { clearTimeout(saveTimer); flush(); } render(); });
+  $('editBtn').addEventListener('click', function () { editing = !editing; adder = null; if(!editing && view==='info')foodQ=''; if (!local && !editing && saveTimer) { clearTimeout(saveTimer); flush(); } render(); });
   document.querySelectorAll('nav button').forEach(function (b) {
     b.addEventListener('click', function () { view = b.dataset.v; editing = false; adder = null; editMeals = {}; try { localStorage.setItem('jed-view', view); } catch (e) {} render(); window.scrollTo(0, 0); });
   });
