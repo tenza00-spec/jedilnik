@@ -1518,7 +1518,7 @@ li.eaten .lab{color:var(--muted)}
       var base=PIECE_FOODS.indexOf(id)>=0?'kos':'g',
         from=old[id]||{unit:base},to=wanted[id]||{unit:base};
       if(from.unit===to.unit)return;
-      var gram=Number(from.unit==='kos'?from.gramsPerPiece:to.gramsPerPiece);
+      var gram=Number(from.gramsPerPiece||to.gramsPerPiece);
       if(!Number.isFinite(gram)||gram<=0)return;
       var scale=from.unit==='g'?1/gram:gram;
       function conv(parts){
