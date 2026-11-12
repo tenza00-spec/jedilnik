@@ -1,0 +1,1152 @@
+{
+  "description": "Generic reference macros per 100 g, not guaranteed to match specific packaged foods. Do not overwrite user-entered values.",
+  "retrieved": "2026-11-12",
+  "license": "CC-BY-4.0 TempoLife; underlying USDA sources CC0",
+  "attribution": "TempoLife Food Nutrition Dataset (tempolife.app), CC-BY-4.0; USDA FoodData Central SR Legacy.",
+  "sourceUrl": "https://github.com/tempolife-app/tempo-food-db/blob/main/data/tempolife-foods.csv",
+  "entries": {
+    "skuta": {
+      "fat": 3.6,
+      "carbs": 4.2,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Estonian curd cheese (quark)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "mleko": {
+      "fat": 3.5,
+      "carbs": 4.8,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Milk 3.5% fat",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "jogurt": {
+      "fat": 3.3,
+      "carbs": 4.7,
+      "fiber": 0,
+      "sugars": 4.7,
+      "record": "Yogurt, plain, whole milk",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "skyr": {
+      "fat": 0.1,
+      "carbs": 4,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Greek yogurt (0%)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "jajce": {
+      "fat": 9.5,
+      "carbs": 0.7,
+      "fiber": 0,
+      "sugars": 0.4,
+      "record": "Egg, whole, raw, fresh",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "banana": {
+      "fat": 0.3,
+      "carbs": 23,
+      "fiber": 2.6,
+      "sugars": 0,
+      "record": "Banana",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "jabolko": {
+      "fat": 0.2,
+      "carbs": 14,
+      "fiber": 2.4,
+      "sugars": 0,
+      "record": "Apple (red)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "spinaca": {
+      "fat": 0.6,
+      "carbs": 4.2,
+      "fiber": 2.9,
+      "sugars": 0.7,
+      "record": "Spinach, frozen, chopped or leaf, unprepared",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "krompir": {
+      "fat": 0.1,
+      "carbs": 16.8,
+      "fiber": 1.6,
+      "sugars": 0,
+      "record": "Boiled potato",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "krompirP": {
+      "fat": 0.2,
+      "carbs": 18.4,
+      "fiber": 1.8,
+      "sugars": 0,
+      "record": "Baked potato",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "riz": {
+      "fat": 0.3,
+      "carbs": 28.2,
+      "fiber": 0.4,
+      "sugars": 0.1,
+      "record": "Rice, white, long-grain, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "testenine": {
+      "fat": 1.5,
+      "carbs": 74.7,
+      "fiber": 3.2,
+      "sugars": 2.7,
+      "record": "Pasta, dry",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "kosmici": {
+      "fat": 6.9,
+      "carbs": 66.3,
+      "fiber": 10.6,
+      "sugars": 0,
+      "record": "Rolled oats (raw)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "piscanec": {
+      "fat": 3.6,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Chicken breast",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "saj": {
+      "fat": 1,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": null,
+      "record": "Fish, pollock, Alaska, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "tuna": {
+      "fat": 1,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Tuna (canned in water)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "sardine": {
+      "fat": 11.5,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Fish, sardine, Atlantic, canned in oil, drained solids with bone",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "sir": {
+      "fat": 28.6,
+      "carbs": 1.4,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Cheese, edam",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "kruh": {
+      "fat": 3.3,
+      "carbs": 49.4,
+      "fiber": 2.7,
+      "sugars": 5.7,
+      "record": "Bread, white",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "pasiran": {
+      "fat": 0.4,
+      "carbs": 7.1,
+      "fiber": 1.6,
+      "sugars": 0,
+      "record": "Tomato sauce",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "am": {
+      "fat": 50.4,
+      "carbs": 20.1,
+      "fiber": 6,
+      "sugars": 0,
+      "record": "Peanut butter (smooth)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "med": {
+      "fat": 0,
+      "carbs": 82.4,
+      "fiber": 0.2,
+      "sugars": 82.1,
+      "record": "Honey",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "olje": {
+      "fat": 100,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Olive oil (extra virgin)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "kakav": {
+      "fat": 13.7,
+      "carbs": 57.9,
+      "fiber": 37,
+      "sugars": 1.8,
+      "record": "Cocoa, dry powder, unsweetened",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "pire": {
+      "fat": 3.4,
+      "carbs": 14.8,
+      "fiber": 1.6,
+      "sugars": 0,
+      "record": "Mashed potatoes",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "mozzarella": {
+      "fat": 22,
+      "carbs": 2.2,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Mozzarella",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "tortilja": {
+      "fat": 7,
+      "carbs": 54,
+      "fiber": 3,
+      "sugars": 0,
+      "record": "Flour tortilla",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "smetana": {
+      "fat": 20,
+      "carbs": 4,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Sour cream (20%)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_kefir": {
+      "fat": 2,
+      "carbs": 4.5,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Kefir",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_grski_jogurt_02": {
+      "fat": 0.1,
+      "carbs": 4,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Greek yogurt (0%)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_grski_jogurt_10": {
+      "fat": 5,
+      "carbs": 3.6,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Greek yogurt",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_sadni_jogurt": {
+      "fat": 1.1,
+      "carbs": 19.1,
+      "fiber": 0,
+      "sugars": 19.1,
+      "record": "Yogurt, fruit, low fat, 10 grams protein per 8 ounce",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_zrnati_sir_cottage": {
+      "fat": 4.5,
+      "carbs": 3.5,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Cottage cheese (4%)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_kisla_smetana_12": {
+      "fat": 10,
+      "carbs": 4.2,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Sour cream (10%)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_sladka_smetana_35": {
+      "fat": 36.1,
+      "carbs": 2.8,
+      "fiber": 0,
+      "sugars": 2.9,
+      "record": "Cream, fluid, heavy whipping",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_maslo": {
+      "fat": 81,
+      "carbs": 0.6,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Butter",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_sirni_namaz": {
+      "fat": 34,
+      "carbs": 3.5,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Cream cheese",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_ricotta": {
+      "fat": 13,
+      "carbs": 3,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Ricotta",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_gauda": {
+      "fat": 27.4,
+      "carbs": 2.2,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Gouda cheese",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_ementaler": {
+      "fat": 29,
+      "carbs": 0.5,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Emmental cheese",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_parmezan": {
+      "fat": 25,
+      "carbs": 3.2,
+      "fiber": 0,
+      "sugars": 0.1,
+      "record": "Cheese, parmesan, hard",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_feta": {
+      "fat": 21.3,
+      "carbs": 4.1,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Feta cheese",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_mozzarella_sveza_kroglica": {
+      "fat": 22,
+      "carbs": 2.2,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Mozzarella",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_mozzarella_light": {
+      "fat": 15.9,
+      "carbs": 2.8,
+      "fiber": 0,
+      "sugars": 1.1,
+      "record": "Cheese, mozzarella, part skim milk",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_puranja_prsa_narezek": {
+      "fat": 3.8,
+      "carbs": 2.2,
+      "fiber": 0,
+      "sugars": 0.9,
+      "record": "Turkey breast, sliced, prepackaged",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_puranji_zrezek_pecen": {
+      "fat": 1.5,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Turkey breast",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_mleto_goveje_peceno": {
+      "fat": 7.6,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Beef, ground, 95% lean meat / 5% fat, crumbles, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_goveji_zrezek_pust_pecen": {
+      "fat": 7.1,
+      "carbs": 0.2,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Beef, top loin filet, boneless, cooked, grilled",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_goveja_juha_bistra": {
+      "fat": 0.1,
+      "carbs": 0.2,
+      "fiber": 0,
+      "sugars": 0.2,
+      "record": "Soup, beef broth, less/reduced sodium, ready to serve",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_tuna_v_olju_odcejena": {
+      "fat": 10.9,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Tuna (canned in oil)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_postrv_pecena": {
+      "fat": 8.2,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Trout (baked)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_kozice": {
+      "fat": 0.3,
+      "carbs": 0.2,
+      "fiber": 0,
+      "sugars": null,
+      "record": "Crustaceans, shrimp, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_ribje_palcke_pecene": {
+      "fat": 16.2,
+      "carbs": 21.7,
+      "fiber": 1.5,
+      "sugars": 1.7,
+      "record": "Fish, fish sticks, frozen, prepared",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_jajcni_beljak": {
+      "fat": 0.2,
+      "carbs": 0.7,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Egg white",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_kruh_bel": {
+      "fat": 3.3,
+      "carbs": 49.4,
+      "fiber": 2.7,
+      "sugars": 5.7,
+      "record": "Bread, white",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_zemlja_bela": {
+      "fat": 3.4,
+      "carbs": 54.2,
+      "fiber": 1.8,
+      "sugars": 0,
+      "record": "White bread rolls",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_zemlja_polnozrnata": {
+      "fat": 3.5,
+      "carbs": 42.7,
+      "fiber": 6,
+      "sugars": 4.3,
+      "record": "Bread, whole-wheat",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_tortilja_polnozrnata": {
+      "fat": 3.5,
+      "carbs": 42.7,
+      "fiber": 6,
+      "sugars": 4.3,
+      "record": "Bread, whole-wheat",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_tortilja_mala_20_cm": {
+      "fat": 7,
+      "carbs": 54,
+      "fiber": 3,
+      "sugars": 0,
+      "record": "Flour tortilla",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_rizev_vafelj": {
+      "fat": 3,
+      "carbs": 81,
+      "fiber": 1.5,
+      "sugars": 0,
+      "record": "Rice cake",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_prepecenec": {
+      "fat": 7.2,
+      "carbs": 72.3,
+      "fiber": 0,
+      "sugars": null,
+      "record": "Crackers, rusk toast",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_musli_brez_dodanega_sladkorja": {
+      "fat": 7,
+      "carbs": 65,
+      "fiber": 8,
+      "sugars": 0,
+      "record": "Muesli",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_granola": {
+      "fat": 16,
+      "carbs": 65,
+      "fiber": 5,
+      "sugars": 0,
+      "record": "Granola",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_riz_suha_teza": {
+      "fat": 0.7,
+      "carbs": 80,
+      "fiber": 1.3,
+      "sugars": 0.1,
+      "record": "Rice, white, long-grain, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_riz_polnozrnat_kuhan": {
+      "fat": 1,
+      "carbs": 25.6,
+      "fiber": 1.6,
+      "sugars": 0.2,
+      "record": "Rice, brown, long-grain, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_testenine_kuhane": {
+      "fat": 0.9,
+      "carbs": 30.9,
+      "fiber": 1.8,
+      "sugars": 0.6,
+      "record": "Pasta, cooked, without added salt",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_testenine_polnozrnate_suha_teza": {
+      "fat": 2.9,
+      "carbs": 73.4,
+      "fiber": 9.2,
+      "sugars": 2.7,
+      "record": "Pasta, whole-wheat, dry",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_kuskus_kuhan": {
+      "fat": 0.2,
+      "carbs": 23.2,
+      "fiber": 1.4,
+      "sugars": 0.1,
+      "record": "Couscous, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_bulgur_kuhan": {
+      "fat": 0.2,
+      "carbs": 18.6,
+      "fiber": 4.5,
+      "sugars": 0.1,
+      "record": "Bulgur, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_kvinoja_kuhana": {
+      "fat": 1.9,
+      "carbs": 21.3,
+      "fiber": 2.8,
+      "sugars": 0.9,
+      "record": "Quinoa, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_ajdova_kasa_kuhana": {
+      "fat": 0.6,
+      "carbs": 19.9,
+      "fiber": 2.7,
+      "sugars": 0.9,
+      "record": "Buckwheat groats, roasted, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_pomfri_pecen_v_pecici": {
+      "fat": 15,
+      "carbs": 41.4,
+      "fiber": 3.8,
+      "sugars": 0,
+      "record": "French fries",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_korenje": {
+      "fat": 0.2,
+      "carbs": 9.6,
+      "fiber": 2.8,
+      "sugars": 4.7,
+      "record": "Carrots, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_spinaca_sveza": {
+      "fat": 0.4,
+      "carbs": 3.6,
+      "fiber": 2.2,
+      "sugars": 0.4,
+      "record": "Spinach, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_bucka": {
+      "fat": 0.3,
+      "carbs": 3.1,
+      "fiber": 1,
+      "sugars": 2.5,
+      "record": "Squash, summer, zucchini, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_paprika": {
+      "fat": 0.3,
+      "carbs": 6,
+      "fiber": 2.1,
+      "sugars": 4.2,
+      "record": "Peppers, sweet, red, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_paradiznik": {
+      "fat": 0.2,
+      "carbs": 3.9,
+      "fiber": 1.2,
+      "sugars": 2.6,
+      "record": "Tomatoes, red, ripe, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_kumara": {
+      "fat": 0.1,
+      "carbs": 3.6,
+      "fiber": 0.5,
+      "sugars": 1.7,
+      "record": "Cucumber, with peel, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_brokoli": {
+      "fat": 0.4,
+      "carbs": 6.6,
+      "fiber": 2.6,
+      "sugars": 1.7,
+      "record": "Broccoli, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_cvetaca": {
+      "fat": 0.3,
+      "carbs": 5,
+      "fiber": 2,
+      "sugars": 1.9,
+      "record": "Cauliflower, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_zelena_solata": {
+      "fat": 0.2,
+      "carbs": 2.9,
+      "fiber": 1.3,
+      "sugars": 0.8,
+      "record": "Lettuce, green leaf, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_cebula": {
+      "fat": 0.1,
+      "carbs": 9.3,
+      "fiber": 1.7,
+      "sugars": 4.2,
+      "record": "Onions, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_cesen_strok": {
+      "fat": 0.5,
+      "carbs": 33.1,
+      "fiber": 2.1,
+      "sugars": 1,
+      "record": "Garlic, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_gobe_sampinjoni": {
+      "fat": 0.3,
+      "carbs": 3.3,
+      "fiber": 1,
+      "sugars": 2,
+      "record": "Mushrooms, white, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_koruza_plocevinka": {
+      "fat": 1.4,
+      "carbs": 13,
+      "fiber": 1.7,
+      "sugars": 4.1,
+      "record": "Corn, sweet, yellow, canned, drained solids",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_grah_zamrznjen": {
+      "fat": 0.4,
+      "carbs": 13.6,
+      "fiber": 4.5,
+      "sugars": 5,
+      "record": "Peas, green, frozen, unprepared",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_rdeca_pesa": {
+      "fat": 0.2,
+      "carbs": 9.6,
+      "fiber": 2.8,
+      "sugars": 6.8,
+      "record": "Beets, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_kislo_zelje": {
+      "fat": 0.1,
+      "carbs": 4.3,
+      "fiber": 2.9,
+      "sugars": 1.8,
+      "record": "Sauerkraut, canned, solids and liquids",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_zamrznjena_mesana_zelenjava": {
+      "fat": 0.5,
+      "carbs": 13.5,
+      "fiber": 4,
+      "sugars": null,
+      "record": "Vegetables, mixed, frozen, unprepared",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_avokado": {
+      "fat": 14.7,
+      "carbs": 8.5,
+      "fiber": 6.7,
+      "sugars": 0.7,
+      "record": "Avocados, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_fizol_plocevinka_odcejen": {
+      "fat": 0.6,
+      "carbs": 14.5,
+      "fiber": 4.3,
+      "sugars": 1.9,
+      "record": "Beans, kidney, all types, mature seeds, canned",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_cicerika_plocevinka_odcejena": {
+      "fat": 2,
+      "carbs": 22.5,
+      "fiber": 6,
+      "sugars": 0,
+      "record": "Chickpeas (canned)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_leca_kuhana": {
+      "fat": 0.4,
+      "carbs": 20.1,
+      "fiber": 7.9,
+      "sugars": 1.8,
+      "record": "Lentils, mature seeds, cooked, boiled, without salt",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_pomaranca": {
+      "fat": 0.1,
+      "carbs": 12,
+      "fiber": 2.4,
+      "sugars": 0,
+      "record": "Orange",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_mandarina": {
+      "fat": 0.3,
+      "carbs": 13.3,
+      "fiber": 1.8,
+      "sugars": 0,
+      "record": "Mandarin / Clementine",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_hruska": {
+      "fat": 0.1,
+      "carbs": 15.2,
+      "fiber": 3.1,
+      "sugars": 9.8,
+      "record": "Pears, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_kivi": {
+      "fat": 0.5,
+      "carbs": 14.7,
+      "fiber": 3,
+      "sugars": 9,
+      "record": "Kiwifruit, green, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_breskev": {
+      "fat": 0.3,
+      "carbs": 10,
+      "fiber": 1.5,
+      "sugars": 0,
+      "record": "Peach",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_grozdje": {
+      "fat": 0.2,
+      "carbs": 18.1,
+      "fiber": 0.9,
+      "sugars": 15.5,
+      "record": "Grapes, red or green (European type, such as Thompson seedless), raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_jagode": {
+      "fat": 0.3,
+      "carbs": 7.7,
+      "fiber": 2,
+      "sugars": 0,
+      "record": "Strawberry",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_borovnice": {
+      "fat": 0.3,
+      "carbs": 14.5,
+      "fiber": 2.4,
+      "sugars": 10,
+      "record": "Blueberries, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_ananas": {
+      "fat": 0.1,
+      "carbs": 13.1,
+      "fiber": 1.4,
+      "sugars": 9.9,
+      "record": "Pineapple, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_mango": {
+      "fat": 0.4,
+      "carbs": 15,
+      "fiber": 1.6,
+      "sugars": 13.7,
+      "record": "Mangos, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_lubenica": {
+      "fat": 0.2,
+      "carbs": 7.6,
+      "fiber": 0.4,
+      "sugars": 6.2,
+      "record": "Watermelon, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_mandlji": {
+      "fat": 49.9,
+      "carbs": 21.6,
+      "fiber": 12.5,
+      "sugars": 4.4,
+      "record": "Nuts, almonds",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_orehi": {
+      "fat": 65.2,
+      "carbs": 13.7,
+      "fiber": 6.7,
+      "sugars": 2.6,
+      "record": "Nuts, walnuts, english",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_arasidi": {
+      "fat": 49.7,
+      "carbs": 21.3,
+      "fiber": 8.4,
+      "sugars": 4.9,
+      "record": "Peanuts, all types, dry-roasted, without salt",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_chia_semena": {
+      "fat": 30.7,
+      "carbs": 42.1,
+      "fiber": 34.4,
+      "sugars": 0,
+      "record": "Chia seeds",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_lanena_semena": {
+      "fat": 42.2,
+      "carbs": 28.9,
+      "fiber": 27.3,
+      "sugars": 1.6,
+      "record": "Seeds, flaxseed",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_soncnicna_semena": {
+      "fat": 51.5,
+      "carbs": 20,
+      "fiber": 8.6,
+      "sugars": 2.6,
+      "record": "Seeds, sunflower seed kernels, dried",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_gorcica": {
+      "fat": 4,
+      "carbs": 5.3,
+      "fiber": 3.3,
+      "sugars": 0,
+      "record": "Mustard (Dijon)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_kecap": {
+      "fat": 0.1,
+      "carbs": 28,
+      "fiber": 1,
+      "sugars": 0,
+      "record": "Ketchup",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_pesto": {
+      "fat": 36.4,
+      "carbs": 6.9,
+      "fiber": 2.1,
+      "sugars": 2.6,
+      "record": "Sauce, pesto, CLASSICO, basil pesto, ready-to-serve",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_sojina_omaka": {
+      "fat": 0.6,
+      "carbs": 4.9,
+      "fiber": 0.8,
+      "sugars": 0.4,
+      "record": "Soy sauce made from soy and wheat (shoyu)",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_balzamicni_kis": {
+      "fat": 0,
+      "carbs": 17,
+      "fiber": 0,
+      "sugars": 15,
+      "record": "Vinegar, balsamic",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_humus": {
+      "fat": 17.8,
+      "carbs": 15,
+      "fiber": 5.5,
+      "sugars": 0.6,
+      "record": "Hummus, commercial",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_paradiznikova_omaka_pripravljena": {
+      "fat": 0.4,
+      "carbs": 7.1,
+      "fiber": 1.6,
+      "sugars": 0,
+      "record": "Tomato sauce",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_oljcno_olje": {
+      "fat": 100,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Olive oil (extra virgin)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_cimet": {
+      "fat": 1.2,
+      "carbs": 80.6,
+      "fiber": 53.1,
+      "sugars": 2.2,
+      "record": "Spices, cinnamon, ground",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_sladkor": {
+      "fat": 0,
+      "carbs": 100,
+      "fiber": 0,
+      "sugars": 99.8,
+      "record": "Sugars, granulated",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_nutella": {
+      "fat": 31.8,
+      "carbs": 57.9,
+      "fiber": 3,
+      "sugars": 0,
+      "record": "Hazelnut spread (Nutella-style)",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_proteinski_prasek_whey_30_g": {
+      "fat": 1.6,
+      "carbs": 6.3,
+      "fiber": 3.1,
+      "sugars": 0,
+      "record": "Beverages, Protein powder whey based",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_cips": {
+      "fat": 34,
+      "carbs": 53,
+      "fiber": 4.5,
+      "sugars": 0,
+      "record": "Potato chips",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "polak": {
+      "fat": 1,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": null,
+      "record": "Fish, pollock, Alaska, cooked",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "polak_s": {
+      "fat": 0.8,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": null,
+      "record": "Fish, pollock, Alaska, raw",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "piscanec_s": {
+      "fat": 3.6,
+      "carbs": 0,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Chicken breast",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "testenine_s": {
+      "fat": 1.5,
+      "carbs": 74.7,
+      "fiber": 3.2,
+      "sugars": 2.7,
+      "record": "Pasta, dry",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    }
+  }
+}
