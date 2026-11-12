@@ -1261,12 +1261,12 @@ li.eaten .lab{color:var(--muted)}
       brand:String(p.brands||'').slice(0,120),
       quantity:quantity,
       kcal:kcal,protein:protein,fat:fat,carbs:carbs,fiber:fiber,sugars:sugars,
-      unit:unit,cat:'Moje',origin:'Open Food Facts',verification:false
+      unit:unit,saveUnit:'g',gramsPer100ml:100,gramsPerPiece:null,cat:'Moje',origin:'Open Food Facts',verification:false
     };
   }
   function barcodeManualProduct(code) {
     return {code:code,name:'',brand:'',quantity:'',kcal:null,protein:null,fat:null,
-      carbs:null,fiber:null,sugars:null,unit:'g',cat:'Moje',origin:'Ročno iz embalaže',verification:false};
+      carbs:null,fiber:null,sugars:null,unit:'g',saveUnit:'g',gramsPer100ml:100,gramsPerPiece:null,cat:'Moje',origin:'Ročno iz embalaže',verification:false};
   }
   function barcodeNutritionOK(v) {
     return !!v && String(v.name||'').trim().length>1 &&
@@ -1277,10 +1277,24 @@ li.eaten .lab{color:var(--muted)}
     return barcodeResult && S.foods.filter(function(f){return f.barcode===barcodeResult.code;})[0] || null;
   }
   function barcodePreview() {
-    var existing=barcodeExisting(),v=existing?{kcal:existing.kcal,protein:existing.p,unit:existing.unit,name:existing.label}:barcodeResult;
-    if(!v || !barcodeNutritionOK(v))return 'Vnesi ime, kalorije in beljakovine na 100 g oziroma 100 ml.';
-    var k=Math.round(v.kcal*(barcodeAmount||0)/100),p=Math.round(v.protein*(barcodeAmount||0)*10)/1000;
-    return fmtN(barcodeAmount)+' '+v.unit+' → ~'+k+' kcal · '+fmtN(p)+' g beljakovin'+(existing?' (po shranjenih podatkih)':'');
+    var existing=barcodeExisting(),b=barcodeResult;
+    if(existing){
+      if(!barcodeNutritionOK({name:existing.label,kcal:existing.kcal,protein:existing.p,unit:'g'}))
+        return 'Za to živilo preveri shranjene kalorije in beljakovine.';
+      return fmtN(barcodeAmount)+' '+existing.unit+' → ~'
+        +Math.round(existing.kcal*(barcodeAmount||0)/per(existing.unit))+' kcal · '
+        +fmtN(Math.round(existing.p*(barcodeAmount||0)/per(existing.unit)*10)/10)+' g beljakovin (shranjen zapis)';
+    }
+    if(!barcodeNutritionOK(b))return 'Vnesi ime, kalorije in beljakovine na 100 g ali 100 ml.';
+    var unit=b.saveUnit==='kos'?'kos':'g',base=b.unit==='ml'?Number(b.gramsPer100ml):100,
+        weight=unit==='kos'?Number(b.gramsPerPiece):100;
+    if(!Number.isFinite(base)||base<20||base>200)return 'Za 100 ml vnesi maso med 20 in 200 g.';
+    if(!Number.isFinite(weight)||weight<=0||weight>2000)return 'Vnesi maso enega kosa v gramih.';
+    var total=(barcodeAmount||0)*weight/base;
+    return fmtN(barcodeAmount)+' '+unit+' → ~'
+      +Math.round(b.kcal*total)+' kcal · '
+      +fmtN(Math.round(b.protein*total*10)/10)+' g beljakovin'
+      +(b.unit==='ml'?' (pretvorba iz 100 ml)':'');
   }
   function barcodePanelHtml() {
     if(!barcodeOpen)return '';
@@ -1311,9 +1325,14 @@ li.eaten .lab{color:var(--muted)}
         +'<label>Ogljikovi hidrati (g/100)<input class="field" data-bcf="carbs" type="number" min="0" max="100" step="any" value="'+(b.carbs==null?'':esc(b.carbs))+'"></label>'
         +'<label>Vlaknine (g/100)<input class="field" data-bcf="fiber" type="number" min="0" max="100" step="any" value="'+(b.fiber==null?'':esc(b.fiber))+'"></label>'
         +'<label>Sladkorji (g/100)<input class="field" data-bcf="sugars" type="number" min="0" max="100" step="any" value="'+(b.sugars==null?'':esc(b.sugars))+'"></label>'
-        +'<label>Merska enota<select class="field" data-bcf="unit"><option value="g"'+(b.unit==='g'?' selected':'')+'>na 100 g</option><option value="ml"'+(b.unit==='ml'?' selected':'')+'>na 100 ml</option></select></label>'
-        +'<label>Količina, ki jo želiš dodati<input class="field" type="number" min="0" max="10000" step="any" data-bca="quantity" value="'+esc(barcodeAmount)+'"></label>'
+        +'<label>Enota na deklaraciji<select class="field" data-bcf="unit"><option value="g"'+(b.unit==='g'?' selected':'')+'>na 100 g</option><option value="ml"'+(b.unit==='ml'?' selected':'')+'>na 100 ml (pretvorba)</option></select></label>'
+        +'<label>Količina za obrok ('+esc(existing?existing.unit:b.saveUnit==='kos'?'kos':'g')+')<input class="field" type="number" min="0" max="10000" step="any" data-bca="quantity" value="'+esc(barcodeAmount)+'"></label>'
         +'</div>';
+      if(!existing){
+        h+='<label class="note">Shrani količine kot <select class="field" data-bcf="saveUnit" style="width:100%"><option value="g"'+(b.saveUnit!=='kos'?' selected':'')+'>g (tehtano)</option><option value="kos"'+(b.saveUnit==='kos'?' selected':'')+'>kos (jajca, tortilije, ploščice …)</option></select></label>';
+        if(b.saveUnit==='kos')h+='<label class="note">Masa enega kosa (g) – preveri na embalaži ali tehtnici<input class="field" type="number" data-bcf="gramsPerPiece" min="1" max="2000" step="any" value="'+(b.gramsPerPiece==null?'':esc(b.gramsPerPiece))+'" placeholder="npr. 60" style="width:100%"></label>';
+        if(b.unit==='ml')h+='<label class="note">Masa 100 ml (g) – privzeta ocena 100 g<input class="field" type="number" data-bcf="gramsPer100ml" min="20" max="200" step="any" value="'+esc(b.gramsPer100ml||100)+'" style="width:100%"></label>';
+      }
       h+='<p id="barcodePreview" class="note"><b>'+esc(barcodePreview())+'</b></p>';
       h+='<p class="barcode-status">Vir: '+esc(b.origin)+'. Podatki iz spletne baze niso nujno pravilni; primerjaj vrednosti na embalaži. '+(existing?'Ta črtna koda je že shranjena pod imenom »'+esc(existing.label)+'«. Ob dodajanju uporabim obstoječe hranilne vrednosti (in ne novih podatkov iz iskanja).':'')+'</p>';
       h+='<label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" data-bcverify="1"'+(b.verification?' checked':'')+'> Preveril sem hranilne vrednosti na embalaži</label>';
@@ -1438,14 +1457,20 @@ li.eaten .lab{color:var(--muted)}
     }
     var amount=Number(barcodeAmount);
     if(addMeal && (!Number.isFinite(amount)||amount<=0||amount>10000)){
-      barcodeError='Vnesi veljavno količino med 0 in 10.000 g/ml.';render();return;
+      barcodeError='Vnesi veljavno količino med 0 in 10.000 g oziroma kosov.';render();return;
     }
     var idx=barcodeDayIdx==null?dayIdx:barcodeDayIdx,day=S.days[idx],meal=day&&day.meals.filter(function(m){return m.id===barcodeMealId;})[0];
     if(addMeal && !meal){barcodeError='Izberi obrok.';render();return;}
     if(addMeal && barcodeEaten && dateOfIdx(idx)>dKey(new Date())) {
       barcodeError='Pri prihodnjem dnevu lahko živilo samo načrtuješ, ne pa že označiš kot pojedeno.';render();return;
     }
-    var existing=barcodeExisting(),b=barcodeResult,unit=existing?existing.unit:b.unit,quantity=Math.round(amount*100)/100;
+    var existing=barcodeExisting(),b=barcodeResult,unit=existing?existing.unit:(b.saveUnit==='kos'?'kos':'g'),quantity=Math.round(amount*100)/100;
+    var base=existing?100:(b.unit==='ml'?Number(b.gramsPer100ml):100),
+      mass=unit==='kos'&&!existing?Number(b.gramsPerPiece):100;
+    if(!existing && (!Number.isFinite(base)||base<20||base>200||!Number.isFinite(mass)||mass<=0||mass>2000)){
+      barcodeError='Za pretvorbo potrebujem veljavno maso 100 ml oziroma maso enega kosa. Podatki niso shranjeni.';render();return;
+    }
+    function converted(key){return b[key]==null?null:Math.round(Number(b[key])*mass/base*1e6)/1e6;}
     if(!existing && ['fat','carbs','fiber','sugars'].some(function(k){return b[k]!=null&&barcodeFinite(b[k],100)===null;})){
       barcodeError='Preveri dodatne hranilne vrednosti: vnos mora biti med 0 in 100 g/100 g ali ml.';render();return;
     }
@@ -1455,8 +1480,10 @@ li.eaten .lab{color:var(--muted)}
     change(function(){
       if(!existing){
         S.foods.push({id:fId,barcode:b.code,label:displayName,cat:b.cat||'Moje',
-          unit:unit,kcal:Number(b.kcal),p:Number(b.protein),def:100,
-          fat:b.fat,carbs:b.carbs,fiber:b.fiber,sugars:b.sugars,
+          unit:unit,kcal:converted('kcal'),p:converted('protein'),def:unit==='kos'?1:100,
+          fat:converted('fat'),carbs:converted('carbs'),fiber:converted('fiber'),sugars:converted('sugars'),
+          gramPerPiece:unit==='kos'?mass:null,massReview:unit==='kos'?'userMass':b.unit==='ml'?'approx':null,
+          legacyUnit:b.unit==='ml'?'ml':null,legacyGramFactor:unit==='kos'?mass:b.unit==='ml'?base/100:null,
           brand:brand,source:b.origin,verified:!!b.verification});
       }
       if(addMeal) {
@@ -1945,7 +1972,14 @@ li.eaten .lab{color:var(--muted)}
       if(property==='name'||property==='brand')barcodeResult[property]=String(t.value).slice(0,180);
       else if(property==='unit'){
         if(e.type!=='change')return;
-        barcodeResult.unit=t.value==='ml'?'ml':'g';
+        barcodeResult.unit=t.value==='ml'?'ml':'g';render();return;
+      }else if(property==='saveUnit'){
+        if(e.type!=='change')return;
+        barcodeResult.saveUnit=t.value==='kos'?'kos':'g';
+        barcodeAmount=barcodeResult.saveUnit==='kos'?1:100;
+        render();return;
+      }else if(property==='gramsPerPiece'||property==='gramsPer100ml'){
+        barcodeResult[property]=t.value===''?null:num(t.value);
       }else if(['kcal','protein','fat','carbs','fiber','sugars'].indexOf(property)>=0) {
         barcodeResult[property]=t.value===''?null:num(t.value);
       }
