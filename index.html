@@ -177,7 +177,7 @@ li.eaten .lab{color:var(--muted)}
 <script>
 (function () {
   var TARGET_LO = 2000, TARGET_HI = 2200, SCALE = 2700, PROTEIN_TARGET = 150;
-  var UNITS = ['g', 'ml', 'kos', 'pločevinka', 'žlica', 'žlička', 'rezina', 'porcija'];
+  var UNITS = ['g'];
   var S = null, view = 'teden', dayIdx = (new Date().getDay() + 6) % 7, editing = false;
   var docRef = null, writing = false, saveTimer = null, undo = null, localRev = 0, savedRev = 0, lastErr = false;
   var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = '', barcodeOpen = false, barcodeInput = '', barcodeResult = null, barcodeBusy = false, barcodeError = '', barcodeReader = null, barcodeCameraActive = false, barcodeCameraToken = 0, barcodeDayIdx = null, barcodeMealId = '', barcodeAmount = 100, barcodeEaten = false, barcodeCameraLoading = false, barcodeRequestSeq = 0, quickFoodId = null, quickMealId = null, quickQty = 100; // {mealId, f, q, note, n, k}
@@ -473,6 +473,56 @@ li.eaten .lab{color:var(--muted)}
       m.items.forEach(function (it) { delete it.skip; if (it.eatenOn && it.eatenOn < mon) { delete it.eatenOn; delete it.portion; } });
     }); });
   }
+
+  var LEGACY_GRAM_FACTORS={"mleko":1.03,"jajce":50,"banana":120,"jabolko":150,"tuna":130,"sardine":90,"kruh":35,"am":16,"med":7,"olje":5,"kakav":2.5,"tortilja":60,"x_mleko_1_5":1.03,"x_kefir":1.03,"x_sladka_smetana_35":1,"x_topljeni_sir_trikotnik":18,"x_goveja_juha_bistra":1,"x_tuna_v_olju_odcejena":120,"x_jajcni_beljak":33,"x_kruh_bel":35,"x_zemlja_bela":60,"x_zemlja_polnozrnata":60,"x_tortilja_polnozrnata":60,"x_tortilja_mala_20_cm":40,"x_rizev_vafelj":7,"x_prepecenec":10,"x_cesen_strok":3,"x_pomaranca":130,"x_mandarina":75,"x_hruska":170,"x_kivi":75,"x_breskev":140,"x_gorcica":5,"x_kecap":17,"x_majoneza":15,"x_majoneza_light":15,"x_ajvar":15,"x_pesto":15,"x_sojina_omaka":15,"x_bbq_omaka":17,"x_balzamicni_kis":15,"x_oljcno_olje":13.5,"x_cimet":2.6,"x_zacimbe_sol_poper_paprika_origano":3,"x_sladkor":4,"x_marmelada":20,"x_nutella":15,"x_proteinski_prasek_whey_30_g":30,"x_proteinski_napitek_250_ml":250,"x_pomarancni_sok":1.04,"x_coca_cola":1.04,"x_pivo":1.01,"x_proteinska_ploscica":60,"x_pica_1_kos":130,"x_kebab_s_piscancem_pita":400,"x_cevapcici_v_lepinji":400};
+  var DEFAULT_LEGACY_GRAMS={'ml':1,'kos':100,'porcija':300,'pločevinka':120,'rezina':35,'žlica':15,'žlička':5};
+  function factorOfLegacy(id,unit){return LEGACY_GRAM_FACTORS[id]||DEFAULT_LEGACY_GRAMS[unit]||100;}
+  var STATIC_MASS_READY=false;
+  function convertStaticMass(){
+    if(STATIC_MASS_READY)return;
+    STATIC_MASS_READY=true;
+    function conv(parts){(parts||[]).forEach(function(x){if(LEGACY_GRAM_FACTORS[x.f])x.q=Math.round(x.q*LEGACY_GRAM_FACTORS[x.f]*1e5)/1e5;});}
+    SMALL_PARTS.forEach(conv);
+    Object.keys(LEGACY_SMOOTHIE_SHOP).forEach(function(k){conv(LEGACY_SMOOTHIE_SHOP[k]);});
+  }
+  function migrateGramUnits() {
+    convertStaticMass();
+    if(!Array.isArray(S.migr))S.migr=[];
+    if(S.migr.indexOf('gramsV1')>=0)return;
+    var factors={};
+    (S.foods||[]).forEach(function(f){
+      if(f.unit==='g')return;
+      var old=f.unit,fac=factorOfLegacy(f.id,old),oldPer=old==='ml'?100:1;
+      factors[f.id]=fac;
+      ['kcal','p','fat','carbs','fiber','sugars'].forEach(function(k){
+        if(f[k]!=null&&f[k]!==''){var n=Number(f[k]);if(isFinite(n))f[k]=Math.round(n*100/(fac*oldPer)*1e6)/1e6;}
+      });
+      f.def=Math.round((Number(f.def)||1)*fac*100)/100;
+      f.legacyUnit=old;f.legacyGramFactor=fac;f.massReview='approx';f.unit='g';
+    });
+    function convert(parts){if(Array.isArray(parts))parts.forEach(function(p){if(factors[p.f])p.q=Math.round((Number(p.q)||0)*factors[p.f]*1e5)/1e5;});}
+    (S.smoothies||[]).forEach(function(sm){convert(sm.parts);});
+    (S.smoothies||[]).forEach(function(sm){
+      if(sm.servingGrams>0)return;
+      var parts=Array.isArray(sm.parts)&&sm.parts.length?sm.parts:LEGACY_SMOOTHIE_SHOP[sm.id];
+      sm.servingGrams=parts&&parts.length?Math.max(1,parts.reduce(function(a,p){return a+(Number(p.q)||0);},0)):300;
+      if(!parts||!parts.length)sm.massReview='approx';
+    });
+    function item(it){
+      if(!it)return;
+      if(it.f&&it.f.indexOf('s:')===0){
+        var sm=S.smoothies.filter(function(s){return 's:'+s.id===it.f;})[0];
+        if(sm)it.q=Math.round((Number(it.q)||0)*sm.servingGrams*1e5)/1e5;
+      }else if(factors[it.f])it.q=Math.round((Number(it.q)||0)*factors[it.f]*1e5)/1e5;
+      convert(it.parts);
+    }
+    (S.days||[]).forEach(function(d){(d.meals||[]).forEach(function(meal){(meal.items||[]).forEach(item);});});
+    Object.keys(S.daySwaps||{}).forEach(function(day){Object.keys(S.daySwaps[day]||{}).forEach(function(mid){var s=S.daySwaps[day][mid];if(s&&Array.isArray(s.items))s.items.forEach(item);});});
+    Object.keys(S.pantry||{}).forEach(function(id){var p=S.pantry[id],fac=factors[id];if(!p||!fac)return;['q','pack'].forEach(function(k){if(p[k]!=null)p[k]=Math.round((Number(p[k])||0)*fac*100)/100;});});
+    S.shopAutoState={}; // količinske kljukice iz starega sistema enot niso več primerljive
+    S.migr.push('gramsV1');migratedNow=true;
+  }
+
   function prep() { if (!S) return; if (!S.foods) S.foods = []; ensureTracking(); addNewFoods(); if(!S.foods.some(function(f){return f.id==='battery_whey';}))S.foods.push({id:'battery_whey',label:'Battery Complete Whey (brez okusa)',cat:'Moje',unit:'g',kcal:0,p:0,def:30}); migrateCooked();
     if(S.migr.indexOf('pastaRaw2')===-1){
       if(!S.foods.some(function(x){return x.id==='testenine_s';}))S.foods.push({id:'testenine_s',cat:'Priloge',label:'Testenine (surove, suha teža)',unit:'g',kcal:356,p:12.5,def:80});
@@ -480,7 +530,7 @@ li.eaten .lab{color:var(--muted)}
     }
     var oldPasta=S.foods.filter(function(x){return x.id==='testenine' && +x.kcal<220 && /surov|suha teža/i.test(x.label);})[0];
     if(oldPasta)oldPasta.label='Testenine (kuhane, stare vrednosti – preveri deklaracijo)';
-    archiveLegacyEntries(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
+    archiveLegacyEntries(); migrateGramUnits(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
     if (Array.isArray(it.parts) && it.parts.length) {var v=smoothieValues(it.parts);return v.valid?v.p:(+it.p||0);}
@@ -512,7 +562,7 @@ li.eaten .lab{color:var(--muted)}
     if (!f) return null;
     if (f.indexOf('s:') === 0) {
       var sm = S.smoothies.filter(function (x) { return 's:' + x.id === f; })[0];
-      return sm ? { id: f, label: 'Smoothie: ' + sm.n, unit: 'kos', kcal: smMacros(sm).k, p: smMacros(sm).p, def: 1 } : null;
+      return sm ? { id: f, label: 'Smoothie: ' + sm.n, unit: 'g', kcal: smMacros(sm).k*100/(sm.servingGrams||300), p: smMacros(sm).p*100/(sm.servingGrams||300), def:sm.servingGrams||300, massReview:sm.massReview||null } : null;
     }
     return (S.foods || []).filter(function (x) { return x.id === f; })[0] || null;
   }
