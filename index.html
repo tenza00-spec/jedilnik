@@ -925,6 +925,50 @@ li.eaten .lab{color:var(--muted)}
       +'<text x="276" y="115" text-anchor="end" fill="var(--muted)" font-size="10">'+esc(list[list.length-1].date.slice(5))+'</text></svg></div>'
       +'<p class="note">Od prvega vnosa: '+fmtN(vals[vals.length-1]-vals[0])+' kg. Posamezne meritve lahko nihajo.</p>';
   }
+
+  function renderNutritionAnalytics(){
+    var range=+S.analyticsRange||7,now=new Date(),rows=[],recorded=[];
+    for(var offset=range-1;offset>=0;offset--){
+      var date=new Date(now.getFullYear(),now.getMonth(),now.getDate()-offset),key=dKey(date);
+      var x=S.history[key],valid=!!(x && ((Array.isArray(x.items)&&x.items.length)||(+x.drinks||0)>0));
+      var row={date:key,data:valid?x:null,well:S.wellness[key]||null};
+      rows.push(row);if(valid)recorded.push(row);
+    }
+    var energy=recorded.reduce(function(a,x){return a+(+x.data.kcal||0);},0),proteins=recorded.reduce(function(a,x){return a+(+x.data.protein||0);},0),
+        average=recorded.length?Math.round(energy/recorded.length):null,averageP=recorded.length?Math.round(proteins/recorded.length):null,
+        proteinGoal=+S.targets.protein||150,
+        reached=recorded.filter(function(x){return (+x.data.protein||0)>=proteinGoal;}).length,
+        appetite=rows.filter(function(x){return x.well&&x.well.appetite!=''&&x.well.appetite!=null;});
+    var avgAppetite=appetite.length?Math.round(appetite.reduce(function(a,x){return a+(+x.well.appetite||0);},0)/appetite.length*10)/10:null;
+    var h='<div class="card"><h3 style="margin-top:0">Prehranska statistika</h3><div style="display:flex;gap:6px;flex-wrap:wrap">';
+    [7,14,30].forEach(function(n){h+='<button type="button" class="'+(range===n?'primary':'ghost')+'" data-act="analyticsRange" data-range="'+n+'">'+n+' dni</button>';});
+    h+='</div><div class="macro-grid"><div><small>Dni z vnosom</small><b>'+recorded.length+' / '+range+'</b></div>'
+      +'<div><small>Povprečno kcal na zabeležen dan</small><b>'+(average===null?'–':average+' kcal')+'</b></div>'
+      +'<div><small>Povprečno beljakovin</small><b>'+(averageP===null?'–':averageP+' g')+'</b></div>'
+      +'<div><small>Vsaj '+proteinGoal+' g beljakovin</small><b>'+reached+' / '+recorded.length+' dni</b></div>'
+      +'<div><small>Povprečen vpisani apetit</small><b>'+(avgAppetite===null?'–':fmtN(avgAppetite)+' / 5')+'</b></div></div>';
+    h+='<p class="subtle">Povprečja vključujejo samo dneve z zapisano hrano ali pijačo. Manjkajoči dnevi niso 0. Nižjega vnosa ne obravnavava kot uspeh sam po sebi.</p>';
+    h+='<h4 style="margin-bottom:7px">Dnevni vnosi (kcal)</h4><div style="max-height:300px;overflow:auto">';
+    var goal=Math.max(1,+S.targets.kcal||2000);
+    rows.forEach(function(r){
+      var v=r.data?+r.data.kcal||0:null,pct=v===null?0:Math.max(0,Math.min(100,100*v/goal));
+      h+='<div class="analytics-row"><small>'+esc(r.date.slice(5))+'</small><div class="barline"><span style="width:'+pct+'%"></span></div><span style="text-align:right">'+(v===null?'—':Math.round(v))+'</span></div>';
+    });
+    h+='</div>';
+    var macroDays=recorded.filter(function(x){return x.data.nutrients && x.data.nutrients.known;});
+    if(macroDays.length){
+      h+='<details><summary style="cursor:pointer">Vlaknine, maščobe in OH v zgodovini</summary>';
+      ['fat','carbs','fiber'].forEach(function(key){
+        var known=macroDays.filter(function(x){return x.data.nutrients.known[key]>0;});
+        if(!known.length){h+='<p class="note">'+({fat:'Maščobe',carbs:'Ogljikovi hidrati',fiber:'Vlaknine'}[key])+': ni zanesljivih podatkov</p>';return;}
+        var total=known.reduce(function(a,x){return a+(x.data.nutrients.totals[key]||0);},0);
+        h+='<p class="note">'+({fat:'Maščobe',carbs:'Ogljikovi hidrati',fiber:'Vlaknine'}[key])+': ~'+fmtN(total/known.length)+' g na dan z vsaj delno znanimi podatki ('+known.length+' dni; delni seštevek)</p>';
+      });
+      h+='</details>';
+    }
+    return h+'</div>';
+  }
+
   function renderProgress() {
     var key=progressDate||dKey(new Date()), w=S.wellness[key]||{}, h='<h2>Napredek</h2>';
     h+='<div class="card"><h3 style="margin-top:0">Dnevna prehranska cilja</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="note" style="flex:1">Energija (kcal)<input class="field" type="number" min="1000" max="6000" step="50" data-target="kcal" value="'+esc(S.targets.kcal||2000)+'" style="width:100%"></label><label class="note" style="flex:1">Beljakovine (g)<input class="field" type="number" min="30" max="350" step="5" data-target="protein" value="'+esc(S.targets.protein||150)+'" style="width:100%"></label></div><p class="subtle">Vnesi cilj, dogovorjen z zdravnikom ali dietetikom. Ob slabosti ga ne poskušaj doseči na silo.</p></div>';
@@ -943,10 +987,8 @@ li.eaten .lab{color:var(--muted)}
     h+='<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><label class="note" style="flex:1">Datum<input id="weightDate" type="date" class="field" value="'+esc(weightDate||dKey(new Date()))+'" style="width:100%"></label>';
     h+='<label class="note" style="flex:1">Teža (kg)<input id="weightKg" type="number" min="30" max="400" step="0.1" class="field" value="'+esc(weightInput)+'" placeholder="170,0" style="width:100%"></label></div><button type="button" class="primary" data-act="weightSave" style="margin-top:10px">Shrani tehtanje</button>';
     h+='<div class="note" style="margin-top:10px">'+S.weights.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,6).map(function(x){return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span>'+esc(x.date)+' · '+fmtN(x.kg)+' kg</span><button type="button" class="mini" aria-label="Odstrani tehtanje" data-act="weightDelete" data-date="'+esc(x.date)+'">×</button></div>';}).join('')+'</div></div>';
-    var hist=Object.keys(S.history).sort().reverse(), now=new Date(), recent=[];
-    for(var z=0;z<7;z++){var dt=new Date(now.getFullYear(),now.getMonth(),now.getDate()-z), k=dKey(dt);if(S.history[k] && S.history[k].items && S.history[k].items.length)recent.push(S.history[k]);}
-    var sum=recent.reduce(function(a,x){a.k+=x.kcal||0;a.p+=x.protein||0;return a;},{k:0,p:0});
-    h+='<div class="card"><h3 style="margin-top:0">Zadnjih 7 dni</h3><p>Vpisanih dni: <b>'+recent.length+' / 7</b></p><p>Na dan z vnosom: <b>'+ (recent.length?Math.round(sum.k/recent.length):'–')+' kcal</b> in <b>'+(recent.length?Math.round(sum.p/recent.length):'–')+' g beljakovin</b></p><p class="subtle">Povprečje vključuje samo dneve z zabeleženo hrano, ne manjkajočih dni.</p></div>';
+    var hist=Object.keys(S.history).sort().reverse();
+    h+=renderNutritionAnalytics();
     h+='<h3>Zgodovina zaužite hrane</h3>';
     if(!hist.length)h+='<p class="note">Zgodovina se začne zbirati, ko označiš dejansko zaužito hrano.</p>';
     hist.slice(0,45).forEach(function(k){var d=S.history[k], items=Array.isArray(d.items)?d.items:[];
@@ -1486,6 +1528,10 @@ li.eaten .lab{color:var(--muted)}
           list.push(it);
         });
       },'Včerajšnje zaužite jedi dodane');return;
+    }
+    if(a==='analyticsRange'){
+      var range=+b.dataset.range;if([7,14,30].indexOf(range)<0)return;
+      S.analyticsRange=range;render();save();return;
     }
     if(a==='shopMode') {S.shopMode=b.dataset.mode==='manual'?'manual':'auto';editing=false;render();save();return;}
     if(a==='shopWeek'){S.shopAutoOptions.weekOffset=+b.dataset.offset===1?1:0;render();save();return;}
