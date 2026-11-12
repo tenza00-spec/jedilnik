@@ -376,9 +376,19 @@ li.eaten .lab{color:var(--muted)}
     setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
   function isValidBackup(d) {
-    return d && Array.isArray(d.days) && d.days.length === 7 &&
-      d.days.every(function(x){return x && Array.isArray(x.meals) && x.meals.every(function(m){return m && Array.isArray(m.items);});}) &&
-      Array.isArray(d.foods) && Array.isArray(d.smoothies) && Array.isArray(d.shop) && Array.isArray(d.stock);
+    if(!d || typeof d!=='object' || !Array.isArray(d.days) || d.days.length!==7 ||
+      !Array.isArray(d.foods) || !Array.isArray(d.smoothies) ||
+      !Array.isArray(d.shop) || !Array.isArray(d.stock))return false;
+    if(!d.days.every(function(day){return day && Array.isArray(day.meals) && day.meals.every(function(m){
+      return m && typeof m.id==='string' && Array.isArray(m.items) &&
+        m.items.every(function(it){return it && typeof it==='object' && typeof it.id==='string';});
+    });}))return false;
+    if(!d.foods.every(function(f){return f && typeof f.id==='string' && typeof f.label==='string' && typeof f.unit==='string';}))return false;
+    if(!d.smoothies.every(function(s){return s && typeof s.id==='string' && typeof s.n==='string';}))return false;
+    if(!d.shop.every(function(g){return g && Array.isArray(g.items) && g.items.every(function(it){return it && typeof it.id==='string';});}))return false;
+    if(!d.stock.every(function(it){return it && typeof it.id==='string';}))return false;
+    return new Set(d.foods.map(function(x){return x.id;})).size===d.foods.length &&
+      new Set(d.smoothies.map(function(x){return x.id;})).size===d.smoothies.length;
   }
   function cleanWeek() {
     var mon = dateOfIdx(0);
@@ -404,6 +414,13 @@ li.eaten .lab{color:var(--muted)}
   function weekMonday() { var n = new Date(), d = new Date(n.getFullYear(), n.getMonth(), n.getDate()); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
   function dateOfIdx(i) { var m = weekMonday(); return dKey(new Date(m.getFullYear(), m.getMonth(), m.getDate() + i)); }
   function isEaten(it, i) { return portionOf(it,dateOfIdx(i)) > 0; }
+  function canRecordDay() {
+    if(dateOfIdx(dayIdx)>dKey(new Date())){
+      setStatus('Za prihodnji dan lahko načrtuješ obroke, ne pa označiš, da si jih že pojedel.');
+      return false;
+    }
+    return true;
+  }
   function shown(it, i) { return !it.extra || it.addedOn === dateOfIdx(i); }
   function mealEK(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemK(it)*portionOf(it,dateOfIdx(i)); },0); }
   function mealEP(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemP(it)*portionOf(it,dateOfIdx(i)); },0); }
@@ -452,7 +469,7 @@ li.eaten .lab{color:var(--muted)}
       try {
         snapshotWeek();
         var previous=localStorage.getItem(LKEY);
-        if (previous) localStorage.setItem(LKEY+'-backup',previous);
+        if (previous) {try{localStorage.setItem(LKEY+'-backup',previous);}catch(e){/* Primarni zapis ima prednost pred rezervnim. */}}
         localStorage.setItem(LKEY, JSON.stringify(S)); setStatus('Shranjeno na tej napravi');
       }
       catch (e) { setStatus('Ni shranjeno: brskalnik ne dovoli shranjevanja (zasebni način?).'); }
@@ -941,7 +958,7 @@ li.eaten .lab{color:var(--muted)}
     list.sort(function(a,b){var c=catOrder(a.cat)-catOrder(b.cat);return c||a.label.localeCompare(b.label,'sl');});
     return {items:list,unknown:unknown};
   }
-  function shoppingQuantityKey(x){return x.unit+'|'+(Math.round(x.q*10000)/10000);}
+  function shoppingQuantityKey(x){return dateOfIdx(0)+'|'+x.unit+'|'+(Math.round(x.q*10000)/10000);}
   function autoShopDone(x) {
     var o=S.shopAutoState[x.f], k=shoppingQuantityKey(x);
     return !!(o && o.done && o.key===k);
@@ -1030,7 +1047,7 @@ li.eaten .lab{color:var(--muted)}
     }
     if (a === 'weightSave') {
       var inp=$('weightKg'),dt=$('weightDate'),kg=num(inp&&inp.value),date=dt&&dt.value;
-      if(!date||!/^\d{4}-\d\d-\d\d$/.test(date)||kg<30||kg>400){setStatus('Vnesi veljaven datum in težo med 30 in 400 kg.');return;}
+      if(!date||!/^\d{4}-\d\d-\d\d$/.test(date)||date>dKey(new Date())||kg<30||kg>400){setStatus('Vnesi veljaven datum in težo med 30 in 400 kg.');return;}
       weightDate=date;weightInput='';
       change(function(){S.weights=S.weights.filter(function(x){return x.date!==date;});S.weights.push({date:date,kg:kg});},'Tehtanje shranjeno');return;
     }
@@ -1065,10 +1082,11 @@ li.eaten .lab{color:var(--muted)}
     if (a === 'editMeal') { var mid = b.dataset.m; if (editMeals[mid]) { delete editMeals[mid]; if (!local && saveTimer) { clearTimeout(saveTimer); flush(); } } else { editMeals[mid] = true; if (adder && adder.mealId === mid) adder = null; } render(); return; }
     if (a === 'delRec') { change(function () { S.recipes = S.recipes.filter(function (r) { return r.id !== id; }); }, 'Recept odstranjen'); return; }
     if (a === 'addRec') { var rid = nid('r'); change(function () { S.recipes.push({ id: rid, n: 'Nov recept', k: 0, p: 0, ing: '', steps: '' }); }); var re = $('rn-' + rid); if (re) { re.focus(); re.select(); } return; }
-    if (a === 'eat') { var fs=findVisibleItem(id);if(!fs)return;var dk=dateOfIdx(dayIdx);change(function(){if(fs.it.eatenOn===dk){delete fs.it.eatenOn;delete fs.it.portion;}else{fs.it.eatenOn=dk;fs.it.portion=1;}});return; }
+    if (a === 'eat') { if(!canRecordDay())return;var fs=findVisibleItem(id);if(!fs)return;var dk=dateOfIdx(dayIdx);change(function(){if(fs.it.eatenOn===dk){delete fs.it.eatenOn;delete fs.it.portion;}else{fs.it.eatenOn=dk;fs.it.portion=1;}});return; }
     if (a === 'adderOpen') { adder = { mealId: b.dataset.m, f: '', n: '', k: 0, note: '' }; setFood(adder, 'skuta'); render(); return; }
     if (a === 'adderCancel') { adder = null; render(); return; }
     if (a === 'adderSave') {
+      if(!canRecordDay())return;
       var m = findMeal(adder.mealId);
       if (!adder.f && !(adder.n || '').trim()) { var ne = $('an-new'); if (ne) ne.focus(); return; }
       var it = { id: nid('i'), extra: true, addedOn: dateOfIdx(dayIdx), eatenOn: dateOfIdx(dayIdx) };
@@ -1100,7 +1118,7 @@ li.eaten .lab{color:var(--muted)}
       return;
     }
     if(t.dataset.actualq) {
-      if(e.type!=='change')return;
+      if(e.type!=='change'||!canRecordDay())return;
       var fs=findVisibleItem(t.dataset.actualq),v=num(t.value);
       if(!fs||!fs.it.f)return;
       var fd=food(fs.it.f);
@@ -1128,7 +1146,7 @@ li.eaten .lab{color:var(--muted)}
       if(bf==='qty')smoothieDraft.parts[bi].q=Math.max(0,num(t.value));
       render();return;
     }
-    if(t.id==='progressDate') {if(e.type!=='change')return;progressDate=t.value;render();return;}
+    if(t.id==='progressDate') {if(e.type!=='change')return;if(t.value>dKey(new Date())){setStatus('Dnevnik počutja je namenjen preteklim in današnjim vnosom.');render();return;}progressDate=t.value;render();return;}
     if(t.id==='weightDate') {weightDate=t.value;return;}
     if(t.id==='weightKg') {weightInput=t.value;return;}
     if(t.dataset.well) {
@@ -1140,7 +1158,7 @@ li.eaten .lab{color:var(--muted)}
       save();return;
     }
     if (t.dataset.portion) {
-      if(e.type!=='change')return;
+      if(e.type!=='change'||!canRecordDay())return;
       var fs=findVisibleItem(t.dataset.portion);if(!fs)return;
       var p=Math.max(0,Math.min(1,num(t.value))),key=dateOfIdx(dayIdx);
       change(function(){if(p>0){fs.it.eatenOn=key;fs.it.portion=p;}else{delete fs.it.eatenOn;delete fs.it.portion;}});return;
@@ -1175,15 +1193,23 @@ li.eaten .lab{color:var(--muted)}
   }
   app.addEventListener('change', function (e) {
     if (e.target.id !== 'importFile' || !e.target.files[0]) return;
-    var r = new FileReader();
-    r.onload = function () {
-      try { var raw=JSON.parse(r.result), d=raw && raw.format==='jedilnik-backup'?raw.data:raw;
+    var file=e.target.files[0];
+    if(file.size && file.size>10*1024*1024){setStatus('Datoteka je večja od 10 MB. Uvoz ni bil izveden.');return;}
+    var r=new FileReader();
+    r.onload=function(){
+      var previous=S, applied=false;
+      try {
+        var raw=JSON.parse(r.result), d=raw && raw.format==='jedilnik-backup'?raw.data:raw;
         if(!isValidBackup(d))throw Error('Neveljavna struktura');
-        if(!window.confirm('Uvoz bo zamenjal tvoje trenutne lokalne podatke. Želiš nadaljevati?'))return;
-        undo=JSON.stringify(S);S=d;prep();render();save();toast('Kopija uvožena'); }
-      catch (err) { setStatus('Ta datoteka ni veljavna kopija jedilnika.'); }
+        if(!window.confirm('Uvoz bo zamenjal trenutne podatke. Pred tem jih lahko izvoziš. Nadaljujem?'))return;
+        undo=JSON.stringify(S);S=d;applied=true;prep();render();save();toast('Kopija uvožena');
+      } catch(err) {
+        if(applied){S=previous;undo=null;render();}
+        setStatus('Uvoz ni uspel. Obstoječi podatki so ohranjeni.');
+      }
     };
-    r.readAsText(e.target.files[0]);
+    r.onerror=function(){setStatus('Datoteke ni bilo mogoče prebrati.');};
+    r.readAsText(file);
   });
   app.addEventListener('input', onField);
   app.addEventListener('change', onField);
