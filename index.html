@@ -1771,16 +1771,22 @@ li.eaten .lab{color:var(--muted)}
   }
   function shopQtyText(x,value){
     var spec=shopUnitSpec(x),display=shopRound(value/spec.factor,spec.decimals);
-    return fmtN(display)+' '+spec.unit;
+    return spec.unit==='kos'?qtyText(display,'kos'):fmtN(display)+' '+spec.unit;
   }
   function shopInputAmount(x,value){
     var spec=shopUnitSpec(x);
     return fmtN(shopRound(value/spec.factor,spec.unit==='l'||spec.unit==='kg'?3:spec.unit==='kos'?2:1));
   }
 
+  // Okvirne nakupne embalaže iz obstoječega ročnega seznama; osebni vnosi imajo prednost.
+  var SHOP_DEFAULT_PACKS={
+    skuta:250,mleko:1030,jogurt:180,jajce:10,
+    spinaca:450,pasiran:500,krompir_s:2500,polak_s:400
+  };
   function pantryData(id) {
     var d=S.pantry&&S.pantry[id]||{};
-    return {q:Math.max(0,Number(d.q)||0),pack:Math.max(0,Number(d.pack)||0)};
+    var pack=d.pack==null?SHOP_DEFAULT_PACKS[id]||0:Number(d.pack);
+    return {q:Math.max(0,Number(d.q)||0),pack:Math.max(0,Number(pack)||0)};
   }
   function stillToBuy(x) {return Math.max(0,Math.round((x.q-pantryData(x.f).q)*100)/100);}
   function packageCount(x) {
@@ -1799,7 +1805,7 @@ li.eaten .lab{color:var(--muted)}
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeExtras"'+(S.shopAutoOptions.includeExtras?' checked':'')+'>Vključi tudi dodatno zabeležene obroke</label>';
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="hideDone"'+(S.shopAutoOptions.hideDone?' checked':'')+'>Skrij že kupljeno</label>';
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="hideStocked"'+(S.shopAutoOptions.hideStocked?' checked':'')+'>Skrij izdelke, ki jih imaš dovolj doma</label>';
-    h+='<p class="subtle">Pri vsakem izdelku lahko vpišeš točno količino doma in velikost pakiranja. Stari seznam Zaloga nima številskih količin. Zalog ne spreminjam samodejno; cene niso preverjene.</p></div>';
+    h+='<p class="subtle">Pri vsakem izdelku lahko vpišeš dejansko količino doma in velikost pakiranja. Za nekaj živil so predlagana običajna pakiranja iz tvojega ročnega seznama (npr. 1 l mleka, 250 g skute, 10 jajc). Spremeni jih glede na trgovino; cene niso preverjene.</p></div>';
     h+='<div class="card"><div class="mh"><b>Še za nakup</b><b class="kc">'+(needed.length-done)+' / '+needed.length+' živil</b></div><div class="metertrack"><div class="meterfill" style="width:'+(needed.length?100*done/needed.length:0)+'%"></div></div><button class="ghost" type="button" data-act="autoClear" style="margin-top:8px">Ponastavi označene nakupe</button></div>';
     var currCat='';
     items.forEach(function(x){
