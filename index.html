@@ -388,7 +388,12 @@ li.eaten .lab{color:var(--muted)}
       m.items.forEach(function (it) { delete it.skip; if (it.eatenOn && it.eatenOn < mon) { delete it.eatenOn; delete it.portion; } });
     }); });
   }
-  function prep() { if (!S) return; if (!S.foods) S.foods = []; ensureTracking(); addNewFoods(); if(!S.foods.some(function(f){return f.id==='battery_whey';}))S.foods.push({id:'battery_whey',label:'Battery Complete Whey (brez okusa)',cat:'Moje',unit:'g',kcal:0,p:0,def:30}); migrateCooked(); archiveLegacyEntries(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
+  function prep() { if (!S) return; if (!S.foods) S.foods = []; ensureTracking(); addNewFoods(); if(!S.foods.some(function(f){return f.id==='battery_whey';}))S.foods.push({id:'battery_whey',label:'Battery Complete Whey (brez okusa)',cat:'Moje',unit:'g',kcal:0,p:0,def:30}); migrateCooked();
+    if(S.migr.indexOf('pastaRaw2')===-1){
+      if(!S.foods.some(function(x){return x.id==='testenine_s';}))S.foods.push({id:'testenine_s',cat:'Priloge',label:'Testenine (surove, suha teža)',unit:'g',kcal:356,p:12.5,def:80});
+      S.migr.push('pastaRaw2');
+    }
+    archiveLegacyEntries(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
     if (Array.isArray(it.parts) && it.parts.length) {var v=smoothieValues(it.parts);return v.valid?v.p:(+it.p||0);}
@@ -886,7 +891,10 @@ li.eaten .lab{color:var(--muted)}
       if(id.indexOf('s:')===0) {
         var sm=S.smoothies.filter(function(x){return 's:'+x.id===id;})[0];
         if(!sm){noteUnknown('Neznan smuti '+id,why);return;}
-        var parts=Array.isArray(sm.parts)&&sm.parts.length ? sm.parts : LEGACY_SMOOTHIE_SHOP[sm.id];
+        var seedSm=null;
+        try{seedSm=JSON.parse($('seed').textContent).smoothies.filter(function(x){return x.id===sm.id;})[0];}catch(e){}
+        var legacySafe=!!(seedSm && seedSm.ing===sm.ing);
+        var parts=Array.isArray(sm.parts)&&sm.parts.length ? sm.parts : (legacySafe?LEGACY_SMOOTHIE_SHOP[sm.id]:null);
         if(!parts || !parts.length){noteUnknown('Smuti brez strukturiranega recepta: '+sm.n,why);return;}
         parts.forEach(function(x){addFoodPart(x.f,(+x.q||0)*value,why+' / '+sm.n);});
         return;
@@ -922,6 +930,7 @@ li.eaten .lab{color:var(--muted)}
           if(it.f) {addFoodPart(it.f,+it.q||0,why);return;}
           // Prejšnje različice so shranile alternative samo kot opis.
           var matched=SMALL_OPTIONS.filter(function(o){return it.n && it.n.indexOf(o[1]+' (')===0;})[0];
+          if(!matched && /^(Polak s pirejem|Aljaški saj s pirejem) \(/.test(it.n||''))matched=SMALL_OPTIONS[18];
           if(matched){smallParts(matched).forEach(function(p){addFoodPart(p.f,p.q,why);});return;}
           if(it.n)noteUnknown(it.n,why);
         });
