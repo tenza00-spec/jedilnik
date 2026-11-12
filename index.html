@@ -1499,22 +1499,28 @@ li.eaten .lab{color:var(--muted)}
   }
 
 
-  var STATIC_USER_UNITS_READY=false;
+  // Pri uvozu druge kopije preveri razliko med predhodnimi in novimi nastavitvami enot.
+  var STATIC_UNIT_OVERRIDES={};
   function applyStaticUserUnits(){
-    if(STATIC_USER_UNITS_READY)return;
-    STATIC_USER_UNITS_READY=true;
-    Object.keys(S.foodUnitOverrides||{}).forEach(function(id){
-      var info=S.foodUnitOverrides[id],base=PIECE_FOODS.indexOf(id)>=0?'kos':'g';
-      if(!info||info.unit===base)return;
-      var weight=Number(info.gramsPerPiece);
-      if(!(weight>0))return;
-      var scale=base==='g'?1/weight:weight;
+    var wanted=S.foodUnitOverrides||{},old=STATIC_UNIT_OVERRIDES,
+      ids=Object.keys(old).concat(Object.keys(wanted));
+    ids.forEach(function(id,i){
+      if(ids.indexOf(id)!==i)return;
+      var base=PIECE_FOODS.indexOf(id)>=0?'kos':'g',
+        from=old[id]||{unit:base},to=wanted[id]||{unit:base};
+      if(from.unit===to.unit)return;
+      var gram=Number(from.unit==='kos'?from.gramsPerPiece:to.gramsPerPiece);
+      if(!Number.isFinite(gram)||gram<=0)return;
+      var scale=from.unit==='g'?1/gram:gram;
       function conv(parts){
-        (parts||[]).forEach(function(p){if(p.f===id)p.q=Math.round((+p.q||0)*scale*1e5)/1e5;});
+        (parts||[]).forEach(function(p){
+          if(p.f===id)p.q=Math.round((+p.q||0)*scale*1e5)/1e5;
+        });
       }
       SMALL_PARTS.forEach(conv);
-      Object.keys(LEGACY_SMOOTHIE_SHOP).forEach(function(key){conv(LEGACY_SMOOTHIE_SHOP[key]);});
+      Object.keys(LEGACY_SMOOTHIE_SHOP).forEach(function(k){conv(LEGACY_SMOOTHIE_SHOP[k]);});
     });
+    STATIC_UNIT_OVERRIDES=JSON.parse(JSON.stringify(wanted));
   }
   function changeFoodUnit(fd,unit) {
     if(unit===fd.unit)return;
@@ -1533,8 +1539,6 @@ li.eaten .lab{color:var(--muted)}
         if(fd[k]!=null && fd[k]!=='')fd[k]=Math.round(Number(fd[k])*nutrientScale*1e6)/1e6;
       });
       function conv(parts){if(Array.isArray(parts))parts.forEach(function(x){if(x.f===fd.id)x.q=Math.round((+x.q||0)*qtyScale*1e5)/1e5;});}
-      SMALL_PARTS.forEach(conv);
-      Object.keys(LEGACY_SMOOTHIE_SHOP).forEach(function(key){conv(LEGACY_SMOOTHIE_SHOP[key]);});
       (S.smoothies||[]).forEach(function(sm){conv(sm.parts);});
       function convItem(it){
         if(it.f===fd.id)it.q=Math.round((+it.q||0)*qtyScale*1e5)/1e5;
@@ -1554,6 +1558,7 @@ li.eaten .lab{color:var(--muted)}
       var base=PIECE_FOODS.indexOf(fd.id)>=0?'kos':'g';
       if(unit===base)delete S.foodUnitOverrides[fd.id];
       else S.foodUnitOverrides[fd.id]={unit:unit,gramsPerPiece:grams};
+      applyStaticUserUnits();
       S.shopAutoState={};
     },'Enota in količine v receptih varno preračunane');
   }
