@@ -144,6 +144,7 @@ li.eaten .lab{color:var(--muted)}
 .rec summary::-webkit-details-marker{display:none}
 .rec summary .kc{font-weight:700}
 .rec[open] summary{margin-bottom:6px}
+.meter{margin:9px 0}.meterhead{display:flex;justify-content:space-between;font-size:13px;font-weight:600}.metertrack{background:var(--chip);height:10px;border-radius:99px;overflow:hidden;margin:5px 0}.meterfill{background:var(--accent);height:100%;border-radius:99px}.pillbtn{border:1px solid var(--line);padding:5px 9px;border-radius:8px;font-size:12px;background:var(--chip);font-weight:600}.pillbtn.active{background:var(--soft);border-color:var(--accent);color:var(--accent)}.portion{display:flex;gap:4px;flex-wrap:wrap;margin:5px 0 7px 29px}.smrow{display:grid;grid-template-columns:1fr 86px 34px;gap:6px;align-items:center;margin:7px 0}.smrow select,.smrow input{min-width:0}.chartwrap{overflow-x:auto;margin-top:12px}.barline{height:10px;border-radius:99px;background:var(--chip);overflow:hidden;margin:4px 0 10px}.barline span{display:block;height:100%;background:var(--accent)}nav .seg{overflow-x:auto;scrollbar-width:thin}nav button{min-width:68px;flex:1 0 68px}details.card summary{cursor:pointer}
 .toast[hidden]{display:none}
 .toast button{background:none;border:0;color:var(--accent);font-weight:700;padding:0}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .toast button{color:var(--accent-ink)}}
@@ -162,6 +163,7 @@ li.eaten .lab{color:var(--muted)}
   <button data-v="manjsi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M12 4v16"/><circle cx="12" cy="12" r="9"/></svg>Manjši apetit</button>
   <button data-v="smutiji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h12l-1.5 12a2 2 0 0 1-2 1.8h-5a2 2 0 0 1-2-1.8z"/><path d="M14 8l2-5"/></svg>Smutiji</button>
   <button data-v="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V10a7 7 0 0 1 14 0v11z"/><path d="M9 14h6M9 17h6"/></svg>Živila</button>
+  <button data-v="napredek"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 19h18M5 17l5-6 4 3 5-9"/></svg>Napredek</button>
   <button data-v="nakup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20.5" r="1"/><circle cx="18" cy="20.5" r="1"/></svg>Nakup</button>
 </div></nav>
   <div id="app"><div class="empty" id="empty">Nalagam tvoje obroke, smutije in nakupovalni seznam.</div></div>
@@ -173,11 +175,11 @@ li.eaten .lab{color:var(--muted)}
 <script type="application/json" id="seed">{"days": [{"id": "d1", "meals": [{"id": "m2", "items": [{"f": "s:s39", "id": "il4tb1", "note": "", "q": 1}], "lunch": false, "name": "Zajtrk"}, {"id": "m4", "items": [{"f": "skuta", "id": "il4tb2", "note": "", "q": 250}, {"f": "tuna", "id": "il4tb3", "note": "", "q": 1}, {"f": "banana", "id": "il4tb4", "note": "", "q": 1}], "lunch": false, "name": "Malica (od doma)"}, {"id": "m8", "items": [{"f": "piscanec", "id": "il4tb5", "note": "", "q": 150}, {"f": "riz", "id": "il4tb6", "note": "", "q": 150}], "lunch": true, "name": "Kosilo (babica)"}, {"id": "mb", "items": [{"f": "jajce", "id": "il4tb7", "note": "kuhani", "q": 2}, {"f": "jabolko", "id": "il4tb8", "note": "", "q": 1}, {"f": "jogurt", "id": "il4tb9", "note": "", "q": 180}], "lunch": false, "name": "Popoldne"}, {"id": "mf", "items": [{"f": "krompirP", "id": "il4tba", "note": "", "q": 300}, {"f": "skuta", "id": "il4tbb", "note": "s česnom in drobnjakom", "q": 200}], "lunch": false, "name": "Večerja"}], "name": "Ponedeljek (pisarna)"}, {"id": "di", "meals": [{"id": "mj", "items": [{"f": "kosmici", "id": "il4tbc", "note": "ovsena kaša s cimetom", "q": 60}, {"f": "mleko", "id": "il4tbd", "note": "", "q": 250}, {"f": "skuta", "id": "il4tbe", "note": "", "q": 125}, {"f": "banana", "id": "il4tbf", "note": "", "q": 1}, {"f": "med", "id": "il4tbg", "note": "", "q": 1}, {"f": "am", "id": "il4tbh", "note": "v kaši", "q": 1}], "lunch": false, "name": "Zajtrk"}, {"id": "mm", "items": [{"f": "jogurt", "id": "il4tbi", "note": "", "q": 180}, {"f": "jabolko", "id": "il4tbj", "note": "", "q": 1}], "lunch": false, "name": "Malica"}, {"id": "mp", "items": [{"f": "cevapcici", "id": "il4tbk", "note": "8–10 kosov", "q": 200}, {"f": "krompir", "id": "il4tbl", "note": "", "q": 200}], "lunch": true, "name": "Kosilo (babica)"}, {"id": "ms", "items": [{"f": "mleko", "id": "il4tbm", "note": "", "q": 250}, {"f": "banana", "id": "il4tbn", "note": "", "q": 1}], "lunch": false, "name": "Popoldne"}, {"id": "mv", "items": [{"f": "krompir", "id": "il4tbo", "note": "krompirjeva solata s kisom", "q": 250}, {"f": "olje", "id": "il4tbp", "note": "", "q": 1}, {"f": "tuna", "id": "il4tbq", "note": "", "q": 1}, {"f": "skuta", "id": "il4tbr", "note": "", "q": 100}], "lunch": false, "name": "Večerja"}], "name": "Torek (doma)"}, {"id": "dz", "meals": [{"id": "m10", "items": [{"f": "s:s3a", "id": "il4tbs", "note": "", "q": 1}], "lunch": false, "name": "Zajtrk"}, {"id": "m12", "items": [{"f": "skuta", "id": "il4tbt", "note": "", "q": 250}, {"f": "tuna", "id": "il4tbu", "note": "", "q": 1}, {"f": "banana", "id": "il4tbv", "note": "", "q": 1}], "lunch": false, "name": "Malica (od doma)"}, {"id": "m16", "items": [{"f": "zrezki", "id": "il4tbw", "note": "", "q": 150}, {"f": "riz", "id": "il4tbx", "note": "", "q": 150}], "lunch": true, "name": "Kosilo (babica)"}, {"id": "m19", "items": [{"f": "jogurt", "id": "il4tby", "note": "", "q": 180}, {"f": "am", "id": "il4tbz", "note": "", "q": 1}, {"f": "med", "id": "il4tb10", "note": "", "q": 1}], "lunch": false, "name": "Popoldne"}, {"id": "m1b", "items": [{"f": "jajce", "id": "il4tb11", "note": "omleta z zmiksano špinačo", "q": 3}, {"f": "spinaca", "id": "il4tb12", "note": "", "q": 50}, {"f": "krompirP", "id": "il4tb13", "note": "", "q": 250}], "lunch": false, "name": "Večerja"}], "name": "Sreda (pisarna)"}, {"id": "d1e", "meals": [{"id": "m1f", "items": [{"f": "s:s3b", "id": "il4tb14", "note": "", "q": 1}], "lunch": false, "name": "Zajtrk"}, {"id": "m1h", "items": [{"f": "skuta", "id": "il4tb15", "note": "", "q": 250}, {"f": "tuna", "id": "il4tb16", "note": "", "q": 1}, {"f": "banana", "id": "il4tb17", "note": "", "q": 1}], "lunch": false, "name": "Malica (od doma)"}, {"id": "m1l", "items": [{"f": "piscanec", "id": "il4tb18", "note": "", "q": 150}, {"f": "krompir", "id": "il4tb19", "note": "", "q": 200}], "lunch": true, "name": "Kosilo (babica)"}, {"id": "m1o", "items": [{"f": "skuta", "id": "il4tb1a", "note": "", "q": 125}, {"f": "banana", "id": "il4tb1b", "note": "", "q": 1}, {"f": "med", "id": "il4tb1c", "note": "", "q": 1}], "lunch": false, "name": "Popoldne"}, {"id": "m1q", "items": [{"f": "saj", "id": "il4tb1d", "note": "z limono", "q": 200}, {"f": "krompir", "id": "il4tb1e", "note": "", "q": 300}, {"f": "olje", "id": "il4tb1f", "note": "", "q": 1}], "lunch": false, "name": "Večerja"}], "name": "Četrtek (pisarna)"}, {"id": "d1t", "meals": [{"id": "m1u", "items": [{"f": "jajce", "id": "il4tb1g", "note": "palačinke iz blenderja", "q": 2}, {"f": "kosmici", "id": "il4tb1h", "note": "", "q": 40}, {"f": "banana", "id": "il4tb1i", "note": "", "q": 1}, {"f": "skuta", "id": "il4tb1j", "note": "", "q": 125}, {"f": "med", "id": "il4tb1k", "note": "", "q": 1}], "lunch": false, "name": "Zajtrk"}, {"id": "m1x", "items": [{"f": "jogurt", "id": "il4tb1l", "note": "s cimetom", "q": 180}, {"f": "med", "id": "il4tb1m", "note": "", "q": 1}], "lunch": false, "name": "Malica"}, {"id": "m1z", "items": [{"f": "cevapcici", "id": "il4tb1n", "note": "8–10 kosov", "q": 200}, {"f": "krompir", "id": "il4tb1o", "note": "", "q": 200}], "lunch": true, "name": "Kosilo (babica)"}, {"id": "m22", "items": [{"f": "skuta", "id": "il4tb1p", "note": "", "q": 125}, {"f": "jabolko", "id": "il4tb1q", "note": "", "q": 1}], "lunch": false, "name": "Popoldne"}, {"id": "m25", "items": [{"f": "testenine", "id": "il4tb1r", "note": "", "q": 80}, {"f": "tuna", "id": "il4tb1s", "note": "", "q": 1}, {"f": "pasiran", "id": "il4tb1t", "note": "omaka", "q": 125}, {"f": "olje", "id": "il4tb1u", "note": "", "q": 1}], "lunch": false, "name": "Večerja"}], "name": "Petek (doma)"}, {"id": "d2a", "meals": [{"id": "m2b", "items": [{"f": "kosmici", "id": "il4tb1v", "note": "ovsena kaša s cimetom", "q": 60}, {"f": "mleko", "id": "il4tb1w", "note": "", "q": 250}, {"f": "skuta", "id": "il4tb1x", "note": "", "q": 125}, {"f": "banana", "id": "il4tb1y", "note": "", "q": 1}, {"f": "med", "id": "il4tb1z", "note": "", "q": 1}, {"f": "am", "id": "il4tb20", "note": "v kaši", "q": 1}], "lunch": false, "name": "Zajtrk"}, {"id": "m2e", "items": [{"f": "banana", "id": "il4tb21", "note": "", "q": 2}, {"f": "med", "id": "il4tb22", "note": "v vodi v bidonu, na daljši turi", "q": 3}], "lunch": false, "name": "Na kolesu"}, {"id": "m2h", "items": [{"f": "zrezki", "id": "il4tb23", "note": "", "q": 150}, {"f": "krompir", "id": "il4tb24", "note": "", "q": 200}], "lunch": true, "name": "Kosilo (babica)"}, {"id": "m2k", "items": [{"f": "skuta", "id": "il4tb25", "note": "", "q": 250}, {"f": "banana", "id": "il4tb26", "note": "", "q": 1}, {"f": "med", "id": "il4tb27", "note": "", "q": 1}], "lunch": false, "name": "Popoldne"}, {"id": "m2m", "items": [{"f": "saj", "id": "il4tb28", "note": "", "q": 200}, {"f": "krompir", "id": "il4tb29", "note": "", "q": 300}, {"f": "olje", "id": "il4tb2a", "note": "", "q": 1}], "lunch": false, "name": "Večerja"}], "name": "Sobota (gorsko kolo)"}, {"id": "d2p", "meals": [{"id": "m2q", "items": [{"f": "jajce", "id": "il4tb2b", "note": "umešana z zmiksano špinačo", "q": 3}, {"f": "spinaca", "id": "il4tb2c", "note": "", "q": 50}, {"f": "krompirP", "id": "il4tb2d", "note": "pražen", "q": 200}], "lunch": false, "name": "Zajtrk"}, {"id": "m2t", "items": [{"f": "jogurt", "id": "il4tb2e", "note": "", "q": 180}, {"f": "banana", "id": "il4tb2f", "note": "", "q": 1}, {"f": "med", "id": "il4tb2g", "note": "", "q": 1}], "lunch": false, "name": "Malica"}, {"id": "m2x", "items": [{"f": "piscanec", "id": "il4tb2h", "note": "", "q": 150}, {"f": "riz", "id": "il4tb2i", "note": "", "q": 150}], "lunch": true, "name": "Kosilo (babica)"}, {"id": "m30", "items": [{"f": "skuta", "id": "il4tb2j", "note": "", "q": 250}, {"f": "kakav", "id": "il4tb2k", "note": "", "q": 1}, {"f": "banana", "id": "il4tb2l", "note": "", "q": 1}, {"f": "med", "id": "il4tb2m", "note": "", "q": 1}], "lunch": false, "name": "Popoldne"}, {"id": "m35", "items": [{"f": "sardine", "id": "il4tb2n", "note": "", "q": 1}, {"f": "jajce", "id": "il4tb2o", "note": "kuhani", "q": 2}, {"f": "krompir", "id": "il4tb2p", "note": "", "q": 250}], "lunch": false, "name": "Večerja"}], "name": "Nedelja (doma)"}], "foods": [{"def": 125, "id": "skuta", "kcal": 112, "label": "Skuta", "p": 12, "unit": "g"}, {"def": 250, "id": "mleko", "kcal": 66, "label": "Mleko", "p": 3.4, "unit": "ml"}, {"def": 180, "id": "jogurt", "kcal": 61, "label": "Navadni jogurt", "p": 3.5, "unit": "g"}, {"def": 150, "id": "skyr", "kcal": 63, "label": "Skyr", "p": 11, "unit": "g"}, {"def": 2, "id": "jajce", "kcal": 75, "label": "Jajce", "p": 6.5, "unit": "kos"}, {"def": 1, "id": "banana", "kcal": 100, "label": "Banana", "p": 1.2, "unit": "kos"}, {"def": 1, "id": "jabolko", "kcal": 80, "label": "Jabolko", "p": 0.3, "unit": "kos"}, {"def": 100, "id": "sadje", "kcal": 50, "label": "Zamrznjeno mešano sadje", "p": 0.8, "unit": "g"}, {"def": 50, "id": "spinaca", "kcal": 23, "label": "Zamrznjena špinača", "p": 2.8, "unit": "g"}, {"def": 250, "id": "krompir", "kcal": 80, "label": "Krompir, kuhan", "p": 2, "unit": "g"}, {"def": 250, "id": "krompirP", "kcal": 96, "label": "Krompir, pečen ali pražen", "p": 2.5, "unit": "g"}, {"def": 150, "id": "riz", "kcal": 130, "label": "Riž, kuhan", "p": 2.7, "unit": "g"}, {"def": 80, "id": "testenine", "kcal": 356, "label": "Testenine (suha teža)", "p": 12.5, "unit": "g"}, {"def": 60, "id": "kosmici", "kcal": 375, "label": "Ovseni kosmiči", "p": 13, "unit": "g"}, {"def": 150, "id": "piscanec", "kcal": 167, "label": "Piščančje prsi, pečene", "p": 31, "unit": "g"}, {"def": 150, "id": "zrezki", "kcal": 233, "label": "Goveji zrezki v omaki", "p": 22, "unit": "g"}, {"def": 200, "id": "cevapcici", "kcal": 250, "label": "Čevapčiči", "p": 15, "unit": "g"}, {"def": 200, "id": "saj", "kcal": 100, "label": "Aljaški saj, pečen", "p": 23, "unit": "g"}, {"def": 1, "id": "tuna", "kcal": 150, "label": "Tuna v lastnem soku", "p": 28, "unit": "pločevinka"}, {"def": 1, "id": "sardine", "kcal": 190, "label": "Sardine", "p": 22, "unit": "pločevinka"}, {"def": 30, "id": "sir", "kcal": 350, "label": "Sir (edamec)", "p": 26, "unit": "g"}, {"def": 1, "id": "kruh", "kcal": 90, "label": "Kruh", "p": 3, "unit": "rezina"}, {"def": 125, "id": "pasiran", "kcal": 32, "label": "Pasiran paradižnik", "p": 1.4, "unit": "g"}, {"def": 1, "id": "am", "kcal": 90, "label": "Arašidovo maslo", "p": 4, "unit": "žlica"}, {"def": 1, "id": "med", "kcal": 22, "label": "Med", "p": 0, "unit": "žlička"}, {"def": 1, "id": "olje", "kcal": 45, "label": "Olje", "p": 0, "unit": "žlička"}, {"def": 1, "id": "kakav", "kcal": 10, "label": "Kakav", "p": 1, "unit": "žlička"}], "shop": [{"g": "Mlečni izdelki in jajca", "id": "g3d", "items": [{"done": false, "id": "x3e", "n": "Skuta", "p": 11, "q": "11 × 250 g", "u": "smutiji, malica za pisarno, kaša, palačinke, večerje"}, {"done": false, "id": "x3f", "n": "Mleko", "p": 2, "q": "2 l", "u": "smutiji, kaša, popoldanske malice"}, {"done": false, "id": "x3g", "n": "Navadni jogurt", "p": 1.6, "q": "4 lončki (180 g)", "u": "malice doma"}, {"done": false, "id": "x3h", "n": "Jajca", "p": 3.4, "q": "~12 kosov (kupuješ po 10)", "u": "omleta, palačinke, jajca, malice"}]}, {"g": "Ribe (malice in večerje)", "id": "g3i", "items": [{"done": false, "id": "x3j", "n": "Tuna v pločevinki (trgovska znamka)", "p": 6.25, "q": "5 pločevink", "u": "3 × malica v pisarni, večerji tor in pet"}, {"done": false, "id": "x3k", "n": "Aljaški saj, zamrznjen file", "p": 3.5, "q": "400 g", "u": "večerji čet in sob"}, {"done": false, "id": "x3l", "n": "Sardine v pločevinki", "p": 0.9, "q": "1 pločevinka", "u": "večerja ned"}]}, {"g": "Priloge", "id": "g3m", "items": [{"done": false, "id": "x3n", "n": "Krompir", "p": 2, "q": "2,5 kg", "u": "večerje, nedeljski zajtrk"}]}, {"g": "Sadje in zelenjava za smutije in jajca", "id": "g3o", "items": [{"done": false, "id": "x3p", "n": "Banane", "p": 3.5, "q": "~14 kosov (2,4 kg)", "u": "smoothie 2, malica v pisarni, kaša, palačinke, kolo"}, {"done": false, "id": "x3q", "n": "Jabolka", "p": 1.3, "q": "~4 kosi (1 kg)", "u": "smoothie B, malice"}, {"done": false, "id": "x3r", "n": "Zamrznjena špinača v porcijah", "p": 1.3, "q": "450 g", "u": "smoothie 1 in 3, omleta, jajca"}]}, {"g": "Ostalo", "id": "g3s", "items": [{"done": false, "id": "x3t", "n": "Pasiran paradižnik", "p": 0.7, "q": "500 g", "u": "omaka za testenine"}]}], "smoothies": [{"c": 1, "id": "s39", "ing": "200 ml mleka, 125 g skute, 120 g zamrznjenega mešanega sadja, 1 porcija zamrznjene špinače (ne okusiš je), 1 žlička medu", "k": 350, "n": "Gozdni sadeži", "p": 23}, {"c": 0.9, "id": "s3a", "ing": "200 ml mleka, 125 g skute, 1 zamrznjena banana na koleščkih, ½ žličke cimeta. Medu ne potrebuje.", "k": 370, "n": "Bananin s cimetom", "p": 23}, {"c": 0.9, "id": "s3b", "ing": "200 ml mleka, 125 g skute, 1 jabolko z lupino (dobro oprano, brez peščišča, na manjše koščke), 1 porcija zamrznjene špinače, ščep cimeta, 1 žlička medu, 3–4 kocke ledu", "k": 380, "n": "Jabolčni zeleni", "p": 23}, {"c": 0.8, "id": "s3c", "ing": "250 ml mleka, 100 g skute, ½ zamrznjene banane, 1 žlička kakava, 1 žlička medu, 3–4 kocke ledu", "k": 350, "n": "Čoko-banana (light)", "p": 21}], "stock": [{"done": false, "id": "z3u", "n": "Ovseni kosmiči", "p": 1, "q": "500 g", "u": "zdrži ~2 tedna"}, {"done": false, "id": "z3v", "n": "Testenine", "p": 1, "q": "500 g", "u": "zdrži ~6 tednov"}, {"done": false, "id": "z3w", "n": "Zamrznjeno mešano sadje", "p": 2, "q": "750 g", "u": "zdrži ~8 tednov"}, {"done": false, "id": "z3x", "n": "Arašidovo maslo", "p": 2.5, "q": "350 g", "u": "zdrži ~4 tedne"}, {"done": false, "id": "z3y", "n": "Kakav v prahu (nesladkan)", "p": 2, "q": "1 škatla", "u": "zdrži več mesecev"}, {"done": false, "id": "z3z", "n": "Cimet", "p": 0.8, "q": "1 vrečka", "u": "zdrži več mesecev"}, {"done": false, "id": "z40", "n": "Česen", "p": 0.4, "q": "1 glavica", "u": "zdrži ~3 tedne"}, {"done": false, "id": "z41", "n": "Med (cvetlični, trgovska znamka)", "p": 5.5, "q": "500 g", "u": "zdrži ~6–8 tednov"}, {"done": false, "id": "z42", "n": "Olje (če ga doma ni)", "p": 2.5, "q": "1 l sončničnega ali repičnega", "u": "zdrži več mesecev"}], "v": 2}</script>
 <script>
 (function () {
-  var TARGET_LO = 2100, TARGET_HI = 2400, SCALE = 2800;
+  var TARGET_LO = 2000, TARGET_HI = 2200, SCALE = 2700, PROTEIN_TARGET = 150;
   var UNITS = ['g', 'ml', 'kos', 'pločevinka', 'žlica', 'žlička', 'rezina', 'porcija'];
   var S = null, view = 'teden', dayIdx = (new Date().getDay() + 6) % 7, editing = false;
   var docRef = null, writing = false, saveTimer = null, undo = null, localRev = 0, savedRev = 0, lastErr = false;
-  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state'; // {mealId, f, q, note, n, k}
+  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, mealSuggest = null; // {mealId, f, q, note, n, k}
   var $ = function (id) { return document.getElementById(id); };
   var app = $('app');
   try { var v0 = localStorage.getItem('jed-view'); if (v0 === 'info') v0 = 'zivila'; if (v0) view = v0; } catch (e) {}
@@ -286,15 +288,92 @@ li.eaten .lab{color:var(--muted)}
     if (editing) h += '<button type="button" class="add" data-act="addRec">+ Dodaj recept</button>';
     return h;
   }
+
+  // Ločen arhiv za zgodovino. Podatki so lokalni in jih ne pošiljamo na strežnik.
+  function ensureTracking() {
+    if (!S.history || typeof S.history !== 'object' || Array.isArray(S.history)) S.history = {};
+    if (!S.daySwaps || typeof S.daySwaps !== 'object') S.daySwaps = {};
+    if (!S.wellness || typeof S.wellness !== 'object') S.wellness = {};
+    if (!Array.isArray(S.weights)) S.weights = [];
+    if (!S.targets || typeof S.targets !== 'object') S.targets = {kcal:2000,protein:150};
+  }
+  function activeSwap(m, di) {
+    var key = dateOfIdx(di);
+    return S.daySwaps && S.daySwaps[key] && S.daySwaps[key][m.id] || null;
+  }
+  function visibleMealItems(m, di) {
+    var sw = activeSwap(m, di);
+    return sw ? sw.items : m.items.filter(function(it) { return !it.extra || it.addedOn === dateOfIdx(di); });
+  }
+  function portionOf(it, date) {
+    if (it.eatenOn !== date) return 0;
+    var p = it.portion == null ? 1 : Number(it.portion);
+    return isFinite(p) ? Math.max(0, Math.min(1, p)) : 1;
+  }
+  function archiveLegacyEntries() {
+    ensureTracking();
+    var byDate = {};
+    (S.days || []).forEach(function(d) { (d.meals || []).forEach(function(m) {
+      (m.items || []).forEach(function(it) {
+        var date = it.eatenOn;
+        if (!date || !/^\d{4}-\d\d-\d\d$/.test(date)) return;
+        if (!byDate[date]) byDate[date] = {date:date, kcal:0, protein:0, items:[]};
+        var p = portionOf(it,date);
+        if (p > 0) {
+          var k = Math.round(itemK(it)*p), pr = Math.round(itemP(it)*p*10)/10;
+          byDate[date].kcal += k; byDate[date].protein += pr;
+          byDate[date].items.push({name:itemLabel(it),kcal:k,protein:pr,portion:p});
+        }
+      });
+    }); });
+    Object.keys(byDate).forEach(function(key) {
+      if (!S.history[key]) S.history[key] = byDate[key];
+    });
+  }
+  function snapshotDay(di) {
+    var date = dateOfIdx(di);
+    if (date > dKey(new Date())) return;
+    var entries=[], kcal=0, protein=0, hasData=false;
+    S.days[di].meals.forEach(function(m) {
+      visibleMealItems(m,di).forEach(function(it) {
+        var part=portionOf(it,date); if (!part) return;
+        hasData=true;
+        var k=Math.round(itemK(it)*part), p=Math.round(itemP(it)*part*10)/10;
+        kcal+=k; protein+=p;
+        entries.push({name:itemLabel(it),kcal:k,protein:p,portion:part,meal:m.name});
+      });
+    });
+    if (hasData || S.history[date]) {
+      var drinks = date === dKey(new Date()) ? sumK(S.drinkLog[date] || []) : (S.history[date] ? (S.history[date].drinks || 0) : 0);
+      S.history[date] = {date:date,kcal:kcal+drinks,protein:Math.round(protein*10)/10,drinks:drinks,items:entries};
+    }
+  }
+  function snapshotWeek() {
+    ensureTracking();
+    (S.days || []).forEach(function(d,di) { snapshotDay(di); });
+  }
+  function exportBackup() {
+    var backup = {format:'jedilnik-backup',version:3,created:new Date().toISOString(),data:S};
+    var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob),link=document.createElement('a');
+    link.href=url;link.download='moj-jedilnik-varnostna-kopija-'+dKey(new Date())+'.json';
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }
+  function isValidBackup(d) {
+    return d && Array.isArray(d.days) && d.days.length === 7 &&
+      d.days.every(function(x){return x && Array.isArray(x.meals) && x.meals.every(function(m){return m && Array.isArray(m.items);});}) &&
+      Array.isArray(d.foods) && Array.isArray(d.smoothies) && Array.isArray(d.shop) && Array.isArray(d.stock);
+  }
   function cleanWeek() {
     var mon = dateOfIdx(0);
     (S.days || []).forEach(function (d, di) { (d.meals || []).forEach(function (m) {
       (m.items || []).forEach(function (it) { if (it.extra && !it.addedOn) { it.addedOn = dateOfIdx(di); it.eatenOn = it.addedOn; } }); // from older version
       m.items = (m.items || []).filter(function (it) { return !it.extra || it.addedOn >= mon; });
-      m.items.forEach(function (it) { delete it.skip; if (it.eatenOn && it.eatenOn < mon) delete it.eatenOn; });
+      m.items.forEach(function (it) { delete it.skip; if (it.eatenOn && it.eatenOn < mon) { delete it.eatenOn; delete it.portion; } });
     }); });
   }
-  function prep() { if (!S) return; if (!S.foods) S.foods = []; addNewFoods(); migrateCooked(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
+  function prep() { if (!S) return; if (!S.foods) S.foods = []; ensureTracking(); addNewFoods(); migrateCooked(); archiveLegacyEntries(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
     if (it.f) { var fd = food(it.f); if (!fd) return +it.p || 0; return (+fd.p || 0) * (+it.q || 0) / per(fd.unit); }
@@ -303,10 +382,10 @@ li.eaten .lab{color:var(--muted)}
   function pTxt(g) { return Math.round(g) + ' g belj.'; }
   function weekMonday() { var n = new Date(), d = new Date(n.getFullYear(), n.getMonth(), n.getDate()); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; }
   function dateOfIdx(i) { var m = weekMonday(); return dKey(new Date(m.getFullYear(), m.getMonth(), m.getDate() + i)); }
-  function isEaten(it, i) { return it.eatenOn === dateOfIdx(i); }
+  function isEaten(it, i) { return portionOf(it,dateOfIdx(i)) > 0; }
   function shown(it, i) { return !it.extra || it.addedOn === dateOfIdx(i); }
-  function mealEK(m, i) { return m.items.reduce(function (a, it) { return a + (shown(it, i) && isEaten(it, i) ? itemK(it) : 0); }, 0); }
-  function mealEP(m, i) { return m.items.reduce(function (a, it) { return a + (shown(it, i) && isEaten(it, i) ? itemP(it) : 0); }, 0); }
+  function mealEK(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemK(it)*portionOf(it,dateOfIdx(i)); },0); }
+  function mealEP(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemP(it)*portionOf(it,dateOfIdx(i)); },0); }
   function dayP(d) { var i = S.days.indexOf(d); return d.meals.reduce(function (a, m) { return a + mealEP(m, i); }, 0); }
   function per(unit) { return unit === 'g' || unit === 'ml' ? 100 : 1; }
   function food(f) {
@@ -326,14 +405,14 @@ li.eaten .lab{color:var(--muted)}
     if (it.f) { var fd = food(it.f); if (fd) return fd.label + ' · ' + qtyText(it.q, fd.unit); return it.n || 'Neznano živilo'; }
     return it.n || 'Brez imena';
   }
-  function mealK(m) { return m.items.reduce(function (a, i) { return a + (i.extra ? 0 : itemK(i)); }, 0); }
+  function mealK(m,di) { var sw=di == null ? null : activeSwap(m,di), items=sw ? sw.items : m.items; return items.reduce(function(a,it){return a+(it.extra && !sw ? 0 : itemK(it));},0); }
   function dayKD(d) {
     var i = S.days.indexOf(d), e = 0, plan = dayK(d).all;
     d.meals.forEach(function (m) { e += mealEK(m, i); });
     var x = i === (new Date().getDay() + 6) % 7 ? drinksTodayK() : 0;
     return { all: e + x, drinks: x, plan: plan };
   }
-  function dayK(d) { var t = 0, l = 0; d.meals.forEach(function (m) { var k = mealK(m); if (m.lunch) l += k; else t += k; }); return { no: t, lunch: l, all: t + l }; }
+  function dayK(d) { var t = 0, l = 0; d.meals.forEach(function (m) { var k = mealK(m,S.days.indexOf(d)); if (m.lunch) l += k; else t += k; }); return { no: t, lunch: l, all: t + l }; }
   function foodOptions(sel) {
     var h = '<option value=""' + (!sel ? ' selected' : '') + '>Drugo (vpišem kalorije sam)</option><optgroup label="Smutiji">';
     S.smoothies.forEach(function (s) { var v = 's:' + s.id; h += '<option value="' + esc(v) + '"' + (sel === v ? ' selected' : '') + '>' + esc(s.n) + '</option>'; });
@@ -348,11 +427,17 @@ li.eaten .lab{color:var(--muted)}
   function save() {
     localRev++;
     if (local) {
-      try { localStorage.setItem(LKEY, JSON.stringify(S)); setStatus('Shranjeno'); }
+      try {
+        snapshotWeek();
+        var previous=localStorage.getItem(LKEY);
+        if (previous) localStorage.setItem(LKEY+'-backup',previous);
+        localStorage.setItem(LKEY, JSON.stringify(S)); setStatus('Shranjeno na tej napravi');
+      }
       catch (e) { setStatus('Ni shranjeno: brskalnik ne dovoli shranjevanja (zasebni način?).'); }
       setTimeout(function () { if (/^Shranjeno/.test($('status').textContent)) setStatus(''); }, 1500);
       return;
     }
+    snapshotWeek();
     if (!docRef) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(flush, 600);
@@ -399,6 +484,7 @@ li.eaten .lab{color:var(--muted)}
     if (view === 'teden') app.innerHTML = renderWeek();
     else if (view === 'manjsi') app.innerHTML = renderSmallAppetite();
     else if (view === 'smutiji') app.innerHTML = renderSmoothies();
+    else if (view === 'napredek') app.innerHTML = renderProgress();
     else if (view === 'nakup') app.innerHTML = renderShop();
     else app.innerHTML = renderFoods();
     if (focusId && $(focusId) && ae.tagName !== 'SELECT') { var el = $(focusId); el.focus(); try { if (sel != null) el.setSelectionRange(sel, sel); } catch (e) {} }
@@ -779,7 +865,8 @@ li.eaten .lab{color:var(--muted)}
     if (local) return;
     local = true; docRef = null;
     var saved = null;
-    try { saved = JSON.parse(localStorage.getItem(LKEY) || 'null'); } catch (e) {}
+    try { saved = JSON.parse(localStorage.getItem(LKEY) || 'null'); if (!isValidBackup(saved)) saved=null; } catch (e) {}
+    if (!saved) { try { var old=JSON.parse(localStorage.getItem(LKEY+'-backup') || 'null'); if (isValidBackup(old)) {saved=old;setStatus('Obnovljena rezervna lokalna kopija.');} } catch(e) {} }
     try { S = saved || JSON.parse($('seed').textContent); } catch (e) { S = null; }
     if (!S || !S.days) { showEmpty('Jedilnika ni bilo mogoče naložiti.'); return; }
     prep();
