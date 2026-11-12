@@ -296,6 +296,9 @@ li.eaten .lab{color:var(--muted)}
     if (!S.wellness || typeof S.wellness !== 'object') S.wellness = {};
     if (!Array.isArray(S.weights)) S.weights = [];
     if (!S.targets || typeof S.targets !== 'object') S.targets = {kcal:2000,protein:150};
+    if (!S.shopAutoState || typeof S.shopAutoState !== 'object' || Array.isArray(S.shopAutoState)) S.shopAutoState = {};
+    if (!S.shopAutoOptions || typeof S.shopAutoOptions !== 'object') S.shopAutoOptions = {includeLunch:false,includeExtras:false,hideDone:false};
+    if (S.shopMode !== 'manual' && S.shopMode !== 'auto') S.shopMode = 'auto';
   }
   function activeSwap(m, di) {
     var key = dateOfIdx(di);
@@ -476,7 +479,7 @@ li.eaten .lab{color:var(--muted)}
   // ---------- render ----------
   function render() {
     if (!S) return;
-    $('editBtn').hidden = view === 'teden';
+    $('editBtn').hidden = view === 'teden' || view === 'napredek' || view === 'manjsi' || (view === 'nakup' && S.shopMode !== 'manual');
     $('editBtn').setAttribute('aria-pressed', editing ? 'true' : 'false');
     $('editBtn').textContent = editing ? 'Končano' : 'Uredi';
     document.querySelectorAll('nav button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === view); });
@@ -835,14 +838,14 @@ li.eaten .lab{color:var(--muted)}
         '<input class="field" id="xu-' + it.id + '" data-xf="u" data-id="' + it.id + '" value="' + esc(it.u) + '" placeholder="opomba (za kaj)" aria-label="Opomba"></div></div>';
     }).join('') + (editing ? '<button type="button" class="add" data-act="addX" data-k="' + kind + '">+ Dodaj izdelek</button>' : '');
   }
-  function renderShop() {
-    var all = [], h = '<h2>Nakupovalni seznam</h2>';
+  function renderManualShop() {
+    var all = [], h = '<h2>Ročno urejeni nakupi</h2>';
     S.shop.forEach(function (g) { all = all.concat(g.items); });
     var tot = all.reduce(function (a, i) { return a + (+i.p || 0); }, 0);
     var leftL = all.filter(function (i) { return !i.done; });
     var left = leftL.reduce(function (a, i) { return a + (+i.p || 0); }, 0);
     h += '<div class="totals tnum"><div><small>Tedensko skupaj</small><b id="shopTot">' + eur(tot) + '</b></div><div><small>Še za kupiti (' + leftL.length + ')</small><b>' + eur(left) + '</b></div></div>';
-    h += '<p class="note">Brez sestavin za kosila, ki jih pripravlja babica.</p>';
+    h += '<p class="note">To so stare ročno vnesene količine in cene. Ne posodabljajo se samodejno in niso aktualne ponudbe trgovin.</p>';
     S.shop.forEach(function (g) {
       h += '<h3>' + (editing ? '<input class="field" style="width:100%;text-transform:none;letter-spacing:0;font-weight:600" id="gn-' + g.id + '" data-gf="g" data-id="' + g.id + '" value="' + esc(g.g) + '" aria-label="Skupina">' : esc(g.g)) + '</h3>';
       h += shopRows(g.items, g.id);
@@ -852,6 +855,86 @@ li.eaten .lab{color:var(--muted)}
     h += '<h2>Zaloge</h2><p class="note">Kupiš enkrat, zdržijo več tednov. Skupaj ' + eur(st) + '.</p>' + shopRows(S.stock, 'stock');
     if (!editing) h += '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button type="button" class="ghost" data-act="clearShop">Nov teden: odkljukaj tedenski seznam</button><button type="button" class="ghost" data-act="clearStock">Odkljukaj zaloge</button></div>';
     return h;
+  }
+
+
+  function plannedShoppingItems() {
+    var totals={}, unknown=[], options=S.shopAutoOptions||{}, seenUnknown={};
+    function noteUnknown(label,day) {
+      var msg=(day ? day+': ' : '')+label;
+      if(!seenUnknown[msg]){unknown.push(msg);seenUnknown[msg]=true;}
+    }
+    function addFoodPart(id,q,why) {
+      var f=food(id),value=Number(q);
+      if(!f || !isFinite(value) || value<=0){noteUnknown('Neznana sestavina '+id,why);return;}
+      if(id.indexOf('s:')===0) {
+        var sm=S.smoothies.filter(function(x){return 's:'+x.id===id;})[0];
+        if(!sm){noteUnknown('Neznan smuti '+id,why);return;}
+        var parts=Array.isArray(sm.parts)&&sm.parts.length ? sm.parts : LEGACY_SMOOTHIE_SHOP[sm.id];
+        if(!parts || !parts.length){noteUnknown('Smuti brez strukturiranega recepta: '+sm.n,why);return;}
+        parts.forEach(function(x){addFoodPart(x.f,(+x.q||0)*value,why+' / '+sm.n);});
+        return;
+      }
+      if(!totals[id])totals[id]={f:id,label:f.label,cat:f.cat||CATMAP[id]||'Moje',unit:f.unit,q:0,reasons:[]};
+      totals[id].q+=value;
+      if(totals[id].reasons.indexOf(why)===-1)totals[id].reasons.push(why);
+    }
+    S.days.forEach(function(d,di){
+      (d.meals||[]).forEach(function(m){
+        if(m.lunch && !options.includeLunch)return;
+        visibleMealItems(m,di).forEach(function(it){
+          if(it.extra && !options.includeExtras)return;
+          var why=d.name.replace(/\s*\(.*\)$/,'')+' / '+m.name;
+          if(Array.isArray(it.parts)&&it.parts.length) {
+            it.parts.forEach(function(p){addFoodPart(p.f,p.q,why);});return;
+          }
+          if(it.f) {addFoodPart(it.f,+it.q||0,why);return;}
+          // Prejšnje različice so shranile alternative samo kot opis.
+          var matched=SMALL_OPTIONS.filter(function(o){return it.n && it.n.indexOf(o[1]+' (')===0;})[0];
+          if(matched){smallParts(matched).forEach(function(p){addFoodPart(p.f,p.q,why);});return;}
+          if(it.n)noteUnknown(it.n,why);
+        });
+      });
+    });
+    var list=Object.keys(totals).map(function(id){return totals[id];});
+    list.sort(function(a,b){var c=catOrder(a.cat)-catOrder(b.cat);return c||a.label.localeCompare(b.label,'sl');});
+    return {items:list,unknown:unknown};
+  }
+  function shoppingQuantityKey(x){return x.unit+'|'+(Math.round(x.q*10000)/10000);}
+  function autoShopDone(x) {
+    var o=S.shopAutoState[x.f], k=shoppingQuantityKey(x);
+    return !!(o && o.done && o.key===k);
+  }
+  function renderAutoShop() {
+    var result=plannedShoppingItems(),items=result.items, done=items.filter(autoShopDone).length;
+    var h='<h2>Samodejni nakupovalni seznam</h2><p class="note">Količine so izračunane iz načrta od ponedeljka ('+esc(dateOfIdx(0))+') do nedelje ('+esc(dateOfIdx(6))+'). Ob spremembi jedilnika se preračunajo. Privzeto brez kosil pri babici in brez dodatnih, že zabeleženih obrokov.</p>';
+    h+='<div class="card"><label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeLunch"'+(S.shopAutoOptions.includeLunch?' checked':'')+'>Vključi kosila pri babici</label>';
+    h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeExtras"'+(S.shopAutoOptions.includeExtras?' checked':'')+'>Vključi tudi dodatno zabeležene obroke</label>';
+    h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="hideDone"'+(S.shopAutoOptions.hideDone?' checked':'')+'>Skrij že kupljeno</label>';
+    h+='<p class="subtle">Nakupovalne količine ne odštevajo samodejno zalog, ker v starem seznamu niso zabeležene točne preostale količine. Cene niso prikazane, saj niso preverjene.</p></div>';
+    h+='<div class="card"><div class="mh"><b>Za nakup</b><b class="kc">'+(items.length-done)+' / '+items.length+' živil</b></div><div class="metertrack"><div class="meterfill" style="width:'+(items.length?100*done/items.length:0)+'%"></div></div><button class="ghost" type="button" data-act="autoClear" style="margin-top:8px">Ponastavi označene nakupe</button></div>';
+    var currCat='';
+    items.forEach(function(x){
+      if(S.shopAutoOptions.hideDone && autoShopDone(x))return;
+      if(x.cat!==currCat){currCat=x.cat;h+='<h3>'+esc(currCat)+'</h3>';}
+      var key=shoppingQuantityKey(x), isDone=autoShopDone(x), sum=fmtN(x.q)+' '+x.unit;
+      var rounded=(x.unit==='kos'||x.unit==='pločevinka'||x.unit==='rezina') && x.q%1!==0 ? ' (za nakup zaokroži na '+Math.ceil(x.q)+')' : '';
+      h+='<div class="row'+(isDone?' done':'')+'"><button type="button" class="cb" data-act="autoTick" data-id="'+esc(x.f)+'" data-key="'+esc(key)+'" role="checkbox" aria-checked="'+isDone+'" aria-label="Kupljeno: '+esc(x.label)+'">'+(isDone?'✓':'')+'</button>'
+         +'<div class="txt"><b>'+esc(x.label)+'</b><span class="note"> · '+esc(sum+rounded)+'</span><small>'+esc(x.reasons.slice(0,3).join('; '))+(x.reasons.length>3?' in še '+(x.reasons.length-3)+' obrokov':'')+'</small></div></div>';
+    });
+    if(!items.length)h+='<div class="empty">V izbranih obrokih ni živil za nakup.</div>';
+    if(result.unknown.length) {
+      h+='<details class="card"><summary><b>Preveri še '+result.unknown.length+' nestrukturiranih obrokov</b></summary><p class="note">Teh ni mogoče varno preračunati v nakupe. Dodaj njihove sestavine v bazo ali jih dopiši v ročni seznam.</p><ul class="tips">'
+        +result.unknown.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></details>';
+    }
+    h+='<p class="note">Pri večjih pakiranjih, zamrznjenih živilih in živilih z odcejeno težo preveri deklaracijo. Seznam prikazuje potrebne količine, ne števila trgovinskih pakiranj.</p>';
+    return h;
+  }
+  function renderShop() {
+    var auto=S.shopMode!=='manual';
+    var h='<h2>Nakup</h2><div style="display:flex;gap:8px;margin:8px 0 12px"><button type="button" class="'+(auto?'primary':'ghost')+'" data-act="shopMode" data-mode="auto" style="flex:1">Samodejni seznam</button>'
+      +'<button type="button" class="'+(!auto?'primary':'ghost')+'" data-act="shopMode" data-mode="manual" style="flex:1">Moj ročni seznam</button></div>';
+    return h+(auto?renderAutoShop():renderManualShop());
   }
 
   // ---------- find helpers ----------
@@ -871,6 +954,13 @@ li.eaten .lab{color:var(--muted)}
   app.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]'); if (!b) return;
     var a = b.dataset.act, id = b.dataset.id;
+    if(a==='shopMode') {S.shopMode=b.dataset.mode==='manual'?'manual':'auto';editing=false;render();save();return;}
+    if(a==='autoTick'){
+      var list=plannedShoppingItems().items, it=list.filter(function(x){return x.f===id;})[0];if(!it)return;
+      var key=shoppingQuantityKey(it),done=autoShopDone(it);
+      change(function(){S.shopAutoState[id]={key:key,done:!done};});return;
+    }
+    if(a==='autoClear'){change(function(){S.shopAutoState={};},'Oznake nakupov počistene');return;}
     if (a === 'drink') { var dd = S.drinks.filter(function (x) { return x.id === id; })[0]; if (dd) logDrink(dd); return; }
     if (a === 'delDrink') { change(function () { S.drinks = S.drinks.filter(function (x) { return x.id !== id; }); }, 'Gumb odstranjen'); return; }
     if (a === 'editDrinks') { editDrinks = !editDrinks; drinkForm = null; render(); return; }
@@ -960,6 +1050,10 @@ li.eaten .lab{color:var(--muted)}
 
   function onField(e) {
     var t=e.target,id=t.dataset.id;
+    if(t.dataset.shopopt){
+      if(e.type!=='change')return;
+      S.shopAutoOptions[t.dataset.shopopt]=!!t.checked;render();save();return;
+    }
     if(t.dataset.bf){
       if(!smoothieDraft)return;
       var bf=t.dataset.bf, bi=+t.dataset.bi;
