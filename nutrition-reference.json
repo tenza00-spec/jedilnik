@@ -9,7 +9,7 @@
       "fat": 3.6,
       "carbs": 4.2,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Estonian curd cheese (quark)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -18,7 +18,7 @@
       "fat": 3.5,
       "carbs": 4.8,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Milk 3.5% fat",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -36,7 +36,7 @@
       "fat": 0.1,
       "carbs": 4,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Greek yogurt (0%)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -54,7 +54,7 @@
       "fat": 0.3,
       "carbs": 23,
       "fiber": 2.6,
-      "sugars": 0,
+      "sugars": null,
       "record": "Banana",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -63,7 +63,7 @@
       "fat": 0.2,
       "carbs": 14,
       "fiber": 2.4,
-      "sugars": 0,
+      "sugars": null,
       "record": "Apple (red)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -81,7 +81,7 @@
       "fat": 0.1,
       "carbs": 16.8,
       "fiber": 1.6,
-      "sugars": 0,
+      "sugars": null,
       "record": "Boiled potato",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -90,7 +90,7 @@
       "fat": 0.2,
       "carbs": 18.4,
       "fiber": 1.8,
-      "sugars": 0,
+      "sugars": null,
       "record": "Baked potato",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -117,7 +117,7 @@
       "fat": 6.9,
       "carbs": 66.3,
       "fiber": 10.6,
-      "sugars": 0,
+      "sugars": null,
       "record": "Rolled oats (raw)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -126,7 +126,7 @@
       "fat": 3.6,
       "carbs": 0,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Chicken breast",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -144,7 +144,7 @@
       "fat": 1,
       "carbs": 0,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Tuna (canned in water)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -180,7 +180,7 @@
       "fat": 0.4,
       "carbs": 7.1,
       "fiber": 1.6,
-      "sugars": 0,
+      "sugars": null,
       "record": "Tomato sauce",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -189,7 +189,7 @@
       "fat": 50.4,
       "carbs": 20.1,
       "fiber": 6,
-      "sugars": 0,
+      "sugars": null,
       "record": "Peanut butter (smooth)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -207,7 +207,7 @@
       "fat": 100,
       "carbs": 0,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Olive oil (extra virgin)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -225,7 +225,7 @@
       "fat": 3.4,
       "carbs": 14.8,
       "fiber": 1.6,
-      "sugars": 0,
+      "sugars": null,
       "record": "Mashed potatoes",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -234,7 +234,7 @@
       "fat": 22,
       "carbs": 2.2,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Mozzarella",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -243,7 +243,7 @@
       "fat": 7,
       "carbs": 54,
       "fiber": 3,
-      "sugars": 0,
+      "sugars": null,
       "record": "Flour tortilla",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -252,7 +252,7 @@
       "fat": 20,
       "carbs": 4,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Sour cream (20%)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -261,7 +261,7 @@
       "fat": 2,
       "carbs": 4.5,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Kefir",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -270,7 +270,7 @@
       "fat": 0.1,
       "carbs": 4,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Greek yogurt (0%)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -279,7 +279,7 @@
       "fat": 5,
       "carbs": 3.6,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Greek yogurt",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -297,7 +297,7 @@
       "fat": 4.5,
       "carbs": 3.5,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Cottage cheese (4%)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -306,7 +306,7 @@
       "fat": 10,
       "carbs": 4.2,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Sour cream (10%)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -324,7 +324,7 @@
       "fat": 81,
       "carbs": 0.6,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Butter",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -333,7 +333,7 @@
       "fat": 34,
       "carbs": 3.5,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Cream cheese",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -342,7 +342,7 @@
       "fat": 13,
       "carbs": 3,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Ricotta",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -351,7 +351,7 @@
       "fat": 27.4,
       "carbs": 2.2,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Gouda cheese",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -360,7 +360,7 @@
       "fat": 29,
       "carbs": 0.5,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Emmental cheese",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -378,7 +378,7 @@
       "fat": 21.3,
       "carbs": 4.1,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Feta cheese",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -387,7 +387,7 @@
       "fat": 22,
       "carbs": 2.2,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Mozzarella",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -414,7 +414,7 @@
       "fat": 1.5,
       "carbs": 0,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Turkey breast",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -450,7 +450,7 @@
       "fat": 10.9,
       "carbs": 0,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Tuna (canned in oil)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -459,7 +459,7 @@
       "fat": 8.2,
       "carbs": 0,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Trout (baked)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -486,7 +486,7 @@
       "fat": 0.2,
       "carbs": 0.7,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Egg white",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -504,7 +504,7 @@
       "fat": 3.4,
       "carbs": 54.2,
       "fiber": 1.8,
-      "sugars": 0,
+      "sugars": null,
       "record": "White bread rolls",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -531,7 +531,7 @@
       "fat": 7,
       "carbs": 54,
       "fiber": 3,
-      "sugars": 0,
+      "sugars": null,
       "record": "Flour tortilla",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -540,7 +540,7 @@
       "fat": 3,
       "carbs": 81,
       "fiber": 1.5,
-      "sugars": 0,
+      "sugars": null,
       "record": "Rice cake",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -558,7 +558,7 @@
       "fat": 7,
       "carbs": 65,
       "fiber": 8,
-      "sugars": 0,
+      "sugars": null,
       "record": "Muesli",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -567,7 +567,7 @@
       "fat": 16,
       "carbs": 65,
       "fiber": 5,
-      "sugars": 0,
+      "sugars": null,
       "record": "Granola",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -648,7 +648,7 @@
       "fat": 15,
       "carbs": 41.4,
       "fiber": 3.8,
-      "sugars": 0,
+      "sugars": null,
       "record": "French fries",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -828,7 +828,7 @@
       "fat": 2,
       "carbs": 22.5,
       "fiber": 6,
-      "sugars": 0,
+      "sugars": null,
       "record": "Chickpeas (canned)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -846,7 +846,7 @@
       "fat": 0.1,
       "carbs": 12,
       "fiber": 2.4,
-      "sugars": 0,
+      "sugars": null,
       "record": "Orange",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -855,7 +855,7 @@
       "fat": 0.3,
       "carbs": 13.3,
       "fiber": 1.8,
-      "sugars": 0,
+      "sugars": null,
       "record": "Mandarin / Clementine",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -882,7 +882,7 @@
       "fat": 0.3,
       "carbs": 10,
       "fiber": 1.5,
-      "sugars": 0,
+      "sugars": null,
       "record": "Peach",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -900,7 +900,7 @@
       "fat": 0.3,
       "carbs": 7.7,
       "fiber": 2,
-      "sugars": 0,
+      "sugars": null,
       "record": "Strawberry",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -972,7 +972,7 @@
       "fat": 30.7,
       "carbs": 42.1,
       "fiber": 34.4,
-      "sugars": 0,
+      "sugars": null,
       "record": "Chia seeds",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -999,7 +999,7 @@
       "fat": 4,
       "carbs": 5.3,
       "fiber": 3.3,
-      "sugars": 0,
+      "sugars": null,
       "record": "Mustard (Dijon)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -1008,7 +1008,7 @@
       "fat": 0.1,
       "carbs": 28,
       "fiber": 1,
-      "sugars": 0,
+      "sugars": null,
       "record": "Ketchup",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -1053,7 +1053,7 @@
       "fat": 0.4,
       "carbs": 7.1,
       "fiber": 1.6,
-      "sugars": 0,
+      "sugars": null,
       "record": "Tomato sauce",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -1062,7 +1062,7 @@
       "fat": 100,
       "carbs": 0,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Olive oil (extra virgin)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -1089,7 +1089,7 @@
       "fat": 31.8,
       "carbs": 57.9,
       "fiber": 3,
-      "sugars": 0,
+      "sugars": null,
       "record": "Hazelnut spread (Nutella-style)",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -1107,7 +1107,7 @@
       "fat": 34,
       "carbs": 53,
       "fiber": 4.5,
-      "sugars": 0,
+      "sugars": null,
       "record": "Potato chips",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -1134,7 +1134,7 @@
       "fat": 3.6,
       "carbs": 0,
       "fiber": 0,
-      "sugars": 0,
+      "sugars": null,
       "record": "Chicken breast",
       "origin": "TempoLife curated",
       "referenceOnly": true
@@ -1147,6 +1147,115 @@
       "record": "Pasta, dry",
       "origin": "USDA SR Legacy (prek TempoLife)",
       "referenceOnly": true
+    },
+    "x_koruzni_kosmici": {
+      "fat": 1,
+      "carbs": 80,
+      "fiber": 3.5,
+      "sugars": null,
+      "record": "Corn flakes",
+      "origin": "TempoLife curated",
+      "referenceOnly": true
+    },
+    "x_sladki_krompir_pecen": {
+      "fat": 0.2,
+      "carbs": 20.7,
+      "fiber": 3.3,
+      "sugars": 6.5,
+      "record": "Sweet potato, cooked, baked in skin, flesh, without salt",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_majoneza": {
+      "fat": 74.9,
+      "carbs": 0.6,
+      "fiber": 0,
+      "sugars": 0.6,
+      "record": "Salad dressing, mayonnaise",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_majoneza_light": {
+      "fat": 22.2,
+      "carbs": 9.2,
+      "fiber": 0,
+      "sugars": 3.6,
+      "record": "Salad dressing, mayonnaise, light",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_marmelada": {
+      "fat": 0.1,
+      "carbs": 68.9,
+      "fiber": 1.1,
+      "sugars": 48.5,
+      "record": "Jams and preserves",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_pomarancni_sok": {
+      "fat": 0.1,
+      "carbs": 11.5,
+      "fiber": 0.3,
+      "sugars": 8.3,
+      "record": "Orange juice, chilled",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_pivo": {
+      "fat": 0,
+      "carbs": 3.6,
+      "fiber": 0,
+      "sugars": 0,
+      "record": "Alcoholic beverage, beer, all",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_temna_cokolada_70": {
+      "fat": 42.6,
+      "carbs": 45.9,
+      "fiber": 10.9,
+      "sugars": 24,
+      "record": "Chocolate, dark, 70-85% cacao solids",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_pokovka_brez_masla": {
+      "fat": 4.5,
+      "carbs": 77.8,
+      "fiber": 14.5,
+      "sugars": 0.9,
+      "record": "Snacks, popcorn, air-popped",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_sladoled": {
+      "fat": 11,
+      "carbs": 23.6,
+      "fiber": 0.7,
+      "sugars": 21.2,
+      "record": "Ice creams, vanilla",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_mlecna_cokolada": {
+      "fat": 31.7,
+      "carbs": 59.8,
+      "fiber": 2.4,
+      "sugars": 55.5,
+      "record": "Candies, MARS SNACKFOOD US, DOVE Milk Chocolate",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
+    },
+    "x_rozine": {
+      "fat": 0.2,
+      "carbs": 80,
+      "fiber": 3.3,
+      "sugars": 65.7,
+      "record": "Raisins, golden, seedless",
+      "origin": "USDA SR Legacy (prek TempoLife)",
+      "referenceOnly": true
     }
-  }
+  },
+  "qualityNote": "Values are indicative generic matches, not product-level verified labels. The source file's curated sugar=0 was treated as missing rather than a measured zero. Existing user values take precedence."
 }
