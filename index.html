@@ -447,7 +447,7 @@ li.eaten .lab{color:var(--muted)}
     link.href=url;link.download='moj-jedilnik-varnostna-kopija-'+dKey(new Date())+'.json';
     document.body.appendChild(link);link.click();link.remove();
     setTimeout(function(){URL.revokeObjectURL(url);},1000);
-    save();
+    save();render();
   }
   function isValidBackup(d) {
     if(!d || typeof d!=='object' || !Array.isArray(d.days) || d.days.length!==7 ||
