@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Moj jedilnik</title>
+<link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Jedilnik">
@@ -13,7 +15,6 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
-<title>Moj jedilnik</title>
 
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1909,6 +1910,12 @@ li.eaten .lab{color:var(--muted)}
   }
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
   localMode('');
+  // Bližnjica na iPhonu ostane ista. Ob HTTPS obisku shrani samo statično lupino za delo brez omrežja.
+  if(window.location && window.location.protocol==='https:' && navigator.serviceWorker && window.addEventListener){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(function(){});
+    });
+  }
 })();
 </script>
 
