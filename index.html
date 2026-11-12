@@ -300,6 +300,7 @@ li.eaten .lab{color:var(--muted)}
     S.favoriteFoodIds=S.favoriteFoodIds.filter(function(id){return typeof id==='string' && S.foods.some(function(f){return f.id===id;});});
     if(!S.pantry || typeof S.pantry!=='object' || Array.isArray(S.pantry))S.pantry={};
     if(!Array.isArray(S.recentFoodIds))S.recentFoodIds=[];
+    if(!S.foodUnitOverrides || typeof S.foodUnitOverrides!=='object' || Array.isArray(S.foodUnitOverrides))S.foodUnitOverrides={};
     if(!S.analyticsRange || [7,14,30].indexOf(+S.analyticsRange)<0)S.analyticsRange=7;
     if (!S.targets || typeof S.targets !== 'object') S.targets = {kcal:2000,protein:150};
     if (!S.shopAutoState || typeof S.shopAutoState !== 'object' || Array.isArray(S.shopAutoState)) S.shopAutoState = {};
@@ -621,7 +622,7 @@ li.eaten .lab{color:var(--muted)}
     }
     var oldPasta=S.foods.filter(function(x){return x.id==='testenine' && +x.kcal<220 && /surov|suha teža/i.test(x.label);})[0];
     if(oldPasta)oldPasta.label='Testenine (kuhane, stare vrednosti – preveri deklaracijo)';
-    archiveLegacyEntries(); migrateGramUnits(); addReferenceNutrients(); migrateCountedFoods(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
+    archiveLegacyEntries(); migrateGramUnits(); addReferenceNutrients(); migrateCountedFoods(); applyStaticUserUnits(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
     if (Array.isArray(it.parts) && it.parts.length) {var v=smoothieValues(it.parts);return v.valid?v.p:(+it.p||0);}
@@ -1464,6 +1465,66 @@ li.eaten .lab{color:var(--muted)}
     },addMeal?'Živilo dodano k obroku':'Živilo shranjeno');
   }
 
+
+  var STATIC_USER_UNITS_READY=false;
+  function applyStaticUserUnits(){
+    if(STATIC_USER_UNITS_READY)return;
+    STATIC_USER_UNITS_READY=true;
+    Object.keys(S.foodUnitOverrides||{}).forEach(function(id){
+      var info=S.foodUnitOverrides[id],base=PIECE_FOODS.indexOf(id)>=0?'kos':'g';
+      if(!info||info.unit===base)return;
+      var weight=Number(info.gramsPerPiece);
+      if(!(weight>0))return;
+      var scale=base==='g'?1/weight:weight;
+      function conv(parts){
+        (parts||[]).forEach(function(p){if(p.f===id)p.q=Math.round((+p.q||0)*scale*1e5)/1e5;});
+      }
+      SMALL_PARTS.forEach(conv);
+      Object.keys(LEGACY_SMOOTHIE_SHOP).forEach(function(key){conv(LEGACY_SMOOTHIE_SHOP[key]);});
+    });
+  }
+  function changeFoodUnit(fd,unit) {
+    if(unit===fd.unit)return;
+    if(unit!=='kos'&&unit!=='g')return;
+    var old=fd.unit;
+    if(old!=='g'&&old!=='kos'){setStatus('Podprti enoti sta g in kos.');render();return;}
+    var suggested=Number(fd.gramPerPiece||fd.legacyGramFactor)||60;
+    var raw=window.prompt('Koliko gramov tehta en kos izdelka »'+fd.label+'«? Ta podatek potrebujem, da ne spremenim kalorij že shranjenih obrokov.',String(suggested));
+    if(raw==null){render();return;}
+    var grams=Number(String(raw).replace(',','.'));
+    if(!Number.isFinite(grams)||grams<1||grams>2000){setStatus('Masa enega kosa mora biti med 1 in 2000 g. Enota ni spremenjena.');render();return;}
+    var qtyScale=old==='g'?1/grams:grams,
+      nutrientScale=old==='g'?grams/100:100/grams;
+    change(function(){
+      ['kcal','p','fat','carbs','fiber','sugars'].forEach(function(k){
+        if(fd[k]!=null && fd[k]!=='')fd[k]=Math.round(Number(fd[k])*nutrientScale*1e6)/1e6;
+      });
+      function conv(parts){if(Array.isArray(parts))parts.forEach(function(x){if(x.f===fd.id)x.q=Math.round((+x.q||0)*qtyScale*1e5)/1e5;});}
+      SMALL_PARTS.forEach(conv);
+      Object.keys(LEGACY_SMOOTHIE_SHOP).forEach(function(key){conv(LEGACY_SMOOTHIE_SHOP[key]);});
+      (S.smoothies||[]).forEach(function(sm){conv(sm.parts);});
+      function convItem(it){
+        if(it.f===fd.id)it.q=Math.round((+it.q||0)*qtyScale*1e5)/1e5;
+        conv(it.parts);
+      }
+      (S.days||[]).forEach(function(d){d.meals.forEach(function(m){m.items.forEach(convItem);});});
+      Object.keys(S.daySwaps||{}).forEach(function(day){Object.keys(S.daySwaps[day]||{}).forEach(function(mid){
+        var swap=S.daySwaps[day][mid];if(swap&&Array.isArray(swap.items))swap.items.forEach(convItem);
+      });});
+      var pantry=S.pantry&&S.pantry[fd.id];
+      if(pantry)['q','pack'].forEach(function(k){if(pantry[k]!=null)pantry[k]=Math.round((+pantry[k]||0)*qtyScale*1e5)/1e5;});
+      fd.def=unit==='kos'?Math.max(1,Math.round((+fd.def||100)*qtyScale)):Math.round((+fd.def||1)*qtyScale*100)/100;
+      fd.unit=unit;
+      fd.gramPerPiece=grams;
+      fd.massReview='userMass';
+      if(!S.foodUnitOverrides)S.foodUnitOverrides={};
+      var base=PIECE_FOODS.indexOf(fd.id)>=0?'kos':'g';
+      if(unit===base)delete S.foodUnitOverrides[fd.id];
+      else S.foodUnitOverrides[fd.id]={unit:unit,gramsPerPiece:grams};
+      S.shopAutoState={};
+    },'Enota in količine v receptih varno preračunane');
+  }
+
   function renderFoods() {
     var complete=S.foods.filter(function(x){return ['fat','carbs','fiber'].every(function(k){return knownNutrient(x,k)!==null;});}).length;
     var uncertain=S.foods.filter(function(x){return x.massReview==='approx'||x.massReview==='countApprox';}).length;
@@ -1488,7 +1549,7 @@ li.eaten .lab{color:var(--muted)}
           return '<li><button type="button" class="fav-button'+(S.favoriteFoodIds.indexOf(f.id)>=0?' starred':'')+'" data-act="favoriteToggle" data-id="'+esc(f.id)+'" aria-pressed="'+(S.favoriteFoodIds.indexOf(f.id)>=0)+'" aria-label="Priljubljeno: '+esc(f.label)+'">'+(S.favoriteFoodIds.indexOf(f.id)>=0?'★':'☆')+'</button><span>' + esc(f.label)
             + (f.barcode?'<small class="subtle" style="display:block">EAN '+esc(f.barcode)+' · '+esc(f.source||'')+(f.verified?' · preverjeno na embalaži':' · preveri deklaracijo')+'</small>':'')
             + (f.nutritionReference?'<small class="subtle" style="display:block">Referenca: '+esc(f.nutritionReferenceSource)+' · '+esc(f.nutritionReference)+' (orientacijsko)</small>':'')
-            + (f.massReview==='countApprox'?'<small class="subtle" style="display:block">Približno '+fmtN(f.legacyGramFactor)+' g / kos (dejanska masa lahko odstopa)</small>':f.massReview==='approx'?'<small class="subtle" style="display:block">⚠ Ocena mase: prej '+esc(f.legacyUnit)+' ≈ '+fmtN(f.legacyGramFactor)+' g; preveri na tehtnici</small>':'')
+            + (f.massReview==='userMass'?'<small class="subtle" style="display:block">Uporabniško vnesena masa: '+fmtN(f.gramPerPiece)+' g / kos (preveri po potrebi)</small>':f.massReview==='countApprox'?'<small class="subtle" style="display:block">Približno '+fmtN(f.legacyGramFactor)+' g / kos (dejanska masa lahko odstopa)</small>':f.massReview==='approx'?'<small class="subtle" style="display:block">⚠ Ocena mase: prej '+esc(f.legacyUnit)+' ≈ '+fmtN(f.legacyGramFactor)+' g; preveri na tehtnici</small>':'')
             + '</span><em class="tnum">' + fmtN(f.kcal) + ' kcal · ' + fmtN(+f.p || 0) + ' g belj. / '+(f.unit==='kos'?'1 kos':'100 g')
             + '<small style="display:block;font-style:normal;color:var(--muted)">M '+(f.fat==null?'–':fmtN(f.fat))+' g · OH '+(f.carbs==null?'–':fmtN(f.carbs))+' g · vlaknine '+(f.fiber==null?'–':fmtN(f.fiber))+' g · sladkorji '+(f.sugars==null?'–':fmtN(f.sugars))+' g</small></em></li>';
         }).join('') + '</ul></div>';
@@ -1988,7 +2049,7 @@ li.eaten .lab{color:var(--muted)}
     if (t.dataset.ff) {
       var fd = S.foods.filter(function (x) { return x.id === id; })[0]; if (!fd) return; var ff = t.dataset.ff;
       if (ff === 'cat') { if (e.type !== 'change') return; fd.cat = t.value; render(); save(); return; }
-      if (ff === 'unit') { if (e.type !== 'change') return; fd.unit = t.value; fd.def = per(t.value) === 100 ? 100 : 1; save(); return; }
+      if (ff === 'unit') { if (e.type !== 'change') return; changeFoodUnit(fd,t.value); return; }
       if(e.type==='change')return;
       if(NUTRIENT_KEYS.indexOf(ff)>=0){
         var v=String(t.value||'').trim(),n=Number(v.replace(',','.'));
