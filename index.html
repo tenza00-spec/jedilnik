@@ -520,7 +520,7 @@ li.eaten .lab{color:var(--muted)}
     (S.days||[]).forEach(function(d){(d.meals||[]).forEach(function(meal){(meal.items||[]).forEach(item);});});
     Object.keys(S.daySwaps||{}).forEach(function(day){Object.keys(S.daySwaps[day]||{}).forEach(function(mid){var s=S.daySwaps[day][mid];if(s&&Array.isArray(s.items))s.items.forEach(item);});});
     Object.keys(S.pantry||{}).forEach(function(id){var p=S.pantry[id],fac=factors[id];if(!p||!fac)return;['q','pack'].forEach(function(k){if(p[k]!=null)p[k]=Math.round((Number(p[k])||0)*fac*100)/100;});});
-    S.shopAutoState={}; // količinske kljukice iz starega sistema enot niso več primerljive
+    // Ohrani stare oznake nakupov. Ker vsebujejo enoto/količino, napačni ključi niso aktivni.
     S.migr.push('gramsV1');migratedNow=true;
   }
 
@@ -611,7 +611,7 @@ li.eaten .lab{color:var(--muted)}
         if(p[k]!=null)p[k]=Math.round((Number(p[k])||0)/fac*1e5)/1e5;
       });
     });
-    S.shopAutoState={};
+    // Stari ključi nakupov ostanejo shranjeni; napačne količine niso označene kot kupljene.
     S.migr.push('countUnitsV1');migratedNow=true;
   }
 
@@ -722,7 +722,16 @@ li.eaten .lab{color:var(--muted)}
     if (it.f) { var fd = food(it.f); if (!fd) return Math.round(+it.k || 0); return Math.round((+fd.kcal || 0) * (+it.q || 0) / per(fd.unit)); }
     return Math.round(+it.k || 0);
   }
-  function qtyText(q, unit) { return (unit === 'g' || unit === 'ml') ? fmtN(q) + ' ' + unit : (q == 1 ? '1 ' + unit : fmtN(q) + ' × ' + unit); }
+  function qtyText(q,unit) {
+    if(unit==='kos'){
+      if(q==1)return '1 kos';
+      if(q==2)return '2 kosa';
+      if(q==3||q==4)return fmtN(q)+' kosi';
+      if(q>0&&!Number.isInteger(+q))return fmtN(q)+' kosa';
+      return fmtN(q)+' kosov';
+    }
+    return fmtN(q)+' '+unit;
+  }
   function itemLabel(it) {
     if (it.f) { var fd = food(it.f); if (fd) return fd.label + ' · ' + qtyText(it.q, fd.unit); return it.n || 'Neznano živilo'; }
     return it.n || 'Brez imena';
@@ -1559,7 +1568,7 @@ li.eaten .lab{color:var(--muted)}
       if(unit===base)delete S.foodUnitOverrides[fd.id];
       else S.foodUnitOverrides[fd.id]={unit:unit,gramsPerPiece:grams};
       applyStaticUserUnits();
-      S.shopAutoState={};
+      // Ne briši shranjenih kljukic; povezane so z enoto in količino.
     },'Enota in količine v receptih varno preračunane');
   }
 
