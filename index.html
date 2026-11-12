@@ -304,6 +304,7 @@ li.eaten .lab{color:var(--muted)}
     if (!S.targets || typeof S.targets !== 'object') S.targets = {kcal:2000,protein:150};
     if (!S.shopAutoState || typeof S.shopAutoState !== 'object' || Array.isArray(S.shopAutoState)) S.shopAutoState = {};
     if (!S.shopAutoOptions || typeof S.shopAutoOptions !== 'object') S.shopAutoOptions = {includeLunch:false,includeExtras:false,hideDone:false,weekOffset:0};
+    if(S.shopAutoOptions.hideStocked==null)S.shopAutoOptions.hideStocked=false;
     if (S.shopMode !== 'manual' && S.shopMode !== 'auto') S.shopMode = 'auto';
   }
   function activeSwap(m, di) {
@@ -935,6 +936,10 @@ li.eaten .lab{color:var(--muted)}
     });
     var calc=smoothieValues(smoothieDraft.parts);
     h+='<div class="totals"><div><small>Kalorije</small><b>~'+calc.k+' kcal</b></div><div><small>Beljakovine</small><b>~'+fmtN(calc.p)+' g</b></div></div>';
+    h+='<div class="macro-grid">'+NUTRIENT_KEYS.map(function(k){
+      var v=partsNutrient(smoothieDraft.parts,k);
+      return '<div><small>'+({fat:'Maščobe',carbs:'Ogljikovi hidrati',fiber:'Vlaknine',sugars:'Sladkorji'}[k])+'</small><b>'+(v===null?'– (neznano)':fmtN(Math.round(v*10)/10)+' g')+'</b></div>';
+    }).join('')+'</div>';
     if(!calc.valid)h+='<p class="note" style="color:var(--warn)">Vrednosti niso popolne, dokler ne vneseš deklaracije Battery wheyja.</p>';
     h+='<div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" class="ghost" data-act="smoothAdd">+ Sestavina</button><button type="button" class="primary" data-act="smoothSave">'+(smoothieEditId?'Posodobi ta smoothie':'Shrani kot nov smoothie')+'</button><button type="button" class="ghost" data-act="smoothReset">'+(smoothieEditId?'Prekliči urejanje':'Ponastavi')+'</button></div></details>';
     return h;
@@ -1492,15 +1497,17 @@ li.eaten .lab{color:var(--muted)}
     h+='<div class="card"><label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeLunch"'+(S.shopAutoOptions.includeLunch?' checked':'')+'>Vključi kosila pri babici</label>';
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeExtras"'+(S.shopAutoOptions.includeExtras?' checked':'')+'>Vključi tudi dodatno zabeležene obroke</label>';
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="hideDone"'+(S.shopAutoOptions.hideDone?' checked':'')+'>Skrij že kupljeno</label>';
+    h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="hideStocked"'+(S.shopAutoOptions.hideStocked?' checked':'')+'>Skrij izdelke, ki jih imaš dovolj doma</label>';
     h+='<p class="subtle">Pri vsakem izdelku lahko vpišeš točno količino doma in velikost pakiranja. Stari seznam Zaloga nima številskih količin. Zalog ne spreminjam samodejno; cene niso preverjene.</p></div>';
     h+='<div class="card"><div class="mh"><b>Še za nakup</b><b class="kc">'+(needed.length-done)+' / '+needed.length+' živil</b></div><div class="metertrack"><div class="meterfill" style="width:'+(needed.length?100*done/needed.length:0)+'%"></div></div><button class="ghost" type="button" data-act="autoClear" style="margin-top:8px">Ponastavi označene nakupe</button></div>';
     var currCat='';
     items.forEach(function(x){
       if(S.shopAutoOptions.hideDone && autoShopDone(x))return;
+      if(S.shopAutoOptions.hideStocked && stillToBuy(x)===0)return;
       if(x.cat!==currCat){currCat=x.cat;h+='<h3>'+esc(currCat)+'</h3>';}
       var key=shoppingQuantityKey(x), isDone=autoShopDone(x),stock=pantryData(x.f),remaining=stillToBuy(x),packs=packageCount(x);
       var buyText=remaining===0?'Dovolj na zalogi':'Kupi '+fmtN(remaining)+' '+x.unit+(packs!==null?' → '+packs+' × pakiranje po '+fmtN(stock.pack)+' '+x.unit:'');
-      h+='<div class="row'+(isDone?' done':'')+'"><button type="button" class="cb" data-act="autoTick" data-id="'+esc(x.f)+'" data-key="'+esc(key)+'" role="checkbox" aria-checked="'+isDone+'" aria-label="Kupljeno: '+esc(x.label)+'">'+(isDone?'✓':'')+'</button>'
+      h+='<div class="row'+(isDone?' done':'')+'"><button type="button" class="cb" data-act="autoTick" data-id="'+esc(x.f)+'" data-key="'+esc(key)+'" role="checkbox" aria-checked="'+isDone+'"'+(remaining===0?' disabled title="Dovolj na zalogi"':'')+' aria-label="Kupljeno: '+esc(x.label)+'">'+(isDone?'✓':'')+'</button>'
          +'<div class="txt"><b>'+esc(x.label)+'</b><span class="note"> · potrebno '+fmtN(x.q)+' '+esc(x.unit)+'</span>'
          +'<small><b>'+esc(buyText)+'</b></small><small>'+esc(x.reasons.slice(0,3).join('; '))+(x.reasons.length>3?' in še '+(x.reasons.length-3)+' obrokov':'')+'</small>'
          +'<details style="margin-top:7px"><summary class="subtle" style="cursor:pointer">Zaloga doma / velikost pakiranja</summary>'
@@ -1601,7 +1608,7 @@ li.eaten .lab{color:var(--muted)}
     if(a==='shopMode') {S.shopMode=b.dataset.mode==='manual'?'manual':'auto';editing=false;render();save();return;}
     if(a==='shopWeek'){S.shopAutoOptions.weekOffset=+b.dataset.offset===1?1:0;render();save();return;}
     if(a==='autoTick'){
-      var list=plannedShoppingItems().items, it=list.filter(function(x){return x.f===id;})[0];if(!it)return;
+      var list=plannedShoppingItems().items, it=list.filter(function(x){return x.f===id;})[0];if(!it||stillToBuy(it)<=0)return;
       var key=shoppingQuantityKey(it),done=autoShopDone(it);
       change(function(){S.shopAutoState[id+'|'+key]={key:key,done:!done};});return;
     }
