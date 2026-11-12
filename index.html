@@ -954,7 +954,7 @@ li.eaten .lab{color:var(--muted)}
         +'<label>Količina, ki jo želiš dodati<input class="field" type="number" min="0" max="10000" step="any" data-bca="quantity" value="'+esc(barcodeAmount)+'"></label>'
         +'</div>';
       h+='<p id="barcodePreview" class="note"><b>'+esc(barcodePreview())+'</b></p>';
-      h+='<p class="barcode-status">Vir: '+esc(b.origin)+'. Podatki iz spletne baze niso nujno pravilni; primerjaj vrednosti na embalaži. '+(existing?'Ta črtna koda je že shranjena pod imenom »'+esc(existing.label)+'«. Obstoječega živila ne bom prepisal.':'')+'</p>';
+      h+='<p class="barcode-status">Vir: '+esc(b.origin)+'. Podatki iz spletne baze niso nujno pravilni; primerjaj vrednosti na embalaži. '+(existing?'Ta črtna koda je že shranjena pod imenom »'+esc(existing.label)+'«. Ob dodajanju uporabim obstoječe hranilne vrednosti (in ne novih podatkov iz iskanja).':'')+'</p>';
       h+='<label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" data-bcverify="1"'+(b.verification?' checked':'')+'> Preveril sem hranilne vrednosti na embalaži</label>';
       h+='<div class="barcode-grid"><label>Dan<select class="field" data-bca="day">'
         +S.days.map(function(x,i){return '<option value="'+i+'"'+(i===idx?' selected':'')+'>'+esc(x.name)+'</option>';}).join('')+'</select></label>'
@@ -1040,7 +1040,7 @@ li.eaten .lab{color:var(--muted)}
     var code=String(raw==null?barcodeInput:raw).replace(/\s+/g,'');
     if(!barcodeOpen)return;
     barcodeInput=code;
-    if(!barcodeGTIN(code)){barcodeError='Vnesi veljavno EAN/UPC kodo z 8, 12, 13 ali 14 številkami (s pravilno kontrolno števko).';render();return;}
+    if(!barcodeGTIN(code)){barcodeResult=null;barcodeError='Vnesi veljavno EAN/UPC kodo z 8, 12, 13 ali 14 številkami (s pravilno kontrolno števko).';render();return;}
     if(barcodeBusy)return;
     barcodeBusy=true;barcodeError='';barcodeResult=null;barcodeAmount=100;barcodeEaten=false;
     var requestId=++barcodeRequestSeq;
@@ -1117,7 +1117,7 @@ li.eaten .lab{color:var(--muted)}
       h += '<h3>' + esc(g.c) + '</h3>';
       if (!editing) {
         h += '<div class="card"><ul class="items">' + g.items.map(function (f) {
-          return '<li><span>' + esc(f.label) + '</span><em class="tnum">' + fmtN(f.kcal) + ' kcal · ' + fmtN(+f.p || 0) + ' g belj. / ' + (per(f.unit) === 100 ? '100 ' + esc(f.unit) : '1 ' + esc(f.unit)) + '</em></li>';
+          return '<li><span>' + esc(f.label) + (f.barcode?'<small class="subtle" style="display:block">EAN '+esc(f.barcode)+' · '+esc(f.source||'')+(f.verified?' · preverjeno na embalaži':' · preveri deklaracijo')+'</small>':'') + '</span><em class="tnum">' + fmtN(f.kcal) + ' kcal · ' + fmtN(+f.p || 0) + ' g belj. / ' + (per(f.unit) === 100 ? '100 ' + esc(f.unit) : '1 ' + esc(f.unit)) + (f.barcode?'<small style="display:block;font-style:normal;color:var(--muted)">'+(f.fat==null?'':'M: '+fmtN(f.fat)+' g ')+(f.carbs==null?'':'OH: '+fmtN(f.carbs)+' g ')+(f.fiber==null?'':'Vlaknine: '+fmtN(f.fiber)+' g')+'</small>':'')+'</em></li>';
         }).join('') + '</ul></div>';
       } else {
         g.items.forEach(function (f) {
