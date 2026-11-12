@@ -1,15 +1,26 @@
 # Moj jedilnik
 
-Prehranski načrtovalnik in dnevnik v eni datoteki `index.html`. Deluje brez strežnika; osebni vnosi ostanejo v **localStorage** brskalnika (`jedilnik-state`). Koda na GitHubu **ni** zbirka uporabnikovih dnevnih vnosov.
+Prehranski načrtovalnik in dnevnik z jedrom v `index.html` ter dodatnima datotekama za PWA (`manifest.webmanifest`, `sw.js`). Deluje brez podatkovnega strežnika; osebni vnosi so v **localStorage** brskalnika (`jedilnik-state`) z dodatno lokalno kopijo v **IndexedDB**, če je na voljo. Koda na GitHubu **ni** zbirka uporabnikovih dnevnih vnosov.
 
 ## Uporaba
 
-- **Teden:** glavni seštevek ob posameznem obroku in pri dnevih prikazuje **samo dejansko zaužite** kcal/beljakovine. Načrt je naveden ločeno in se **ne šteje** v zaužito. Posamezno živilo je 0 kcal pojedeno, dokler ga ne označiš. Na voljo so deleži 0/25/50/75/100 % in natančni grami/ml; v prihodnjih dneh ni dovoljeno predhodno označevati hrane kot pojedene.
+- **Teden:** glavni seštevek ob posameznem obroku in pri dnevih prikazuje **samo dejansko zaužite** kcal/beljakovine. Načrt je naveden ločeno in se **ne šteje** v zaužito. Posamezno živilo je 0 kcal pojedeno, dokler ga ne označiš. Na voljo so deleži 0/25/50/75/100 %, natančni grami/ml, hitri vnos priljubljenih živil in ponavljanje včerajšnjih dejansko zabeleženih jedi. V prihodnjih dneh ni dovoljeno predhodno označevati hrane kot pojedene.
 - **Manjši apetit:** 32 alternativ s strukturiranimi sestavinami; izbrane zamenjave veljajo za posamezen dan in ohranijo izhodiščni obrok.
-- **Smutiji:** sestavljalnik, urejanje shranjenih receptov in preračun hranilnih vrednosti iz živil. Za neokusni Battery Complete Whey je treba vnesti deklaracijo na 100 g.
-- **Živila:** baza z vrednostmi kcal in beljakovin. Za `g` in `ml` je podatek na 100 enot, za druge enote na kos/žlico/pločevinko ipd. Gumb **Skeniraj črtno kodo** omogoča skeniranje s kamero, fotografijo ali ročnim vnosom EAN/UPC ter shranjevanje izdelka ali neposredno dodajanje v obrok.
-- **Nakup:** samodejen seznam za ta ali naslednji teden in ločen, nespremenjen ročni seznam. Kljukice so vezane na teden in načrtovano količino.
-- **Napredek:** izbirna dnevna evidenca počutja, dejansko zabeležene prehrane, telesne teže, ciljev in izvoza/uvoza JSON.
+- **Smutiji:** sestavljalnik, urejanje shranjenih receptov in preračun kalorij, beljakovin ter znanih maščob, OH, vlaknin in sladkorjev iz živil. Za neokusni Battery Complete Whey je treba vnesti deklaracijo na 100 g. Nepoznane vrednosti so prikazane kot »–«, ne kot 0.
+- **Živila:** baza z energijo, beljakovinami in izbirnimi vrednostmi maščob, OH, vlaknin in sladkorjev. Za `g` in `ml` je podatek na 100 enot, za druge enote na kos/žlico/pločevinko. Z zvezdico lahko označiš priljubljena živila. **Skeniraj črtno kodo** omogoča kamero, fotografijo ali ročni EAN/UPC ter neposredno dodajanje v obrok.
+- **Nakup:** samodejen seznam za ta ali naslednji teden in ločen, nedotaknjen stari ročni seznam. Za posamezno živilo vpišeš zalogo doma v ustrezni merski enoti in po želji velikost pakiranja; aplikacija izračuna preostalo količino za nakup in potrebno število pakiranj. Kljukice se prilagajajo tednu in izračunani količini. Zaloge se ne odštevajo samodejno ob obrokih, ker bi to lahko bilo netočno.
+- **Napredek:** izbirna dnevna evidenca počutja, dejansko zabeležene prehrane, telesne teže, ciljev, 7/14/30-dnevne analitike ter izvoza/uvoza JSON. Povprečja vključujejo le zabeležene dneve; ne vnašajo izmišljenih ničel.
+
+## Hranila in natančnost
+
+- Pri skeniranih izdelkih se kcal, beljakovine, maščobe, ogljikovi hidrati, vlaknine in sladkorji shranijo na 100 g ali 100 ml, če jih baza vrne.
+- Pri drugih živilih lahko te vrednosti dopolniš z urejanjem **Živila** po deklaraciji. Prazno polje = **neznano**, vpisana 0 = **dejansko nič**.
+- Seštevki dodatnih hranil so navedeni kot **delni**, če katera od dejansko pojedenih jedi nima deklaracije. Dnevni pregled hranil na zavihku **Teden** ne vključuje pijač.
+- Pri *Ponovi včerajšnje zaužito* se prekopirajo dejansko shranjeni vnosi iz predhodnega dne kot ročno zapisane jedi; če stari vnos nima podrobne deklaracije, se ne ustvarijo izmišljeni makri.
+
+## Safari bližnjica, manifest in delovanje brez povezave
+
+Obstoječe ikone iz Safarija **ni treba odstranjevati ali ponovno nameščati**. Aplikacija zdaj vsebuje manifest in service worker. Po prvem spletnem obisku prek HTTPS in osvežitvi lahko odpre **osnovno lupino aplikacije** tudi brez interneta, če Safari predpomnilnika medtem ne odstrani. Ob offline načinu ostanejo osebni vnosi lokalni; **iskanje novih artiklov po črtni kodi (Open Food Facts) potrebuje internet**. Prav tako lahko nalaganje knjižnice za kamero brez interneta odpove, če je ni v predpomnilniku brskalnika. Zunanji API-ji in osebni dnevnik se ne shranjujejo v service-worker predpomnilnik.
 
 ## Skeniranje črtne kode in Open Food Facts
 
@@ -37,23 +48,29 @@ Pri starejših smutijih se nakupovalni recept uporabi le, če besedilo sestavin 
 ## Shranjevanje in varnostne kopije
 
 - Podatki se zapisujejo **lokalno v brskalnik**, niso sinhronizirani med napravami.
-- Ob spremembah se poskusi shraniti tudi predhodna lokalna različica. To ni zunanja varnostna kopija.
-- V **Napredek → Varnostne kopije → Izvozi kopijo JSON** redno prenesi osebno kopijo in jo shrani na varno. JSON vključuje tudi dnevnik in morebitne zdravstvene zapise: obravnavaj ga kot zasebno datoteko.
+- Ob spremembah se poskusi shraniti tudi predhodna lokalna različica. Poleg tega se ob podprtem IndexedDB z zamikom ustvari dodatna obnovitvena kopija iste naprave. Nobena od teh kopij ni zunanja varnostna kopija.
+- V **Napredek → Varnostne kopije → Izvozi kopijo JSON** vsaj tedensko prenesi zasebno kopijo v Datoteke/iCloud Drive. Aplikacija hrani datum zadnjega **sproženega** izvoza in opozori po 7 dneh; ne more preveriti, ali si datoteko res shranil. JSON vsebuje tudi dnevnik in morebitne zdravstvene podatke: **ne nalagaj ga v javni GitHub repozitorij**.
 - Pred uvozom je treba potrditi zamenjavo podatkov; osnovna validacija uvoza prepreči nekaj vrst poškodovanih kopij.
 - Repozitorij vsebuje tudi varnostno vejo `backup-pred-dinamicnim-nakupom-2026-11-12`, ki ohranja kodo pred posodobitvijo nakupovalnega seznama, **ne** podatkov s posameznikove naprave.
 
 ## Kaj še ni popolnoma natančno
 
 1. Katalog vsebuje tudi *okvirne* hranilne vrednosti. Za kupljene izdelke je najboljši vir konkretna deklaracija; pri receptih preveri surovo/kuhano maso.
-2. Ogljikovi hidrati, maščobe, vlaknine in mikrohranila niso popolno strukturirano spremljani.
-3. Nakupni seznam še nima dejanskih trgovinskih pakiranj, aktualnih cen ali natančnega odštevanja zalog.
-4. Ni prijave v račun, šifrirane sinhronizacije ali zanesljivega varnostnega kopiranja v oblak.
+2. Ogljikovi hidrati, maščobe, vlaknine in sladkorji se beležijo, **če so znani**; številni starejši zapisi imajo te vrednosti prazne. Mikrohranila niso vključena.
+3. Pakiranja in zaloge se odštejejo le, če uporabnik vnese **dejanske velikosti in količine**. Ne obstaja samodejno sinhroniziranje zaloge z računi trgovin ali preverjanje aktualnih cen.
+4. Ni prijave v račun ali šifrirane samodejne sinhronizacije med napravami. Izvoz v Datoteke/iCloud Drive in uvoz JSON ostajata potreben način prenosa.
 5. Preverjena je logika v simuliranem okolju; nadaljnje testiranje na fizičnem telefonu, v Safari/Chrome ter pri prehodih med tedni je še potrebno.
 6. Izračuni so pomoč pri evidenci, ne medicinska navodila ali nadomestilo za individualen prehranski načrt.
 
 ## Osnovni kontrolni seznam za test
 
 - [ ] Na telefonu osveži stran in preveri vseh šest zavihkov.
+- [ ] Označi nekaj priljubljenih živil v Živilih; v Tednu jih dodaj kot pojedeno ali samo načrtovano.
+- [ ] Dopolni maščobe, OH in vlaknine na konkretnem izdelku; preveri, ali se delni seštevki pravilno prikažejo.
+- [ ] Na Nakupu vnesi zalogo (npr. 500 ml mleka) in velikost pakiranja; preveri odštevanje in možnost skrivanja že založenega.
+- [ ] V Napredek primerjaj 7/14/30 dni in preveri, da dnevi brez vnosa niso prikazani kot 0.
+- [ ] Shrani JSON kopijo v Datoteke/iCloud Drive in preveri možnost obnove na testni napravi. Ne briši lokalnih podatkov brez varnostne kopije.
+- [ ] Za offline preverjanje najprej odpri aplikacijo s povezavo, potem izklopi internet in znova odpri Safari ikono. Iskanje novih izdelkov offline ne deluje.
 - [ ] V Živila vklopi kamero in skeniraj znan EAN-13; preveri tudi fotografijo in ročni vnos.
 - [ ] Izdelek preveri z embalažo, ga shrani in dodaj v Večerjo; neoznačene jedi naj kažejo 0 kcal pojedeno in se ne prištevajo k Večerji.
 - [ ] Poskusi isto črtno kodo še enkrat; ne sme nastati dvojni izdelek. Brez omrežja naj bo na voljo ročni vnos.
