@@ -179,7 +179,7 @@ li.eaten .lab{color:var(--muted)}
   var UNITS = ['g', 'ml', 'kos', 'pločevinka', 'žlica', 'žlička', 'rezina', 'porcija'];
   var S = null, view = 'teden', dayIdx = (new Date().getDay() + 6) % 7, editing = false;
   var docRef = null, writing = false, saveTimer = null, undo = null, localRev = 0, savedRev = 0, lastErr = false;
-  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = '', barcodeOpen = false, barcodeInput = '', barcodeResult = null, barcodeBusy = false, barcodeError = '', barcodeReader = null, barcodeCameraActive = false, barcodeCameraToken = 0, barcodeDayIdx = null, barcodeMealId = '', barcodeAmount = 100, barcodeEaten = false, barcodeCameraLoading = false; // {mealId, f, q, note, n, k}
+  var adder = null, editMeals = {}, local = false, LKEY = 'jedilnik-state', smoothieDraft = null, smoothieEditId = null, mealSuggest = null, progressDate = null, weightDate = null, weightInput = '', barcodeOpen = false, barcodeInput = '', barcodeResult = null, barcodeBusy = false, barcodeError = '', barcodeReader = null, barcodeCameraActive = false, barcodeCameraToken = 0, barcodeDayIdx = null, barcodeMealId = '', barcodeAmount = 100, barcodeEaten = false, barcodeCameraLoading = false, barcodeRequestSeq = 0; // {mealId, f, q, note, n, k}
   var $ = function (id) { return document.getElementById(id); };
   var app = $('app');
   try { var v0 = localStorage.getItem('jed-view'); if (v0 === 'zivila') v0 = 'info'; if (v0) view = v0; } catch (e) {}
@@ -873,7 +873,7 @@ li.eaten .lab{color:var(--muted)}
   }
   function barcodeNormalize(response,code) {
     var p=response&&response.product;
-    if(!p || typeof p!=='object')return null;
+    if(!p || typeof p!=='object' || response.status===0 || response.status==='failure' || (!p.product_name && !p.product_name_sl && !p.nutriments && !p.nutrition))return null;
     var n=p.nutriments||{},ag=p.nutrition&&p.nutrition.aggregated_set&&p.nutrition.aggregated_set.nutrients||{};
     function nutrient(field,max) {
       var key=field+'_100g', nvalue=barcodeFinite(n[key],max);
@@ -916,10 +916,10 @@ li.eaten .lab{color:var(--muted)}
     return barcodeResult && S.foods.filter(function(f){return f.barcode===barcodeResult.code;})[0] || null;
   }
   function barcodePreview() {
-    if(!barcodeResult || !barcodeNutritionOK(barcodeResult))return 'Vnesi ime, kalorije in beljakovine na 100 g oziroma 100 ml.';
-    var k=Math.round(barcodeResult.kcal*(barcodeAmount||0)/100),
-        p=Math.round(barcodeResult.protein*(barcodeAmount||0)/10)/10;
-    return fmtN(barcodeAmount)+' '+barcodeResult.unit+' → ~'+k+' kcal · '+fmtN(p)+' g beljakovin';
+    var existing=barcodeExisting(),v=existing?{kcal:existing.kcal,protein:existing.p,unit:existing.unit,name:existing.label}:barcodeResult;
+    if(!v || !barcodeNutritionOK(v))return 'Vnesi ime, kalorije in beljakovine na 100 g oziroma 100 ml.';
+    var k=Math.round(v.kcal*(barcodeAmount||0)/100),p=Math.round(v.protein*(barcodeAmount||0)*10)/1000;
+    return fmtN(barcodeAmount)+' '+v.unit+' → ~'+k+' kcal · '+fmtN(p)+' g beljakovin'+(existing?' (po shranjenih podatkih)':'');
   }
   function barcodePanelHtml() {
     if(!barcodeOpen)return '';
@@ -1038,10 +1038,12 @@ li.eaten .lab{color:var(--muted)}
   }
   function barcodeLookup(raw) {
     var code=String(raw==null?barcodeInput:raw).replace(/\s+/g,'');
+    if(!barcodeOpen)return;
     barcodeInput=code;
     if(!barcodeGTIN(code)){barcodeError='Vnesi veljavno EAN/UPC kodo z 8, 12, 13 ali 14 številkami (s pravilno kontrolno števko).';render();return;}
     if(barcodeBusy)return;
     barcodeBusy=true;barcodeError='';barcodeResult=null;barcodeAmount=100;barcodeEaten=false;
+    var requestId=++barcodeRequestSeq;
     barcodeCameraStop();render();
     var url='https://world.openfoodfacts.org/api/v3/product/'+encodeURIComponent(code)+'?fields=code,product_name,product_name_sl,product_name_en,brands,quantity,product_quantity_unit,nutriments,nutrition_data_per,nutrition&lc=sl';
     var controller=typeof AbortController==='function'?new AbortController():null;
@@ -1053,20 +1055,20 @@ li.eaten .lab{color:var(--muted)}
       if(!resp.ok)throw new Error('HTTP '+resp.status);
       return resp.json();
     }).then(function(json){
-      if(!barcodeOpen)return;
+      if(!barcodeOpen||requestId!==barcodeRequestSeq)return;
       barcodeResult=barcodeNormalize(json,code) || barcodeManualProduct(code);
       barcodeError=barcodeResult.origin==='Open Food Facts'?'Izdelek najden. Preveri in po potrebi popravi podatke.':'Izdelka ni v bazi; vnesi podatke z embalaže.';
     }).catch(function(error){
-      if(!barcodeOpen)return;
+      if(!barcodeOpen||requestId!==barcodeRequestSeq)return;
       barcodeResult=barcodeManualProduct(code);
       barcodeError='Podatkov ni bilo mogoče pridobiti ('+(error&&error.name==='AbortError'?'časovna omejitev':'povezava ni uspela')+'). Podatke lahko vneseš ročno s pakiranja.';
     }).finally(function(){
-      clearTimeout(timeout);barcodeBusy=false;
-      if(barcodeOpen&&view==='info')render();
+      clearTimeout(timeout);if(requestId!==barcodeRequestSeq)return;
+      barcodeBusy=false;if(barcodeOpen&&view==='info')render();
     });
   }
   function barcodeSaveFood(addMeal) {
-    if(!barcodeResult || !barcodeNutritionOK(barcodeResult)) {
+    if(!barcodeResult || (!barcodeExisting() && !barcodeNutritionOK(barcodeResult))) {
       barcodeError='Pred shranjevanjem vnesi ime, kcal in beljakovine na 100 g/ml ter preveri enoto.';render();return;
     }
     var amount=Number(barcodeAmount);
@@ -1078,7 +1080,10 @@ li.eaten .lab{color:var(--muted)}
     if(addMeal && barcodeEaten && dateOfIdx(idx)>dKey(new Date())) {
       barcodeError='Pri prihodnjem dnevu lahko živilo samo načrtuješ, ne pa že označiš kot pojedeno.';render();return;
     }
-    var existing=barcodeExisting(),b=barcodeResult,unit=b.unit,quantity=Math.round(amount*100)/100;
+    var existing=barcodeExisting(),b=barcodeResult,unit=existing?existing.unit:b.unit,quantity=Math.round(amount*100)/100;
+    if(!existing && ['fat','carbs','fiber','sugars'].some(function(k){return b[k]!=null&&barcodeFinite(b[k],100)===null;})){
+      barcodeError='Preveri dodatne hranilne vrednosti: vnos mora biti med 0 in 100 g/100 g ali ml.';render();return;
+    }
     var displayName=String(b.name).trim(),brand=String(b.brand||'').trim();
     if(brand && displayName.toLowerCase().indexOf(brand.toLowerCase())===-1)displayName=brand+' – '+displayName;
     var fId=existing?existing.id:nid('f'), date=dateOfIdx(idx);
@@ -1095,8 +1100,8 @@ li.eaten .lab{color:var(--muted)}
         var swap=S.daySwaps&&S.daySwaps[date]&&S.daySwaps[date][meal.id];
         (swap?swap.items:meal.items).push(item);
       }
-      barcodeResult=null;barcodeInput='';barcodeError='';barcodeOpen=false;barcodeCameraStop();
-      if(addMeal){dayIdx=idx;view='teden';editing=false;}else{view='info';foodQ=displayName;editing=false;}
+      barcodeResult=null;barcodeInput='';barcodeError='';barcodeOpen=false;barcodeRequestSeq++;barcodeCameraStop();
+      if(addMeal){dayIdx=idx;view='teden';editing=false;}else{view='info';foodQ=existing?existing.label:displayName;editing=false;}
     },addMeal?'Živilo dodano k obroku':'Živilo shranjeno');
   }
 
@@ -1307,14 +1312,14 @@ li.eaten .lab{color:var(--muted)}
     var b = e.target.closest('[data-act]'); if (!b) return;
     var a = b.dataset.act, id = b.dataset.id;
     if(a==='barcodeOpen'){
-      barcodeOpen=true;barcodeError='';barcodeDayIdx=dayIdx;barcodeMealId=S.days[dayIdx].meals[0].id;render();return;
+      barcodeRequestSeq++;barcodeOpen=true;barcodeError='';barcodeDayIdx=dayIdx;barcodeMealId=S.days[dayIdx].meals[0].id;render();return;
     }
     if(a==='barcodeClose'){
-      barcodeCameraStop();barcodeOpen=false;barcodeResult=null;barcodeError='';barcodeBusy=false;render();return;
+      barcodeRequestSeq++;barcodeCameraStop();barcodeOpen=false;barcodeResult=null;barcodeError='';barcodeBusy=false;render();return;
     }
-    if(a==='barcodeStart'){barcodeStartCamera();return;}
+    if(a==='barcodeStart'){if(!barcodeBusy)barcodeStartCamera();return;}
     if(a==='barcodeStop'){barcodeCameraStop();barcodeError='Kamera ustavljena.';render();return;}
-    if(a==='barcodePhoto'){var fileInput=$('barcodePhotoInput');if(fileInput)fileInput.click();return;}
+    if(a==='barcodePhoto'){if(!barcodeBusy){var fileInput=$('barcodePhotoInput');if(fileInput)fileInput.click();}return;}
     if(a==='barcodeLookup'){barcodeLookup($('barcodeInput')?$('barcodeInput').value:barcodeInput);return;}
     if(a==='barcodeSave'){barcodeSaveFood(false);return;}
     if(a==='barcodeSaveMeal'){barcodeSaveFood(true);return;}
@@ -1585,7 +1590,7 @@ li.eaten .lab{color:var(--muted)}
   }
   $('editBtn').addEventListener('click', function () { editing = !editing; adder = null; if(!editing && view==='info')foodQ=''; if (!local && !editing && saveTimer) { clearTimeout(saveTimer); flush(); } render(); });
   document.querySelectorAll('nav button').forEach(function (b) {
-    b.addEventListener('click', function () { if(barcodeCameraActive||barcodeCameraLoading)barcodeCameraStop();barcodeOpen=false;view = b.dataset.v; editing = false; adder = null; editMeals = {}; try { localStorage.setItem('jed-view', view); } catch (e) {} render(); window.scrollTo(0, 0); });
+    b.addEventListener('click', function () { barcodeRequestSeq++;if(barcodeCameraActive||barcodeCameraLoading)barcodeCameraStop();barcodeOpen=false;barcodeBusy=false;view = b.dataset.v; editing = false; adder = null; editMeals = {}; try { localStorage.setItem('jed-view', view); } catch (e) {} render(); window.scrollTo(0, 0); });
   });
   document.addEventListener('visibilitychange', function () { if(document.visibilityState==='hidden')barcodeCameraStop();if (document.visibilityState === 'hidden' && saveTimer && !local) { clearTimeout(saveTimer); flush(); } });
 
