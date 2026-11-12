@@ -694,9 +694,41 @@ li.eaten .lab{color:var(--muted)}
       Object.keys(S.drinkLog).forEach(function (k) { if (k < cut) delete S.drinkLog[k]; });
     });
   }
+
+  function availableQuickFoods() {
+    var ids=[];
+    (S.favoriteFoodIds||[]).concat(S.recentFoodIds||[]).forEach(function(id){
+      if(ids.indexOf(id)<0 && food(id) && id.slice(0,2)!=='s:')ids.push(id);
+    });
+    return ids.slice(0,16).map(food);
+  }
+  function renderQuickFood() {
+    var fav=availableQuickFoods(),d=S.days[dayIdx];
+    var h='<details class="card" style="margin:9px 0"><summary><b>⚡ Hitri vnos živil</b> <span class="subtle">(priljubljena in nedavna)</span></summary>';
+    if(!fav.length)return h+'<p class="note">V zavihku Živila označi najpogostejše izdelke z zvezdico ali skeniraj izdelek.</p></details>';
+    if(!fav.some(function(x){return x.id===quickFoodId;})){quickFoodId=fav[0].id;quickQty=+(fav[0].def||100);}
+    if(!d.meals.some(function(m){return m.id===quickMealId;}))quickMealId=d.meals[0].id;
+    h+='<div class="quick-row"><select id="quickFood" class="field" aria-label="Priljubljeno živilo">'
+      +fav.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===quickFoodId?' selected':'')+'>'+esc(x.label)+'</option>';}).join('')+'</select>';
+    h+='<input type="text" inputmode="decimal" id="quickQty" class="field" value="'+esc(fmtN(quickQty))+'" aria-label="Količina">';
+    var selected=food(quickFoodId);
+    h+='<span class="note" style="align-self:center">'+esc(selected?selected.unit:'')+'</span></div>';
+    h+='<div class="quick-row"><select id="quickMeal" class="field" aria-label="Izberi obrok">'
+      +d.meals.map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===quickMealId?' selected':'')+'>'+esc(m.name)+'</option>';}).join('')+'</select>';
+    h+='<button type="button" class="primary" data-act="quickEaten">Dodaj kot pojedeno</button><button type="button" class="ghost" data-act="quickPlanned">Samo v načrt</button></div>';
+    if(selected)h+='<p class="subtle">Trenutni izbor: ~'+Math.round((+selected.kcal||0)*(+quickQty||0)/per(selected.unit))+' kcal. Prihodnje dni lahko dodajaš samo v načrt.</p>';
+    return h+'</details>';
+  }
+  function yesterdayDate(di) {
+    var current=new Date(dateOfIdx(di)+'T12:00:00');current.setDate(current.getDate()-1);return dKey(current);
+  }
+  function yesterdayMealEntries(m,di) {
+    var hist=S.history&&S.history[yesterdayDate(di)];
+    return hist&&Array.isArray(hist.items)?hist.items.filter(function(x){return x.meal===m.name;}):[];
+  }
   function renderWeek() {
     var short = ['Pon', 'Tor', 'Sre', 'Čet', 'Pet', 'Sob', 'Ned'], today = (new Date().getDay() + 6) % 7;
-    var h = renderWater() + '<div class="strip" role="tablist">' + S.days.map(function (d, i) {
+    var h = renderWater() + renderQuickFood() + '<div class="strip" role="tablist">' + S.days.map(function (d, i) {
       return '<button type="button" role="tab" data-act="day" data-i="' + i + '" class="' + (i === dayIdx ? 'on' : '') + (i === today ? ' today' : '') + '" aria-selected="' + (i === dayIdx) + '"><b>' + short[i] + '</b><small class="tnum" id="tab-' + i + '" title="Dejansko zaužito">' + Math.round(dayKD(d).all) + ' kcal</small></button>';
     }).join('') + '</div>';
     var d = S.days[dayIdx];
@@ -725,6 +757,8 @@ li.eaten .lab{color:var(--muted)}
             '<div class="acts"><button type="button" class="primary" data-act="adderSave">Dodaj</button><button type="button" class="ghost" data-act="adderCancel">Prekliči</button></div></div>';
         } else {
           h += '<button type="button" class="add" data-act="adderOpen" data-m="' + m.id + '">+ Dodaj, kar sem jedel</button>';
+          if(yesterdayMealEntries(m,dayIdx).length && dateOfIdx(dayIdx)<=dKey(new Date()))
+            h += '<button type="button" class="ghost" data-act="repeatYesterday" data-m="'+esc(m.id)+'" style="margin:6px 0">↻ Ponovi včerajšnje zaužito</button>';
         }
       } else {
         visibleMealItems(m,dayIdx).forEach(function (it) { h += '<div class="eitem">' + itemEditor(it, 'e', it.id) + '</div>'; });
@@ -1407,6 +1441,33 @@ li.eaten .lab{color:var(--muted)}
       if(!S.foods.some(function(f){return f.id===id;}))return;
       change(function(){var i=S.favoriteFoodIds.indexOf(id);if(i>=0)S.favoriteFoodIds.splice(i,1);else S.favoriteFoodIds.unshift(id);},'Priljubljena živila posodobljena');return;
     }
+    if(a==='quickEaten'||a==='quickPlanned'){
+      if(a==='quickEaten'&&!canRecordDay())return;
+      var f=food(quickFoodId),m=S.days[dayIdx].meals.filter(function(x){return x.id===quickMealId;})[0],q=Number(quickQty);
+      if(!f||!m||!Number.isFinite(q)||q<=0||q>10000){setStatus('Izberi živilo, obrok in veljavno količino.');return;}
+      var date=dateOfIdx(dayIdx);
+      change(function(){
+        var it={id:nid('i'),f:f.id,q:q,extra:true,addedOn:date,note:'Hitri vnos'};
+        if(a==='quickEaten')it.eatenOn=date;
+        var swap=activeSwap(m,dayIdx);(swap?swap.items:m.items).push(it);
+        S.recentFoodIds=[f.id].concat(S.recentFoodIds.filter(function(id){return id!==f.id;})).slice(0,12);
+      },a==='quickEaten'?'Živilo dodano med pojedeno':'Živilo dodano v načrt');return;
+    }
+    if(a==='repeatYesterday'){
+      if(!canRecordDay())return;
+      var m=S.days[dayIdx].meals.filter(function(x){return x.id===b.dataset.m;})[0];
+      if(!m)return;
+      var entries=yesterdayMealEntries(m,dayIdx),date=dateOfIdx(dayIdx);
+      if(!entries.length){setStatus('Včeraj ni zabeleženih jedi za ta obrok.');return;}
+      change(function(){
+        var sw=activeSwap(m,dayIdx),list=sw?sw.items:m.items;
+        entries.forEach(function(x){
+          var it={id:nid('i'),extra:true,addedOn:date,eatenOn:date,n:x.name||'Ponovljena jed',k:+x.kcal||0,p:+x.protein||0,note:'Ponovljeno iz dnevnika '+yesterdayDate(dayIdx)};
+          NUTRIENT_KEYS.forEach(function(k){it[k]=x[k]==null?null:+x[k];});
+          list.push(it);
+        });
+      },'Včerajšnje zaužite jedi dodane');return;
+    }
     if(a==='shopMode') {S.shopMode=b.dataset.mode==='manual'?'manual':'auto';editing=false;render();save();return;}
     if(a==='shopWeek'){S.shopAutoOptions.weekOffset=+b.dataset.offset===1?1:0;render();save();return;}
     if(a==='autoTick'){
@@ -1552,6 +1613,11 @@ li.eaten .lab{color:var(--muted)}
       }
       if(t.dataset.bca==='eaten'){barcodeEaten=!!t.checked;return;}
     }
+    if(t.id==='quickFood'){
+      if(e.type!=='change')return;quickFoodId=t.value;var fd=food(quickFoodId);quickQty=fd?(+fd.def||100):100;render();return;
+    }
+    if(t.id==='quickMeal'){quickMealId=t.value;return;}
+    if(t.id==='quickQty'){quickQty=num(t.value);return;}
     if(t.dataset.target){
       if(e.type!=='change')return;
       var goal=Math.round(num(t.value)), kind=t.dataset.target;
