@@ -537,7 +537,7 @@ li.eaten .lab{color:var(--muted)}
     else app.innerHTML = renderFoods();
     if (focusId && $(focusId) && ae.tagName !== 'SELECT') { var el = $(focusId); el.focus(); try { if (sel != null) el.setSelectionRange(sel, sel); } catch (e) {} }
     var avg = Math.round(S.days.reduce(function (a, d) { return a + dayK(d).all; }, 0) / S.days.length / 10) * 10;
-    $('sub').textContent = 'Povprečno ~' + avg + ' kcal na dan · kosila pripravlja babica';
+    $('sub').textContent = 'Načrt: povprečno ~' + avg + ' kcal na dan · kosila pripravlja babica';
   }
 
   function gaugeHtml(k, pr) {
@@ -804,9 +804,11 @@ li.eaten .lab{color:var(--muted)}
     var vals=list.map(function(x){return +x.kg;});
     var low=Math.min.apply(null,vals), high=Math.max.apply(null,vals);
     var span=Math.max(2,high-low), mid=(high+low)/2, bottom=mid-span/2, top=mid+span/2;
-    var coords=list.map(function(x,i){return [(24+i*252/Math.max(1,list.length-1)).toFixed(1),(94-74*(x.kg-bottom)/(top-bottom)).toFixed(1)];});
+    var firstDate=new Date(list[0].date+'T12:00:00').getTime(),lastDate=new Date(list[list.length-1].date+'T12:00:00').getTime();
+    var interval=Math.max(86400000,lastDate-firstDate);
+    var coords=list.map(function(x){var stamp=new Date(x.date+'T12:00:00').getTime();return [(24+252*(stamp-firstDate)/interval).toFixed(1),(94-74*(x.kg-bottom)/(top-bottom)).toFixed(1)];});
     var path=coords.map(function(p){return p.join(',');}).join(' ');
-    var dots=coords.map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="var(--accent)"/>';}).join('');
+    var dots=coords.map(function(p,i){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3.5" fill="var(--accent)"><title>'+esc(list[i].date+' · '+fmtN(list[i].kg)+' kg')+'</title></circle>';}).join('');
     return '<div class="chartwrap"><svg viewBox="0 0 300 125" width="100%" role="img" aria-label="Graf telesne teže">'
       +'<path d="M24 20H276M24 57H276M24 94H276" stroke="var(--line)" fill="none"/>'
       +(coords.length>1?'<polyline points="'+path+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>':'')
@@ -905,7 +907,7 @@ li.eaten .lab{color:var(--muted)}
     var tot = all.reduce(function (a, i) { return a + (+i.p || 0); }, 0);
     var leftL = all.filter(function (i) { return !i.done; });
     var left = leftL.reduce(function (a, i) { return a + (+i.p || 0); }, 0);
-    h += '<div class="totals tnum"><div><small>Tedensko skupaj</small><b id="shopTot">' + eur(tot) + '</b></div><div><small>Še za kupiti (' + leftL.length + ')</small><b>' + eur(left) + '</b></div></div>';
+    h += '<div class="totals tnum"><div><small>Ročni predračun (stare cene)</small><b id="shopTot">' + eur(tot) + '</b></div><div><small>Preostalo po starih cenah (' + leftL.length + ')</small><b>' + eur(left) + '</b></div></div>';
     h += '<p class="note">To so stare ročno vnesene količine in cene. Ne posodabljajo se samodejno in niso aktualne ponudbe trgovin.</p>';
     S.shop.forEach(function (g) {
       h += '<h3>' + (editing ? '<input class="field" style="width:100%;text-transform:none;letter-spacing:0;font-weight:600" id="gn-' + g.id + '" data-gf="g" data-id="' + g.id + '" value="' + esc(g.g) + '" aria-label="Skupina">' : esc(g.g)) + '</h3>';
