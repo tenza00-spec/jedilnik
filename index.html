@@ -405,7 +405,7 @@ li.eaten .lab{color:var(--muted)}
     if (it.f) { var fd = food(it.f); if (fd) return fd.label + ' · ' + qtyText(it.q, fd.unit); return it.n || 'Neznano živilo'; }
     return it.n || 'Brez imena';
   }
-  function mealK(m,di) { var sw=di == null ? null : activeSwap(m,di), items=sw ? sw.items : m.items; return items.reduce(function(a,it){return a+(it.extra && !sw ? 0 : itemK(it));},0); }
+  function mealK(m,di) { var items=di==null ? m.items : visibleMealItems(m,di); return items.reduce(function(a,it){return a+(di==null && it.extra ? 0 : itemK(it));},0); }
   function dayKD(d) {
     var i = S.days.indexOf(d), e = 0, plan = dayK(d).all;
     d.meals.forEach(function (m) { e += mealEK(m, i); });
@@ -774,7 +774,7 @@ li.eaten .lab{color:var(--muted)}
     h += '<button type="button" class="primary" data-act="addFood" style="width:100%;margin:4px 0 10px">+ Dodaj novo živilo</button>' + (!editing ? '<p class="subtle">Novo živilo lahko dodaš neposredno. Za urejanje obstoječih izberi »Uredi«.</p>' : '');
     var groups = groupedFoods(foodQ), n = groups.reduce(function (a, g) { return a + g.items.length; }, 0);
     h += '<input class="field" style="width:100%;margin:4px 0 6px" id="foodSearch" type="search" value="' + esc(foodQ) + '" placeholder="Išči živilo (' + (S.foods || []).length + ')" aria-label="Išči živilo">';
-    if (!n) h += '<p class="note">Ni zadetkov. Dodaj ga z »Uredi« → »+ Dodaj živilo«.</p>';
+    if (!n) h += '<p class="note">Ni zadetkov. Z gumbom zgoraj lahko dodaš novo živilo.</p>';
     groups.forEach(function (g) {
       h += '<h3>' + esc(g.c) + '</h3>';
       if (!editing) {
