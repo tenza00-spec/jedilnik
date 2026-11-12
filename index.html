@@ -1356,13 +1356,28 @@ li.eaten .lab{color:var(--muted)}
   function selectedShoppingMonday(){
     var mon=weekMonday();mon.setDate(mon.getDate()+(+S.shopAutoOptions.weekOffset===1?7:0));return dKey(mon);
   }
-  function shoppingQuantityKey(x){return selectedShoppingMonday()+'|'+x.unit+'|'+(Math.round(x.q*10000)/10000);}
+  function shoppingQuantityKey(x){
+    var left=stillToBuy(x),pack=pantryData(x.f).pack;
+    return selectedShoppingMonday()+'|'+x.unit+'|'+(Math.round(x.q*10000)/10000)+'|'+left+'|'+pack;
+  }
   function autoShopDone(x) {
     var k=shoppingQuantityKey(x),o=S.shopAutoState[x.f+'|'+k]||S.shopAutoState[x.f];
     return !!(o && o.done && o.key===k);
   }
+
+  function pantryData(id) {
+    var d=S.pantry&&S.pantry[id]||{};
+    return {q:Math.max(0,Number(d.q)||0),pack:Math.max(0,Number(d.pack)||0)};
+  }
+  function stillToBuy(x) {return Math.max(0,Math.round((x.q-pantryData(x.f).q)*100)/100);}
+  function packageCount(x) {
+    var left=stillToBuy(x),size=pantryData(x.f).pack;
+    return size>0&&left>0?Math.ceil((left-1e-9)/size):null;
+  }
   function renderAutoShop() {
-    var result=plannedShoppingItems(),items=result.items, done=items.filter(autoShopDone).length;
+    var result=plannedShoppingItems(),items=result.items,
+      needed=items.filter(function(x){return stillToBuy(x)>0;}),
+      done=needed.filter(autoShopDone).length;
     var mon=new Date(weekMonday());mon.setDate(mon.getDate()+(+S.shopAutoOptions.weekOffset===1?7:0));
     var sun=new Date(mon);sun.setDate(mon.getDate()+6);
     var h='<h2>Samodejni nakupovalni seznam</h2><div style="display:flex;gap:8px;margin:8px 0"><button class="'+(+S.shopAutoOptions.weekOffset===1?'ghost':'primary')+'" data-act="shopWeek" data-offset="0" style="flex:1">Ta teden</button><button class="'+(+S.shopAutoOptions.weekOffset===1?'primary':'ghost')+'" data-act="shopWeek" data-offset="1" style="flex:1">Naslednji teden</button></div>';
@@ -1370,16 +1385,20 @@ li.eaten .lab{color:var(--muted)}
     h+='<div class="card"><label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeLunch"'+(S.shopAutoOptions.includeLunch?' checked':'')+'>Vključi kosila pri babici</label>';
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="includeExtras"'+(S.shopAutoOptions.includeExtras?' checked':'')+'>Vključi tudi dodatno zabeležene obroke</label>';
     h+='<label style="display:flex;gap:8px;align-items:center;margin:5px 0"><input type="checkbox" data-shopopt="hideDone"'+(S.shopAutoOptions.hideDone?' checked':'')+'>Skrij že kupljeno</label>';
-    h+='<p class="subtle">Nakupovalne količine ne odštevajo samodejno zalog, ker v starem seznamu niso zabeležene točne preostale količine. Cene niso prikazane, saj niso preverjene.</p></div>';
-    h+='<div class="card"><div class="mh"><b>Za nakup</b><b class="kc">'+(items.length-done)+' / '+items.length+' živil</b></div><div class="metertrack"><div class="meterfill" style="width:'+(items.length?100*done/items.length:0)+'%"></div></div><button class="ghost" type="button" data-act="autoClear" style="margin-top:8px">Ponastavi označene nakupe</button></div>';
+    h+='<p class="subtle">Pri vsakem izdelku lahko vpišeš točno količino doma in velikost pakiranja. Stari seznam Zaloga nima številskih količin. Zalog ne spreminjam samodejno; cene niso preverjene.</p></div>';
+    h+='<div class="card"><div class="mh"><b>Še za nakup</b><b class="kc">'+(needed.length-done)+' / '+needed.length+' živil</b></div><div class="metertrack"><div class="meterfill" style="width:'+(needed.length?100*done/needed.length:0)+'%"></div></div><button class="ghost" type="button" data-act="autoClear" style="margin-top:8px">Ponastavi označene nakupe</button></div>';
     var currCat='';
     items.forEach(function(x){
       if(S.shopAutoOptions.hideDone && autoShopDone(x))return;
       if(x.cat!==currCat){currCat=x.cat;h+='<h3>'+esc(currCat)+'</h3>';}
-      var key=shoppingQuantityKey(x), isDone=autoShopDone(x), sum=fmtN(x.q)+' '+x.unit;
-      var rounded=(x.unit==='kos'||x.unit==='pločevinka'||x.unit==='rezina') && x.q%1!==0 ? ' (za nakup zaokroži na '+Math.ceil(x.q)+')' : '';
+      var key=shoppingQuantityKey(x), isDone=autoShopDone(x),stock=pantryData(x.f),remaining=stillToBuy(x),packs=packageCount(x);
+      var buyText=remaining===0?'Dovolj na zalogi':'Kupi '+fmtN(remaining)+' '+x.unit+(packs!==null?' → '+packs+' × pakiranje po '+fmtN(stock.pack)+' '+x.unit:'');
       h+='<div class="row'+(isDone?' done':'')+'"><button type="button" class="cb" data-act="autoTick" data-id="'+esc(x.f)+'" data-key="'+esc(key)+'" role="checkbox" aria-checked="'+isDone+'" aria-label="Kupljeno: '+esc(x.label)+'">'+(isDone?'✓':'')+'</button>'
-         +'<div class="txt"><b>'+esc(x.label)+'</b><span class="note"> · '+esc(sum+rounded)+'</span><small>'+esc(x.reasons.slice(0,3).join('; '))+(x.reasons.length>3?' in še '+(x.reasons.length-3)+' obrokov':'')+'</small></div></div>';
+         +'<div class="txt"><b>'+esc(x.label)+'</b><span class="note"> · potrebno '+fmtN(x.q)+' '+esc(x.unit)+'</span>'
+         +'<small><b>'+esc(buyText)+'</b></small><small>'+esc(x.reasons.slice(0,3).join('; '))+(x.reasons.length>3?' in še '+(x.reasons.length-3)+' obrokov':'')+'</small>'
+         +'<details style="margin-top:7px"><summary class="subtle" style="cursor:pointer">Zaloga doma / velikost pakiranja</summary>'
+         +'<div class="quick-row"><label class="note">Doma ('+esc(x.unit)+')<input class="field" style="width:100%" type="text" inputmode="decimal" data-pantry="q" data-id="'+esc(x.f)+'" value="'+esc(fmtN(stock.q))+'"></label>'
+         +'<label class="note">Pakiranje ('+esc(x.unit)+')<input class="field" style="width:100%" type="text" inputmode="decimal" data-pantry="pack" data-id="'+esc(x.f)+'" value="'+(stock.pack?esc(fmtN(stock.pack)):'')+'" placeholder="neznano"></label></div></details></div></div>';
     });
     if(!items.length)h+='<div class="empty">V izbranih obrokih ni živil za nakup.</div>';
     if(result.unknown.length) {
@@ -1635,6 +1654,16 @@ li.eaten .lab{color:var(--muted)}
       if(!isFinite(v)||v<0||v>(+fs.it.q||0)){setStatus('Količina mora biti med 0 in načrtovanimi '+fmtN(fs.it.q)+' '+fd.unit+'. Za več uporabi »Dodaj, kar sem jedel«.');return;}
       var date=dateOfIdx(dayIdx),fraction=(+fs.it.q||0)>0?v/(+fs.it.q):0;
       change(function(){if(fraction>0){fs.it.eatenOn=date;fs.it.portion=fraction;}else{delete fs.it.eatenOn;delete fs.it.portion;}});return;
+    }
+    if(t.dataset.pantry){
+      if(e.type!=='change')return;
+      var id=t.dataset.id,entry=plannedShoppingItems().items.filter(function(x){return x.f===id;})[0];
+      if(!entry)return;
+      var raw=String(t.value||'').trim(),v=raw===''?0:Number(raw.replace(',','.'));
+      if(!Number.isFinite(v)||v<0||v>1000000){setStatus('Vnesi količino med 0 in 1.000.000.');return;}
+      if(!S.pantry[id])S.pantry[id]={q:0,pack:0};
+      S.pantry[id][t.dataset.pantry==='pack'?'pack':'q']=Math.round(v*100)/100;
+      render();save();return;
     }
     if(t.dataset.shopopt){
       if(e.type!=='change')return;
