@@ -50,7 +50,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .edit-toggle[aria-pressed="true"]{background:var(--soft);color:var(--accent);border-color:var(--accent)}
 .medit{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;font-size:13px;font-weight:600;color:var(--accent)}
 .medit[aria-pressed="true"]{background:var(--soft);border-color:var(--accent)}
-.mh .rt{display:flex;align-items:center;gap:8px}
+.mh .rt{display:flex;align-items:center;gap:8px}.meal-totals{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}.meal-totals .subtle{font-size:11px;white-space:nowrap}.item-energy{display:flex;flex-direction:column;align-items:flex-end;gap:2px}.item-energy small{font-size:11px;color:var(--muted)}
 .strip{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none;margin:0 -4px;padding-inline:4px}
 .strip::-webkit-scrollbar{display:none}
 .strip button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;align-items:center;min-width:56px}
@@ -427,6 +427,7 @@ li.eaten .lab{color:var(--muted)}
   }
   function shown(it, i) { return !it.extra || it.addedOn === dateOfIdx(i); }
   function mealEK(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemK(it)*portionOf(it,dateOfIdx(i)); },0); }
+  function mealActuallyEatenHtml(m,i) {return '<strong class="kc tnum">Pojedeno: '+Math.round(mealEK(m,i))+' kcal · '+fmtN(mealEP(m,i))+' g belj.</strong>';}
   function mealEP(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemP(it)*portionOf(it,dateOfIdx(i)); },0); }
   function dayP(d) {
     var i=S.days.indexOf(d),key=dateOfIdx(i),base=d.meals.reduce(function(a,m){return a+mealEP(m,i);},0);
@@ -629,13 +630,13 @@ li.eaten .lab{color:var(--muted)}
   function renderWeek() {
     var short = ['Pon', 'Tor', 'Sre', 'Čet', 'Pet', 'Sob', 'Ned'], today = (new Date().getDay() + 6) % 7;
     var h = renderWater() + '<div class="strip" role="tablist">' + S.days.map(function (d, i) {
-      return '<button type="button" role="tab" data-act="day" data-i="' + i + '" class="' + (i === dayIdx ? 'on' : '') + (i === today ? ' today' : '') + '" aria-selected="' + (i === dayIdx) + '"><b>' + short[i] + '</b><small class="tnum" id="tab-' + i + '">' + dayK(d).all + '</small></button>';
+      return '<button type="button" role="tab" data-act="day" data-i="' + i + '" class="' + (i === dayIdx ? 'on' : '') + (i === today ? ' today' : '') + '" aria-selected="' + (i === dayIdx) + '"><b>' + short[i] + '</b><small class="tnum" id="tab-' + i + '" title="Dejansko zaužito">' + Math.round(dayKD(d).all) + ' kcal</small></button>';
     }).join('') + '</div>';
     var d = S.days[dayIdx];
     h += '<div class="dayhead"><h2>' + esc(d.name) + '</h2></div><div class="gauge" id="gauge">' + gaugeHtml(dayKD(d), dayP(d)) + '</div>';
     d.meals.forEach(function (m) {
       var me = !!editMeals[m.id];
-      h += '<div class="meal' + (m.lunch ? ' lunch' : '') + '"><div class="mh"><span class="nm">' + esc(m.name) + (m.lunch ? '<span class="tag">babica</span>' : '') + '</span><span class="rt"><span class="kc tnum" id="mk-' + m.id + '">~' + mealK(m,dayIdx) + ' kcal</span>' +
+      h += '<div class="meal' + (m.lunch ? ' lunch' : '') + '"><div class="mh"><span class="nm">' + esc(m.name) + (m.lunch ? '<span class="tag">babica</span>' : '') + '</span><span class="rt"><span class="meal-totals"><span id="mk-' + m.id + '">' + mealActuallyEatenHtml(m,dayIdx) + '</span><small class="subtle tnum" id="mp-' + m.id + '">Načrt: ~' + mealK(m,dayIdx) + ' kcal</small></span>' +
         '<button type="button" class="medit" data-act="editMeal" data-m="' + m.id + '" aria-pressed="' + me + '">' + (me ? 'Končano' : 'Uredi') + '</button></span></div>';
       if (!me) {
         h += '<ul class="items">' + visibleMealItems(m,dayIdx).map(function (it) {
@@ -643,8 +644,13 @@ li.eaten .lab{color:var(--muted)}
           return '<li class="' + (isEaten(it, dayIdx) ? 'eaten' : '') + '"><div class="it"><button type="button" class="tick" data-act="eat" data-id="' + it.id + '" aria-pressed="' + isEaten(it, dayIdx) + '" aria-label="' + (isEaten(it, dayIdx) ? 'Tega nisem jedel' : 'To sem pojedel') + '">' +
             (isEaten(it, dayIdx) ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12.5l4.5 4.5L19 7"/></svg>' : '') + '</button>' +
             '<span class="lab">' + esc(itemLabel(it)) + (it.extra ? '<span class="xtag">dodano</span>' : '') + (fd && it.note ? '<small>' + esc(it.note) + '</small>' : '') + '</span></div>' +
-            '<em class="tnum">' + (isEaten(it,dayIdx) ? Math.round(itemK(it)*portionOf(it,dateOfIdx(dayIdx)))+' od '+itemK(it) : itemK(it)) + ' kcal' + (itemP(it) >= 3 ? '<span class="pg">' + pTxt(isEaten(it,dayIdx)?itemP(it)*portionOf(it,dateOfIdx(dayIdx)):itemP(it)) + '</span>' : '') + '</em>' + '<select class="pillbtn" data-portion="' + esc(it.id) + '" aria-label="Pojedeni delež ' + esc(itemLabel(it)) + '">' + [0,0.25,0.5,0.75,1].map(function(p){return '<option value="'+p+'"'+(portionOf(it,dateOfIdx(dayIdx))===p?' selected':'')+'>'+Math.round(p*100)+'%</option>';}).join('') + '</select>' +
-             ((fd && (fd.unit==='g'||fd.unit==='ml')) ? '<label class="actualqty"><input type="text" inputmode="decimal" class="field tnum" data-actualq="' + esc(it.id) + '" value="' + (isEaten(it,dayIdx)?esc(fmtN((+it.q||0)*portionOf(it,dateOfIdx(dayIdx)))):'') + '" placeholder="0" aria-label="Dejansko pojedeno v ' + esc(fd.unit) + '"> ' + esc(fd.unit) + '</label>' : '') + (it.extra ? '<button type="button" class="mini" data-act="delItem" data-id="' + it.id + '" aria-label="Odstrani">×</button>' : '') + '</li>';
+            '<em class="tnum item-energy"><b>' + Math.round(itemK(it)*portionOf(it,dateOfIdx(dayIdx))) + ' kcal pojedeno</b>' +
+             (portionOf(it,dateOfIdx(dayIdx))>0 && itemP(it)*portionOf(it,dateOfIdx(dayIdx))>=1 ? '<span class="pg">' + pTxt(itemP(it)*portionOf(it,dateOfIdx(dayIdx))) + '</span>' : '') +
+             '<small>Načrt: ~' + itemK(it) + ' kcal</small></em>' +
+             '<select class="pillbtn" data-portion="' + esc(it.id) + '" aria-label="Pojedeni delež ' + esc(itemLabel(it)) + '">' +
+             [0,0.25,0.5,0.75,1].map(function(p){return '<option value="'+p+'"'+(portionOf(it,dateOfIdx(dayIdx))===p?' selected':'')+'>'+Math.round(p*100)+'%</option>';}).join('') +
+             ([0,0.25,0.5,0.75,1].indexOf(portionOf(it,dateOfIdx(dayIdx)))<0 ? '<option value="'+portionOf(it,dateOfIdx(dayIdx))+'" selected>'+Math.round(portionOf(it,dateOfIdx(dayIdx))*100)+'% (teža)</option>' : '') +
+             '</select>' + ((fd && (fd.unit==='g'||fd.unit==='ml')) ? '<label class="actualqty"><input type="text" inputmode="decimal" class="field tnum" data-actualq="' + esc(it.id) + '" value="' + (isEaten(it,dayIdx)?esc(fmtN((+it.q||0)*portionOf(it,dateOfIdx(dayIdx)))):'') + '" placeholder="0" aria-label="Dejansko pojedeno v ' + esc(fd.unit) + '"> ' + esc(fd.unit) + '</label>' : '') + (it.extra ? '<button type="button" class="mini" data-act="delItem" data-id="' + it.id + '" aria-label="Odstrani">×</button>' : '') + '</li>';
         }).join('') + '</ul>';
         if (!visibleMealItems(m,dayIdx).length) h += '<p class="note">Ni jedi.</p>';
         if (adder && adder.mealId === m.id) {
@@ -1280,9 +1286,13 @@ li.eaten .lab{color:var(--muted)}
   function updateTotals() {
     if (view !== 'teden') return;
     var d = S.days[dayIdx];
-    d.meals.forEach(function(m){var el=$('mk-'+m.id);if(el)el.textContent='~'+mealK(m,dayIdx)+' kcal';});
+    d.meals.forEach(function(m){
+      var actual=$('mk-'+m.id),plan=$('mp-'+m.id);
+      if(actual)actual.innerHTML=mealActuallyEatenHtml(m,dayIdx);
+      if(plan)plan.textContent='Načrt: ~'+mealK(m,dayIdx)+' kcal';
+    });
     var g = $('gauge'); if (g) g.innerHTML = gaugeHtml(dayKD(d), dayP(d));
-    var tab = $('tab-' + dayIdx); if (tab) tab.textContent = dayK(d).all;
+    var tab = $('tab-' + dayIdx); if (tab) tab.textContent = Math.round(dayKD(d).all)+' kcal';
   }
   $('editBtn').addEventListener('click', function () { editing = !editing; adder = null; if(!editing && view==='info')foodQ=''; if (!local && !editing && saveTimer) { clearTimeout(saveTimer); flush(); } render(); });
   document.querySelectorAll('nav button').forEach(function (b) {
