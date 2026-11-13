@@ -2,6 +2,20 @@
 
 Prehranski načrtovalnik in dnevnik z jedrom v `index.html` ter dodatnima datotekama za PWA (`manifest.webmanifest`, `sw.js`). Deluje brez podatkovnega strežnika; osebni vnosi so v **localStorage** brskalnika (`jedilnik-state`) z dodatno lokalno kopijo v **IndexedDB**, če je na voljo. Koda na GitHubu **ni** zbirka uporabnikovih dnevnih vnosov.
 
+## Načrt po dogovoru z zdravnico (13. november 2026)
+
+**Cilj:** približno 2.500 kcal/dan in najmanj 150 g beljakovin. Dnevna hoja vsaj 30 minut; vadba za moč ponedeljek, sreda in petek. To so trenutna individualna navodila zdravnice, ne univerzalna pravila za vse uporabnike.
+
+Sprememba se v že shranjenem stanju izvede **enkrat**, označena z `doctorPlan20261113`. Pred spreminjanjem obstoječih receptov aplikacija poskusi shraniti dejansko zaužite obroke v zgodovino. Že zaužiti smuti ostane stara porcija z originalnimi kcal/beljakovinami, novi načrt se zanj začne naslednji teden. Osebne dodatne jedi, ročni nakupovalni seznam in obstoječa zgodovina ostanejo v lokalni shrambi.
+
+- **Smutiji**: iz štirih osnovnih receptov so odstranjeni zmiksani sadeži (gozdni sadeži, banana, jabolko); namesto njih se uporabi kombinacija mleka, skute in skyra. Sadje se zaužije celo, posebej. Načrtovano sadje je dodano med ločene malice. Prilagojeni osebni smutiji se ne prepisujejo, vendar se na sadje v njih opozori. Sestavljalnik ne dovoli novih smutijev s sadjem.
+- **Kosila pri babici:** dodano je približno 150 g kuhanega brokolija ali korenja v kosih. Generične hranilne vrednosti so orientacijske.
+- **Priloge:** pri rižu je napisano `al dente`, pri krompirju `v kosih, ne pire`. Recept za pire je zamenjan s krompirjem v kosih. Pri palačinkah banana ostane ločeno celo sadje namesto dela zmiksanega testa.
+- **Kalorije/proteini:** dodatki so predvsem obstoječa živila (skyr in ovseni kosmiči). Izhodiščni sedemdnevni načrt po spremembi daje približno 2.487–2.575 kcal/dan in najmanj 150 g beljakovin. Uporabnikov individualno spremenjeni jedilnik se lahko razlikuje.
+- **Vadba:** nov zavihek `Vadba` vsebuje *drug* nabor šestih vaj kot predhodni program (sklece ob steni, izteg kolena sede, odmik noge vstran, razpiranje rok v predklonu, pregib komolcev, dvig na prste), opis pravilne izvedbe, povezave do iskanja videov na YouTubu in datumom vezano beleženje opravljenih vaj ter minut hoje. Vaje naj se začnejo z eno serijo, ob dobri toleranci se lahko postopno povečajo na dve.
+
+**Omejitve:** podatki o pripravljenih obrokih so približni, načrt ni dokaz dejanskega vnosa. Zaradi Mounjara hrane ne sili ob slabosti ali nezmožnosti pitja. Datumski dnevniki vadbe, počutja in hrane ostajajo v tvojem brskalniku; redno izvozi JSON.
+
 ## Uporaba
 
 - **Teden:** glavni seštevek pri obroku in dnevih prikazuje **samo dejansko zaužite** kalorije in beljakovine, načrt pa je prikazan ločeno. Porcije označuješ po 0/25/50/75/100 % ali z natančno maso v gramih pri tehtanih živilih. Pri jajcih, tortilijah, sadju in podobnih živilih uporabljaš enoto **kos**. Na voljo sta hitri vnos priljubljenih živil in ponavljanje včerajšnjih vnosov. Prihodnjih dni ni mogoče predhodno označiti kot pojedene.
@@ -9,6 +23,7 @@ Prehranski načrtovalnik in dnevnik z jedrom v `index.html` ter dodatnima datote
 - **Smutiji:** sestavljalnik, urejanje shranjenih receptov in preračun kalorij, beljakovin ter znanih maščob, OH, vlaknin in sladkorjev iz živil. Za neokusni Battery Complete Whey je treba vnesti deklaracijo na 100 g. Nepoznane vrednosti so prikazane kot »–«, ne kot 0.
 - **Živila:** uporabljaš samo **g** (tehtani izdelki) in **kos** (jajca, tortilije, sadje, žemlje, posamezne ploščice/porcije in konzerve). Hranilne vrednosti veljajo na 100 g ali na 1 kos. Sam izbereš novo živilo v g ali kos; pri spremembi enote obstoječega živila aplikacija vpraša za maso kosa in preračuna recepte. Skeniranje omogoča tudi shranjevanje prepoznanega izdelka kot kos, če vneseš maso enega kosa.
 - **Nakup:** samodejen seznam za ta ali naslednji teden in ločen, nedotaknjen ročni seznam. Količine so prikazane kot **litri za mleko in druge pijače, mililitri za manjše tekoče sestavine, kilogrami/grami za tehtano hrano in kosi za štete izdelke**. Zalogo in pakiranja vpišeš v istih prikazanih enotah. Za mleko (1 l), skuto (250 g), jajca (10 kosov) in nekatera druga živila so kot predlog uporabljene običajne embalaže iz ročnega seznama. Zaloge se ne odštevajo samodejno ob obrokih.
+- **Vadba:** nov načrt šestih drugačnih domačih vaj, razlage in YouTube iskanja, označevanje izvedbe ter minut hoje. Beleženje je ločeno od kalorij.
 - **Napredek:** izbirna dnevna evidenca počutja, dejansko zabeležene prehrane, telesne teže, ciljev, 7/14/30-dnevne analitike ter izvoza/uvoza JSON. Povprečja vključujejo le zabeležene dneve; ne vnašajo izmišljenih ničel.
 
 ## Hranila in natančnost
@@ -84,7 +99,9 @@ Pri starejših smutijih se nakupovalni recept uporabi le, če besedilo sestavin 
 
 ## Osnovni kontrolni seznam za test
 
-- [ ] Na telefonu osveži stran in preveri vseh šest zavihkov.
+- [ ] Na telefonu osveži stran in preveri vseh **sedem** zavihkov, tudi Vadba.
+- [ ] Preveri cilj 2.500 kcal / 150 g beljakovin, dneve s kuhano zelenjavo, smutije brez sadja in ločeno celo sadje.
+- [ ] V zavihku Vadba označi vajo in zabeleži sprehod; nato stran osveži in preveri, ali je vnos ostal.
 - [ ] V samodejnem nakupu preveri približno 1,35 l mleka, 2,55 kg skute in 14 banan na nespremenjenem začetnem načrtu (tvoja prilagojena različica se lahko razlikuje).
 - [ ] V nakupu vpiši 0,5 l zaloge mleka in preveri, da se preostanek zmanjša za 0,5 l; pri mleku s pakiranjem 1 l preveri ustrezno zaokroženo število pakiranj.
 - [ ] Preveri jajce, banano in tortilijo v kosih ter sir, piščanca, skuto in mleko v gramih.
