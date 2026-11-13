@@ -615,6 +615,126 @@ li.eaten .lab{color:var(--muted)}
     S.migr.push('countUnitsV1');migratedNow=true;
   }
 
+
+  // Spremembe po posvetu z zdravnico: izhodiščni 2500 kcal, najmanj 150 g beljakovin.
+  // Migra se le enkrat; osebno vnesene dodatne jedi in pretekli dnevnik ostanejo.
+  function adoptPhysicianPlan() {
+    if(!Array.isArray(S.migr))S.migr=[];
+    if(S.migr.indexOf('doctorPlan20261113')>=0)return;
+    snapshotWeek(); // arhiviraj dejansko zaužite vnose pred spremembo predloge
+    S.targets.kcal=2500;S.targets.protein=150;
+    function includeFood(o){
+      if(!S.foods.some(function(x){return x.id===o.id;}))S.foods.push(o);
+    }
+    includeFood({id:'korenje_kuhano',cat:'Zelenjava',label:'Korenje, kuhano v kosih',unit:'g',kcal:35,p:0.8,carbs:8.2,fat:0.2,fiber:2.8,def:150,source:'Generična orientacijska vrednost; preveri pripravo'});
+    includeFood({id:'brokoli_kuhan',cat:'Zelenjava',label:'Brokoli, kuhan v cvetovih',unit:'g',kcal:35,p:2.4,carbs:7.2,fat:0.4,fiber:3.3,def:150,source:'Generična orientacijska vrednost; preveri pripravo'});
+    var today=dKey(new Date());
+    var smoothiePlan={
+      s39:{n:'Beljakovinski mlečni (brez sadja)',ing:'200 ml mleka, 125 g skute, 150 g skyra. Gozdne sadeže pojej cele posebej.',parts:[{f:'mleko',q:206},{f:'skuta',q:125},{f:'skyr',q:150}]},
+      s3a:{n:'Mlečni s cimetom (brez sadja)',ing:'200 ml mleka, 125 g skute, 150 g skyra, cimet po okusu. Banano pojej celo posebej.',parts:[{f:'mleko',q:206},{f:'skuta',q:125},{f:'skyr',q:150},{f:'x_cimet',q:1.3}]},
+      s3b:{n:'Beljakovinski s cimetom (brez sadja)',ing:'200 ml mleka, 125 g skute, 150 g skyra, ščepec cimeta. Jabolko pojej celo posebej.',parts:[{f:'mleko',q:206},{f:'skuta',q:125},{f:'skyr',q:150},{f:'x_cimet',q:1.3}]},
+      s3c:{n:'Čokoladni beljakovinski (brez sadja)',ing:'250 ml mleka, 100 g skute, 150 g skyra, 5 g kakava. Banano pojej celo posebej.',parts:[{f:'mleko',q:257.5},{f:'skuta',q:100},{f:'skyr',q:150},{f:'kakav',q:5}]}
+    };
+    // Izvirne recepte spremeni le, kadar niso bili prej prilagojeni po meri.
+    var original=JSON.parse($('seed').textContent),changedSm={};
+    (S.smoothies||[]).forEach(function(sm){
+      var proposed=smoothiePlan[sm.id];
+      if(!proposed)return;
+      var seed=original.smoothies.filter(function(x){return x.id===sm.id;})[0];
+      if(!seed || (sm.ing!==seed.ing && !sm.doctorPlan))return;
+      var oldMass=Number(sm.servingGrams)||300;
+      sm.parts=JSON.parse(JSON.stringify(proposed.parts));
+      sm.servingGrams=sm.parts.reduce(function(a,p){return a+p.q;},0);
+      sm.n=proposed.n;sm.ing=proposed.ing;sm.doctorPlan=true;
+      changedSm['s:'+sm.id]={oldMass:oldMass,newMass:sm.servingGrams};
+    });
+    function freezeIfEaten(it,sourceMeal){
+      if(!it.eatenOn || !/^\d{4}-\d\d-\d\d$/.test(it.eatenOn))return false;
+      // Ohrani dejansko zaužito kot ločen dneven vnos, še preden spremeniš recept.
+      var fromDate=it.eatenOn,originalK=it.k,originalP=it.p,origN=it.n;
+      if(it.f || Array.isArray(it.parts)){
+        // Del vnosa je lahko smoothie; staro energijo poišči v arhivu, kadar je na voljo.
+        var old=S.history[fromDate],entry=old&&old.items&&old.items.filter(function(e){return e.name && (e.name===itemLabel(it)||e.name.indexOf(sourceMeal.name)>=0);})[0];
+        originalK=originalK!=null?originalK:(entry&&entry.kcal!=null?entry.kcal:null);
+        originalP=originalP!=null?originalP:(entry&&entry.protein!=null?entry.protein:null);
+      }
+      it.extra=true;it.addedOn=fromDate;
+      if(originalK!=null&&originalP!=null){
+        it.k=Number(originalK);it.p=Number(originalP);it.n=origN||'Predhodno zaužit obrok';
+        delete it.f;delete it.q;delete it.parts;
+      }
+      return true;
+    }
+    function mealBy(di,ix){return S.days[di]&&S.days[di].meals[ix];}
+    (S.days||[]).forEach(function(d,di){
+      (d.meals||[]).forEach(function(m){
+        var additions=[];
+        m.items.forEach(function(it){
+          var variant=changedSm[it.f];
+          if(!variant)return;
+          var servings=(Number(it.q)||0)/variant.oldMass;
+          if(it.eatenOn && it.eatenOn===dateOfIdx(di)){
+            var kcalOld=(+original.smoothies.filter(function(s){return 's:'+s.id===it.f;})[0]?.k||0)*servings;
+            var proteinOld=(+original.smoothies.filter(function(s){return 's:'+s.id===it.f;})[0]?.p||0)*servings;
+            // Pretvori v samostojen dnevni zapis brez povezave z novo formulo.
+            var oldDate=it.eatenOn;
+            it.extra=true;it.addedOn=oldDate;it.n='Predhodni smoothie (zaužit pred spremembo)';it.k=Math.round(kcalOld);it.p=proteinOld;
+            delete it.f;delete it.q;
+            additions.push({id:nid('i'),f:'s:'+Object.keys(smoothiePlan).filter(function(k){return 's:'+k in changedSm;})[0],q:variant.newMass*servings,note:'Po priporočilu zdravnice: sadje posebej'});
+          }else if(!it.eatenOn){
+            it.q=Math.round(variant.newMass*servings*100)/100;
+            it.note='Brez sadja; sadje pojej posebej';
+          }
+        });
+        additions.forEach(function(it){m.items.push(it);});
+      });
+    });
+    function add(di,mealIndex,id,q,note){
+      var m=mealBy(di,mealIndex);if(!m||!food(id))return;
+      m.items.push({id:nid('i'),f:id,q:q,note:note||''});
+    }
+    // Sadje, odstranjeno iz smutijev, prestavi k popoldanski malici.
+    if(changedSm['s:s39'])add(0,3,'sadje',120,'Odtaljeno, celo; ne miksaj');
+    if(changedSm['s:s3a'])add(2,3,'banana',1,'Pojej celo, ne v smutiju');
+    if(changedSm['s:s3b'])add(3,3,'jabolko',1,'Pojej celo, ne v smutiju');
+    // Pri vsakem kosilu pri babici dodaj kuhano zelenjavo.
+    for(var di=0;di<7;di++){
+      var lunch=S.days[di].meals.filter(function(x){return x.lunch;})[0];
+      if(lunch)lunch.items.push({id:nid('i'),f:di%2===0?'brokoli_kuhan':'korenje_kuhano',q:150,note:'Kuhano, v kosih (ne razkuhano)'});
+    }
+    // Minimalne dopolnitve obstoječih živil: skyr za protein, kosmiči za energijo.
+    var skyrAdd=[200,250,200,250,250,150,250];
+    var oatsAdd=[20,0,20,50,50,0,60];
+    for(var di=0;di<7;di++){
+      if(skyrAdd[di])add(di,3,'skyr',skyrAdd[di],'Dodatne beljakovine; lahko razdeliš v dve manjši porciji');
+      if(oatsAdd[di])add(di,3,'kosmici',oatsAdd[di],'Kosmiči posebej ali skupaj s skyrom; pojej, ne mešaj s sadjem');
+    }
+    // Posebna navodila: brez pireja in razkuhanega riža.
+    S.days.forEach(function(d){
+      d.meals.forEach(function(m){
+        m.items.forEach(function(it){
+          if(it.f==='pire'&&!it.eatenOn){it.f='krompir';it.note='Kuhan krompir v kosih, ne pire';}
+          if(it.f==='riz'&&!it.eatenOn)it.note=(it.note?it.note+'; ':'')+'Riž skuhaj al dente (ne razkuhaj)';
+          if((it.f==='krompir'||it.f==='krompirP')&&!it.eatenOn)it.note=(it.note?it.note+'; ':'')+'V kosih, ne pire';
+        });
+      });
+    });
+    // Receptov, ki jih je uporabnik sam uredil, ne prepisuj.
+    var pancake=S.recipes&&S.recipes.filter(function(r){return r.id==='r1';})[0],
+      oldPancake=original.recipes&&original.recipes.filter(function(r){return r.id==='r1';})[0];
+    if(pancake && /banano.*zmiksaj|Jajca, kosmiče, banano/.test(pancake.steps||'')){
+      pancake.steps=pancake.steps.replace('Jajca, kosmiče, banano, skuto in cimet zmiksaj','Jajca, kosmiče, skuto in cimet zmiksaj')
+        +'\nBanano postrezi kot celo sadje ob palačinkah, ne v zmiksanem testu.';
+    }
+    var pure=S.recipes&&S.recipes.filter(function(r){return r.id==='r11';})[0];
+    if(pure && /Pire krompir/i.test(pure.n||'')){
+      pure.n='Kuhan krompir v kosih';pure.ing='300 g krompirja v kosih, sol, peteršilj';
+      pure.steps='Krompir nareži na večje kose. Kuhaj do prijetno čvrste teksture, odcedi in postrezi v kosih. Ne pretlači v pire in ga ne razkuhaj.';
+      pure.k=240;pure.p=6;
+    }
+    S.migr.push('doctorPlan20261113');migratedNow=true;
+  }
+
   function prep() { if (!S) return; if (!S.foods) S.foods = []; ensureTracking(); addNewFoods(); if(!S.foods.some(function(f){return f.id==='battery_whey';}))S.foods.push({id:'battery_whey',label:'Battery Complete Whey (brez okusa)',cat:'Moje',unit:'g',kcal:0,p:0,def:30}); migrateCooked();
     if(S.migr.indexOf('pastaRaw2')===-1){
       if(!S.foods.some(function(x){return x.id==='testenine_s';}))S.foods.push({id:'testenine_s',cat:'Priloge',label:'Testenine (surove, suha teža)',unit:'g',kcal:356,p:12.5,def:80});
@@ -622,7 +742,7 @@ li.eaten .lab{color:var(--muted)}
     }
     var oldPasta=S.foods.filter(function(x){return x.id==='testenine' && +x.kcal<220 && /surov|suha teža/i.test(x.label);})[0];
     if(oldPasta)oldPasta.label='Testenine (kuhane, stare vrednosti – preveri deklaracijo)';
-    archiveLegacyEntries(); migrateGramUnits(); addReferenceNutrients(); migrateCountedFoods(); applyStaticUserUnits(); cleanWeek(); addRecipes(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
+    archiveLegacyEntries(); migrateGramUnits(); addReferenceNutrients(); migrateCountedFoods(); applyStaticUserUnits(); cleanWeek(); addRecipes(); adoptPhysicianPlan(); if (!S.waterGoal) S.waterGoal = 3000; if (!S.drinkLog || typeof S.drinkLog !== 'object') S.drinkLog = {}; if (!Array.isArray(S.drinks)) S.drinks = JSON.parse(JSON.stringify(DRINKS));
     if (S.water && typeof S.water === 'object') { Object.keys(S.water).forEach(function (k) { var v = +S.water[k] || 0; if (v) { if (!S.drinkLog[k]) S.drinkLog[k] = []; S.drinkLog[k].unshift({ id: 'lw' + k, n: 'Voda', ml: v, k: 0, t: '' }); } }); delete S.water; } S.foods.forEach(function (f) { if (f.p == null) f.p = PDEF[f.id] != null ? PDEF[f.id] : 0; }); }
   function itemP(it) {
     if (Array.isArray(it.parts) && it.parts.length) {var v=smoothieValues(it.parts);return v.valid?v.p:(+it.p||0);}
