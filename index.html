@@ -218,6 +218,22 @@ li.eaten .lab{color:var(--muted)}
     S.foods.forEach(function (f) { if (!f.cat) f.cat = CATMAP[f.id] || 'Moje'; });
   }
 
+  // Generične orientacijske vrednosti na 100 g (mleko na 100 ml). Ne prepisuj obstoječih ali uporabniških živil.
+  // Različne znamke, deleži maščobe in načini priprave lahko odstopajo. Za točno deklaracijo uporabi urejanje živil.
+  var RECIPE_FOOD_ROWS = "beef95|Meso|Mleto goveje meso 5 % maščobe, surovo|137|21|5|0\nbeef90|Meso|Mleto goveje meso 10 % maščobe, surovo|176|20|10|0\nbeef85|Meso|Mleto goveje meso 15 % maščobe, surovo|215|18.6|15|0\nbeef80|Meso|Mleto goveje meso 20 % maščobe, surovo|254|17|20|0\nbeefsteak|Meso|Goveji zrezek pust, surov|130|22|4.5|0\nbeefgoulash|Meso|Goveje meso za golaž pusto, surovo|140|21|6|0\nbeefliver|Meso|Goveja jetra, surova|135|20|3.6|4\nporklean|Meso|Svinjski file, surov|120|21|3.5|0\nporkshoulder|Meso|Svinjsko pleče, surovo|205|18|15|0\nporkmince|Meso|Mleto svinjsko meso približno 20 % maščobe, surovo|260|17|21|0\nporkbeef|Meso|Mleto mešano meso svinjina-govedina približno 20 % maščobe, surovo|250|17|20|0\nchickenbreast|Meso|Piščančje prsi brez kože, surove|110|23|1.5|0\nchickenthigh|Meso|Piščančja stegna brez kože, surova|120|19|4.5|0\nchickendrum|Meso|Piščančje krače z kožo, surove (užitni del)|160|18|9|0\nchickenwings|Meso|Piščančje perutničke s kožo, surove (brez kosti)|190|18|13|0\nturkeybreast|Meso|Puranje prsi brez kože, surove|110|24|1.5|0\nturkeymince|Meso|Mleto puranje meso približno 7 % maščobe, surovo|150|20|7|0\nrabbit|Meso|Kunčje meso, surovo|136|20|5.5|0\nspaghetti|Priloge|Špageti, suhi (pred kuhanjem)|356|12.5|1.5|72\nspaghetti_whole|Priloge|Špageti polnozrnati, suhi|348|13|2.5|67\npenne|Priloge|Penne, suhe (pred kuhanjem)|356|12.5|1.5|72\nfusilli|Priloge|Fusilli, suhi (pred kuhanjem)|356|12.5|1.5|72\nfarfalle|Priloge|Farfalle, suhe (pred kuhanjem)|356|12.5|1.5|72\ntagliatelle|Priloge|Tagliatelle jajčne, suhe|375|13|4|70\nlinguine|Priloge|Linguine, suhe|356|12.5|1.5|72\nmacaroni|Priloge|Makaroni, suhi|356|12.5|1.5|72\nlasagne|Priloge|Listi za lazanjo, suhi|356|12.5|1.5|72\nspaghetti_cooked|Priloge|Špageti, kuhani v vodi brez olja|158|5.8|0.9|30.9\npenne_cooked|Priloge|Penne, kuhane v vodi brez olja|158|5.8|0.9|30.9\neggnoodles|Priloge|Jajčni rezanci, suhi|385|14|4|72\nricewhite|Priloge|Riž bel dolgozrnati, suh|365|7.1|0.7|80\nricebasmati|Priloge|Riž basmati, suh|355|7.5|0.7|78\nricejasmine|Priloge|Riž jasmin, suh|355|7|0.7|79\nricearborio|Priloge|Riž za rižoto arborio, suh|355|7|0.7|79\nricebrown|Priloge|Riž rjavi, suh|370|7.5|2.7|77\nricewhitecooked|Priloge|Riž bel, kuhan v vodi|130|2.7|0.3|28\nricebasmaticooked|Priloge|Riž basmati, kuhan v vodi|130|2.7|0.3|28\ncouscousdry|Priloge|Kuskus, suh|376|12.8|0.6|77\nbulgurdry|Priloge|Bulgur, suh|342|12.3|1.3|76\nquinoadry|Priloge|Kvinoja, suha|368|14.1|6.1|64\nbarleydry|Priloge|Ješprenj, suh|354|12.5|2.3|73\nbuckwheatdry|Priloge|Ajdova kaša, suha|343|13.3|3.4|71.5\npotatoraw|Priloge|Krompir surov, olupljen|77|2|0.1|17\npotatoboiled|Priloge|Krompir kuhan v vodi, brez maščobe|87|1.9|0.1|20\nsweetpotatoraw|Priloge|Sladki krompir, surov|86|1.6|0.1|20\nflourplain|Kruh in žita|Pšenična moka bela, suha|364|10.3|1|76\nflourwhole|Kruh in žita|Pšenična moka polnozrnata, suha|340|13|2.5|72\nflourspelt|Kruh in žita|Pirina moka, suha|348|12|2|70\nflourrye|Kruh in žita|Ržena moka, suha|325|10|1.6|76\nflourcorn|Kruh in žita|Koruzna moka, suha|365|7|3.9|76\noats|Kruh in žita|Ovseni kosmiči, suhi|379|13|6.5|67\nbreadcrumbs|Kruh in žita|Drobtine, suhe|395|13|5|72\nyeastdry|Kruh in žita|Kvas suhi|325|40|7.6|41\nyeastfresh|Kruh in žita|Kvas sveži|105|8.5|1.9|18\nmushrooms|Zelenjava|Šampinjoni, surovi|22|3.1|0.3|3.3\nmushroomscooked|Zelenjava|Šampinjoni, kuhani brez olja|28|3.6|0.5|4\nonionraw|Zelenjava|Čebula rumena, surova|40|1.1|0.1|9.3\nonionred|Zelenjava|Čebula rdeča, surova|40|1.1|0.1|9.3\ncarrotraw|Zelenjava|Korenje surovo|41|0.9|0.2|9.6\ngarlic|Zelenjava|Česen, surov (olupljen)|149|6.4|0.5|33\ntomatoraw|Zelenjava|Paradižnik svež, surov|18|0.9|0.2|3.9\npeppergreen|Zelenjava|Paprika zelena, surova|20|0.9|0.2|4.6\npepperred|Zelenjava|Paprika rdeča, surova|31|1|0.3|6\nzucchini|Zelenjava|Bučke, surove|17|1.2|0.3|3.1\neggplant|Zelenjava|Jajčevec, surov|25|1|0.2|5.9\nbroccoliraw|Zelenjava|Brokoli, surov|34|2.8|0.4|6.6\ncauliflowerraw|Zelenjava|Cvetača, surova|25|1.9|0.3|5\nspinachraw|Zelenjava|Špinača, sveža surova|23|2.9|0.4|3.6\nleek|Zelenjava|Por, surov|61|1.5|0.3|14\ncelery|Zelenjava|Zelena stebelna, surova|14|0.7|0.2|3\ncabbage|Zelenjava|Zelje belo, surovo|25|1.3|0.1|5.8\ncucumber|Zelenjava|Kumara, surova|15|0.7|0.1|3.6\ncorncanned|Zelenjava|Koruza sladka v konzervi, odcejena|84|2.3|1.3|16\npeasfrozen|Zelenjava|Grah, zamrznjen pred kuhanjem|81|5.4|0.4|14.5\npassata|Omake in začimbe|Passata, pasiran paradižnik brez olja|30|1.5|0.2|5\ntomatopaste|Omake in začimbe|Paradižnikov koncentrat (mezga)|82|4.3|0.5|19\ntomatocanned|Omake in začimbe|Paradižnik pelati v konzervi|24|1.2|0.2|4.5\noliveoil|Omake in začimbe|Olivno olje, stehtano v gramih|884|0|100|0\nsunfloweroil|Omake in začimbe|Sončnično olje, stehtano v gramih|884|0|100|0\nrapeseedoil|Omake in začimbe|Repično olje, stehtano v gramih|884|0|100|0\nbutter|Mlečni izdelki|Maslo, stehtano v gramih|717|0.9|81|0.1\ncream12|Mlečni izdelki|Kisla smetana 12 % maščobe, v gramih|135|3|12|4\ncream20|Mlečni izdelki|Kisla smetana 20 % maščobe, v gramih|206|2.5|20|3.4\ncookingcream|Mlečni izdelki|Smetana za kuhanje 20 % maščobe|205|2.8|20|3.8\ncream35|Mlečni izdelki|Sladka smetana 35 % maščobe|340|2|35|3\nmilklow|Mlečni izdelki|Mleko 1,5 % maščobe, v ml|47|3.4|1.5|4.9\nmilkfull|Mlečni izdelki|Mleko 3,5 % maščobe, v ml|64|3.3|3.5|4.8\nmozzlight|Sir|Mozzarella light, tehtana v gramih|165|19|8|3\nmozzfull|Sir|Mozzarella običajna, tehtana v gramih|250|18|19|2\nparm|Sir|Parmezan, trdi sir|431|38|29|4\nricotta|Sir|Ricotta|174|11.3|13|3\nfeta|Sir|Feta sir|264|14|21|4\neggraw|Jajca|Jajce celo, surovo brez lupine|143|12.6|9.5|0.7\neggwhite|Jajca|Jajčni beljak, surov (g)|52|10.9|0.2|0.7\nyolk|Jajca|Jajčni rumenjak, surov (g)|322|15.9|26.5|3.6\ntuna_canned|Ribe|Tuna v lastnem soku, odcejena|116|26|1|0\ntuna_oil|Ribe|Tuna v olju, odcejena (referenčno)|198|26|10|0\nsalmonraw|Ribe|Losos atlantski, surov|208|20|13|0\ncodraw|Ribe|Trska, surova|82|18|0.7|0\npollockraw|Ribe|Aljaški polak, surov file|81|17.8|0.8|0\nshrimpraw|Ribe|Kozice, surove olupljene|85|20|0.5|0\nsardines|Ribe|Sardine v lastnem soku, odcejene|185|22|10|0\nlentilsdry|Stročnice|Leča, suha|352|24.6|1.1|63\nlentilscooked|Stročnice|Leča, kuhana|116|9|0.4|20\nchickpeascooked|Stročnice|Čičerika, kuhana|164|8.9|2.6|27\nbeanscooked|Stročnice|Fižol rdeči, kuhan|127|8.7|0.5|22.8\nbeanscanned|Stročnice|Fižol v konzervi, odcejen|108|7|0.5|18\ntofu|Stročnice|Tofu čvrst, naraven|144|15|8.7|3\nwalnuts|Oreščki in semena|Orehi jedrca|654|15|65|14\nalmonds|Oreščki in semena|Mandlji naravni|579|21|50|22\npumpkinseeds|Oreščki in semena|Bučna semena|559|30|49|11\nflaxseeds|Oreščki in semena|Lanena semena|534|18|42|29\nchia|Oreščki in semena|Chia semena|486|17|31|42\napple|Sadje|Jabolko, brez peščišča|52|0.3|0.2|14\nbanana|Sadje|Banana brez olupka|89|1.1|0.3|23\nblueberries|Sadje|Borovnice sveže|57|0.7|0.3|14\nstrawberries|Sadje|Jagode sveže|32|0.7|0.3|7.7\navocado|Sadje|Avokado, užitni del|160|2|15|8.5";
+  function addRecipeIngredients(){
+    if(!Array.isArray(S.recipeIngredientIds))S.recipeIngredientIds=[];
+    RECIPE_FOOD_ROWS.split('\\n').forEach(function(line){
+      var a=line.split('|'),id='recipe_'+a[0];
+      if(S.recipeIngredientIds.indexOf(id)>=0)return;
+      S.recipeIngredientIds.push(id);
+      if(S.foods.some(function(f){return f.id===id;}))return;
+      S.foods.push({id:id,cat:a[1],label:a[2],unit:a[0]==='milklow'||a[0]==='milkfull'?'ml':'g',
+        kcal:Number(a[3]),p:Number(a[4]),fat:Number(a[5]),carbs:Number(a[6]),fiber:null,sugars:null,def:100,
+        nutritionReference:'Generična referenčna ocena; preveri embalažo',nutritionReferenceSource:'Sestava primerljivih osnovnih živil (USDA FoodData Central, orientacijsko)'});
+    });
+  }
+
   // ---------- one-time migration: cooked weights, raw variants, pollock instead of saithe ----------
   var migratedNow = false;
   function migrateCooked() {
@@ -727,7 +743,7 @@ li.eaten .lab{color:var(--muted)}
     S.migr.push('doctorPlan20261113');migratedNow=true;
   }
 
-  function prep() { if (!S) return; if (!S.foods) S.foods = []; if (!Array.isArray(S.batchRecipes)) S.batchRecipes = []; ensureTracking(); addNewFoods(); if(!S.foods.some(function(f){return f.id==='battery_whey';}))S.foods.push({id:'battery_whey',label:'Battery Complete Whey (brez okusa)',cat:'Moje',unit:'g',kcal:0,p:0,def:30}); migrateCooked();
+  function prep() { if (!S) return; if (!S.foods) S.foods = []; if (!Array.isArray(S.batchRecipes)) S.batchRecipes = []; ensureTracking(); addNewFoods(); addRecipeIngredients(); if(!S.foods.some(function(f){return f.id==='battery_whey';}))S.foods.push({id:'battery_whey',label:'Battery Complete Whey (brez okusa)',cat:'Moje',unit:'g',kcal:0,p:0,def:30}); migrateCooked();
     if(S.migr.indexOf('pastaRaw2')===-1){
       if(!S.foods.some(function(x){return x.id==='testenine_s';}))S.foods.push({id:'testenine_s',cat:'Priloge',label:'Testenine (surove, suha teža)',unit:'g',kcal:356,p:12.5,def:80});
       S.migr.push('pastaRaw2');
@@ -1790,7 +1806,7 @@ li.eaten .lab{color:var(--muted)}
   function batchTotals(recipe) {
     var k=0,p=0,valid=!!(recipe.parts&&recipe.parts.length);
     (recipe.parts||[]).forEach(function(part){
-      var f=food(part.f),q=Number(part.q);
+      var f=food(part.f),q=Number(String(part.q).replace(',','.'));
       if(!f||!Number.isFinite(q)||q<=0){valid=false;return;}
       k+=(+f.kcal||0)*q/per(f.unit);
       p+=(+f.p||0)*q/per(f.unit);
@@ -1798,13 +1814,17 @@ li.eaten .lab{color:var(--muted)}
     return {k:k,p:p,valid:valid};
   }
   function batchPortion(recipe) {
-    var t=batchTotals(recipe),yieldGrams=Number(recipe.yieldGrams),portionGrams=Number(recipe.portionGrams);
+    var t=batchTotals(recipe),yieldGrams=Number(String(recipe.yieldGrams).replace(',','.')),portionGrams=Number(String(recipe.portionGrams).replace(',','.'));
     var valid=t.valid&&Number.isFinite(yieldGrams)&&yieldGrams>0&&Number.isFinite(portionGrams)&&portionGrams>0&&portionGrams<=yieldGrams;
     return {valid:valid,k:valid?t.k*portionGrams/yieldGrams:0,p:valid?t.p*portionGrams/yieldGrams:0,percent:valid?100*portionGrams/yieldGrams:0,total:t};
   }
   function batchFoodSelect(sel,i){
-    return '<select class="field" style="flex:1;min-width:0" data-batch-field="food" data-bi="'+i+'" aria-label="Sestavina '+(i+1)+'"><option value="">Izberi živilo</option>'+
-      groupedFoods('').map(function(g){return '<optgroup label="'+esc(g.c)+'">'+g.items.map(function(f){return '<option value="'+esc(f.id)+'"'+(f.id===sel?' selected':'')+'>'+esc(f.label)+'</option>';}).join('')+'</optgroup>';}).join('')+'</select>';
+    var f=food(sel),label=f?f.label:'Izberi živilo';
+    return '<div class="food-picker" style="flex:1"><details><summary class="field food-picker-trigger" aria-label="Izberi sestavino">'+esc(label)+'</summary>'+
+      '<div class="food-picker-panel"><input class="field food-picker-search" type="search" placeholder="Išči: špageti, goveje surovo ..." aria-label="Išči sestavino" autocomplete="off">'+
+      '<div class="food-picker-results">'+foodPickerChoices(sel)+'</div><p class="food-picker-empty note" hidden>Ni zadetkov.</p></div></details>'+
+      '<select hidden data-batch-field="food" data-bi="'+i+'" aria-label="Sestavina '+(i+1)+'"><option value="">Izberi živilo</option>'+
+      groupedFoods('').map(function(g){return '<optgroup label="'+esc(g.c)+'">'+g.items.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===sel?' selected':'')+'>'+esc(x.label)+'</option>';}).join('')+'</optgroup>';}).join('')+'</select></div>';
   }
   function renderBatchCalculator(){
     var h='<h2>Recept iz več sestavin</h2><p class="note">Za bolognese, golaž, rižote in podobne jedi: surove sestavine stehtaj posebej, po kuhanju pa celotno jed in svojo porcijo. Testenine, ki jih skuhaš ločeno, zabeleži posebej.</p>';
@@ -2137,7 +2157,7 @@ li.eaten .lab{color:var(--muted)}
     var choice = e.target.closest('[data-food-choice]');
     if (choice) {
       var picker = choice.closest('.food-picker');
-      var select = picker && picker.querySelector('select[data-k="f"]');
+      var select = picker && picker.querySelector('select[data-k="f"], select[data-batch-field="food"]');
       if (select) {
         select.value = choice.dataset.foodChoice;
         select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -2495,7 +2515,7 @@ li.eaten .lab{color:var(--muted)}
       if(e.type==='change' && t.tagName!=='SELECT')return;
       if(!batchDraft)return;
       var field=t.dataset.batchField,bi=+t.dataset.bi;
-      if(field==='food' && batchDraft.parts[bi])batchDraft.parts[bi].f=t.value;
+      if(field==='food' && batchDraft.parts[bi]){batchDraft.parts[bi].f=t.value;render();return;}
       else if(field==='qty' && batchDraft.parts[bi])batchDraft.parts[bi].q=t.value;
       else if(['name','yieldGrams','portionGrams','mealId'].indexOf(field)>=0)batchDraft[field]=t.value;
       return;
