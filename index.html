@@ -1822,7 +1822,10 @@ li.eaten .lab{color:var(--muted)}
         '<div class="macro-grid" style="margin-top:12px"><label class="note">Celotna kuhana jed (g)<input class="field" style="width:100%" type="text" inputmode="decimal" data-batch-field="yieldGrams" value="'+esc(d.yieldGrams)+'" placeholder="npr. 1100"></label>'+
         '<label class="note">Moja porcija (g)<input class="field" style="width:100%" type="text" inputmode="decimal" data-batch-field="portionGrams" value="'+esc(d.portionGrams)+'" placeholder="npr. 600"></label></div>'+
         '<p class="note" id="batchCalcResult">'+(b.valid?('Tvoja porcija: <b>'+Math.round(b.k)+' kcal · '+fmtN(b.p)+' g beljakovin</b> ('+fmtN(b.percent)+' % recepta). Celoten recept: '+Math.round(b.total.k)+' kcal · '+fmtN(b.total.p)+' g beljakovin.'): 'Vnesi vsa živila, količine ter težo cele kuhane jedi in svoje porcije.')+'</p>'+
-        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="ghost" data-act="batchCalc">Izračunaj</button><button type="button" class="primary" data-act="batchSave">Shrani recept</button><button type="button" class="ghost" data-act="batchCancel">Zapri</button></div></div>';
+        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="ghost" data-act="batchCalc">Izračunaj</button><button type="button" class="primary" data-act="batchSave">Shrani recept</button><button type="button" class="ghost" data-act="batchCancel">Zapri</button></div>'+
+        '<p class="note">Dodaj porcijo med današnje zaužite obroke (izračun ostane shranjen kot posnetek).</p>'+
+        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><select class="field" style="flex:1" data-batch-field="mealId" aria-label="Današnji obrok">'+S.days[(new Date().getDay()+6)%7].meals.map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===d.mealId?' selected':'')+'>'+esc(m.name)+'</option>';}).join('')+'</select>'+
+        '<button type="button" class="primary" data-act="batchEat">Dodaj kot pojedeno danes</button></div></div>';
     }
     var saved=S.batchRecipes||[];
     if(saved.length){
@@ -2155,6 +2158,15 @@ li.eaten .lab{color:var(--muted)}
       var next=JSON.parse(JSON.stringify(batchDraft));next.name=name;if(!next.id)next.id=nid('batch');
       change(function(){if(!Array.isArray(S.batchRecipes))S.batchRecipes=[];var i=S.batchRecipes.findIndex(function(x){return x.id===next.id;});if(i>=0)S.batchRecipes[i]=next;else S.batchRecipes.push(next);batchDraft=null;},'Recept shranjen');return;
     }
+    if(a==='batchEat'){
+      if(!batchDraft)return;
+      var serving=batchPortion(batchDraft),name=String(batchDraft.name||'').trim(),today=(new Date().getDay()+6)%7,
+        meal=S.days[today].meals.filter(function(m){return m.id===batchDraft.mealId;})[0]||S.days[today].meals[0];
+      if(!serving.valid||!name||!meal){setStatus('Izpolni ime, živila, količine, težo jedi in porcije.');return;}
+      var date=dKey(new Date()),it={id:nid('i'),n:name+' ('+fmtN(batchDraft.portionGrams)+' g)',k:Math.round(serving.k),p:Math.round(serving.p*10)/10,
+        extra:true,addedOn:date,eatenOn:date,note:'Recept: '+fmtN(batchDraft.portionGrams)+' g od '+fmtN(batchDraft.yieldGrams)+' g kuhane jedi'};
+      change(function(){var sw=activeSwap(meal,today);(sw?sw.items:meal.items).push(it);},'Porcija dodana kot pojedena');return;
+    }
     if(a==='batchEdit'){
       var recipe=(S.batchRecipes||[]).filter(function(x){return x.id===id;})[0];
       if(recipe){batchDraft=JSON.parse(JSON.stringify(recipe));render();}
@@ -2485,7 +2497,7 @@ li.eaten .lab{color:var(--muted)}
       var field=t.dataset.batchField,bi=+t.dataset.bi;
       if(field==='food' && batchDraft.parts[bi])batchDraft.parts[bi].f=t.value;
       else if(field==='qty' && batchDraft.parts[bi])batchDraft.parts[bi].q=t.value;
-      else if(['name','yieldGrams','portionGrams'].indexOf(field)>=0)batchDraft[field]=t.value;
+      else if(['name','yieldGrams','portionGrams','mealId'].indexOf(field)>=0)batchDraft[field]=t.value;
       return;
     }
     if (t.id === 'foodSearch') { if (e.type !== 'input') return; foodQ = t.value; render(); return; }
