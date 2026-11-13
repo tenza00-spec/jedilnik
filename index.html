@@ -165,6 +165,7 @@ li.eaten .lab{color:var(--muted)}
   <button data-v="smutiji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h12l-1.5 12a2 2 0 0 1-2 1.8h-5a2 2 0 0 1-2-1.8z"/><path d="M14 8l2-5"/></svg>Smutiji</button>
   <button data-v="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V10a7 7 0 0 1 14 0v11z"/><path d="M9 14h6M9 17h6"/></svg>Živila</button>
   <button data-v="napredek"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 19h18M5 17l5-6 4 3 5-9"/></svg>Napredek</button>
+  <button data-v="vadba"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>Vadba</button>
   <button data-v="nakup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20.5" r="1"/><circle cx="18" cy="20.5" r="1"/></svg>Nakup</button>
 </div></nav>
   <div id="app"><div class="empty" id="empty">Nalagam tvoje obroke, smutije in nakupovalni seznam.</div></div>
@@ -296,6 +297,7 @@ li.eaten .lab{color:var(--muted)}
     if (!S.daySwaps || typeof S.daySwaps !== 'object') S.daySwaps = {};
     if (!S.wellness || typeof S.wellness !== 'object') S.wellness = {};
     if (!Array.isArray(S.weights)) S.weights = [];
+    if(!S.activityLog||typeof S.activityLog!=='object'||Array.isArray(S.activityLog))S.activityLog={};
     if(!Array.isArray(S.favoriteFoodIds))S.favoriteFoodIds=[];
     S.favoriteFoodIds=S.favoriteFoodIds.filter(function(id){return typeof id==='string' && S.foods.some(function(f){return f.id===id;});});
     if(!S.pantry || typeof S.pantry!=='object' || Array.isArray(S.pantry))S.pantry={};
@@ -928,7 +930,7 @@ li.eaten .lab{color:var(--muted)}
   // ---------- render ----------
   function render() {
     if (!S) return;
-    $('editBtn').hidden = view === 'teden' || view === 'napredek' || view === 'manjsi' || (view === 'nakup' && S.shopMode !== 'manual');
+    $('editBtn').hidden = view === 'teden' || view === 'napredek' || view === 'vadba' || view === 'manjsi' || (view === 'nakup' && S.shopMode !== 'manual');
     $('editBtn').setAttribute('aria-pressed', editing ? 'true' : 'false');
     $('editBtn').textContent = editing ? 'Končano' : 'Uredi';
     document.querySelectorAll('nav button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === view); });
@@ -938,6 +940,7 @@ li.eaten .lab{color:var(--muted)}
     else if (view === 'manjsi') app.innerHTML = renderSmallAppetite();
     else if (view === 'smutiji') app.innerHTML = renderSmoothies();
     else if (view === 'napredek') app.innerHTML = renderProgress();
+    else if (view === 'vadba') app.innerHTML = renderTraining();
     else if (view === 'nakup') app.innerHTML = renderShop();
     else app.innerHTML = renderFoods();
     if (focusId && $(focusId) && ae.tagName !== 'SELECT') { var el = $(focusId); el.focus(); try { if (sel != null) el.setSelectionRange(sel, sel); } catch (e) {} }
@@ -1069,7 +1072,7 @@ li.eaten .lab{color:var(--muted)}
       return '<button type="button" role="tab" data-act="day" data-i="' + i + '" class="' + (i === dayIdx ? 'on' : '') + (i === today ? ' today' : '') + '" aria-selected="' + (i === dayIdx) + '"><b>' + short[i] + '</b><small class="tnum" id="tab-' + i + '" title="Dejansko zaužito">' + Math.round(dayKD(d).all) + ' kcal</small></button>';
     }).join('') + '</div>';
     var d = S.days[dayIdx];
-    h += '<div class="dayhead"><h2>' + esc(d.name) + '</h2></div><div class="gauge" id="gauge">' + gaugeHtml(dayKD(d), dayP(d)) + '</div>' + renderMacroSummary(dayIdx);
+    h += '<div class="dayhead"><h2>' + esc(d.name) + '</h2></div><div class="gauge" id="gauge">' + gaugeHtml(dayKD(d), dayP(d)) + '</div><p class="note">Po navodilu zdravnice: približno 2.500 kcal, vsaj 150 g beljakovin, sadje celo in posebej, kuhano zelenjavo ob kosilu, riž al dente in krompir v kosih. Hoja 30 min vsak dan, moč pon/sre/pet.</p>' + renderMacroSummary(dayIdx);
     d.meals.forEach(function (m) {
       var me = !!editMeals[m.id];
       h += '<div class="meal' + (m.lunch ? ' lunch' : '') + '"><div class="mh"><span class="nm">' + esc(m.name) + (m.lunch ? '<span class="tag">babica</span>' : '') + '</span><span class="rt"><span class="meal-totals"><span id="mk-' + m.id + '">' + mealActuallyEatenHtml(m,dayIdx) + '</span><small class="subtle tnum" id="mp-' + m.id + '">Načrt: ~' + mealK(m,dayIdx) + ' kcal</small></span>' +
@@ -1317,6 +1320,66 @@ li.eaten .lab{color:var(--muted)}
       h+='</details>';
     }
     return h+'</div>';
+  }
+
+
+  // Drugi nabor vaj: nobena od prvotnih petih (počep do stola, veslanje,
+  // potisk s tal, romunski mrtvi dvig, potisk ročk nad glavo).
+  var TRAINING_MOVEMENTS=[
+    {id:'wallpush',n:'Sklece ob steni',dose:'8–12 ponovitev',focus:'Prsi, triceps in nadzor trupa',
+      how:'Stoj približno za dolžino roke od stene. Dlani položi v višini prsi, nekoliko širše od ramen. S pokrčenimi komolci se počasi približaj steni, telo naj ostane ravno. Z izdihom se odrini nazaj.',
+      caution:'Ne usločaj križa. Lažje: stopi bližje steni. Ob bolečini v zapestjih/ramenih se ustavi.',
+      video:'https://www.youtube.com/results?search_query=wall+push+ups+proper+form+physical+therapy'},
+    {id:'kneeextend',n:'Izteg kolena sede',dose:'10–15 na nogo',focus:'Sprednje stegenske mišice',
+      how:'Sedi na stabilnem stolu s stopali na tleh. Eno koleno počasi iztegni do udobne višine, za sekundo zadrži in nogo počasi spusti. Zamenjaj stran. Brez dodatne uteži.',
+      caution:'Ne zaklepaj kolena na silo in ne zibaj trupa. Če koleno boli, zmanjšaj obseg giba.',
+      video:'https://www.youtube.com/results?search_query=seated+knee+extension+exercise+physiotherapy'},
+    {id:'hipabduct',n:'Odmik noge vstran ob opori',dose:'10–15 na nogo',focus:'Stranske mišice zadnjice in ravnotežje',
+      how:'Stoj ob trdnem pultu in se ga drži. Trup naj bo pokončen, nogo iz kolka počasi odmakni vstran le toliko, da se ne nagibaš. Počasi vrni, nato zamenjaj nogo.',
+      caution:'Ne obračaj stopala močno navzven in ne nihaj z nogo. Opora mora biti stabilna.',
+      video:'https://www.youtube.com/results?search_query=standing+hip+abduction+exercise+physical+therapy'},
+    {id:'reversefly',n:'Razpiranje rok v predklonu',dose:'8–12 ponovitev',focus:'Zgornji del hrbta in zadnji del ramen',
+      how:'Rahlo pokrči kolena, iz kolkov se nagní naprej in ohrani raven hrbet. Roki z zelo lahkima ročkama ali brez njih naj visita pod rameni. Počasi ju odpri vstran in nadzorovano spusti.',
+      caution:'Začni brez uteži ali z najlažjo možnostjo, ne nujno 7 kg. Ne dviguj ramen proti ušesom in ne zamahuj s trupom.',
+      video:'https://www.youtube.com/results?search_query=dumbbell+reverse+fly+proper+form+beginner'},
+    {id:'biceps',n:'Pregib komolcev z ročkama',dose:'10–15 ponovitev',focus:'Biceps in moč prijema',
+      how:'Stoj ali sedi na stabilnem stolu. Komolca ob telesu, zapestji nevtralni. Počasi pokrči komolca in dvigni ročki, nato ju nadzorovano spusti.',
+      caution:'Ne nihaj s hrbtom in ne potiskaj komolcev daleč naprej. Začni z lažjima ročkama.',
+      video:'https://www.youtube.com/results?search_query=dumbbell+biceps+curl+proper+form+beginner'},
+    {id:'calf',n:'Dvig na prste ob opori',dose:'10–15 ponovitev',focus:'Meča, gležnji, ravnotežje',
+      how:'Stoj na ravnih tleh ob stabilnem pultu. S stopaloma v širini bokov se počasi dvigni na prste, za trenutek zadrži in kontrolirano spusti.',
+      caution:'Ne izvajaj na stopnici in ne izgubi stika z oporo. Če te bolijo stopala ali Ahilova tetiva, skrajšaj gib.',
+      video:'https://www.youtube.com/results?search_query=standing+calf+raises+support+exercise+physical+therapy'}
+  ];
+  var trainingDayIdx=(new Date().getDay()+6)%7;
+  function trainingPlanDay(di){return di===0||di===2||di===4;}
+  function renderTraining(){
+    var today=dKey(new Date()),date=dateOfIdx(trainingDayIdx),
+      log=S.activityLog[date]||{},completed=Array.isArray(log.completed)?log.completed:[],
+      walk=Number(log.walkMinutes)||0,canLog=date<=today,isStrength=trainingPlanDay(trainingDayIdx);
+    var short=['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
+    var h='<h2>Vadba in hoja</h2><p class="note"><b>Po dogovoru z zdravnico:</b> 3 treningi moči tedensko in vsaj 30 minut hoje vsak dan. Vaje spodaj so <b>drugi nabor</b> od prvotno predlaganih petih. Za začetek po 1 serijo; po 2–3 tednih po potrebi 2. Zmerno in z dobro tehniko.</p>';
+    h+='<div class="strip" role="tablist">'+S.days.map(function(d,i){
+      return '<button type="button" role="tab" class="'+(i===trainingDayIdx?'on':'')+'" data-act="trainingDay" data-i="'+i+'" aria-selected="'+(i===trainingDayIdx)+'"><b>'+short[i]+'</b><small>'+(trainingPlanDay(i)?'Moč + hoja':'Hoja')+'</small></button>';
+    }).join('')+'</div>';
+    h+='<div class="card"><div class="mh"><b>'+esc(S.days[trainingDayIdx].name)+'</b><span class="subtle">'+esc(date)+'</span></div>'
+       +'<label class="note">Danes opravljena hoja (skupaj v minutah)<input class="field" type="number" min="0" max="600" step="5" data-walk="minutes" value="'+esc(walk)+'" '+(canLog?'':'disabled')+' style="width:100%"></label>'
+       +'<p class="note">'+(walk>=30?'✓ Vpisanih vsaj 30 minut hoje.':'Cilj: vsaj 30 minut; lahko 3 × 10 minut. Zdaj vpisano: '+walk+' min.')+'</p></div>';
+    if(isStrength){
+      h+='<div class="card"><h3 style="margin-top:0">Trening moči – drugačne vaje</h3><p class="subtle">Ogrevanje: 5 minut lahkotne hoje in gibanja ramen. Začni z eno serijo 8–15 ponovitev, počivaj 60–120 sekund in ohrani nekaj ponovitev v rezervi. Če je kateri gib boleč, ga izpusti ali prilagodi.</p>';
+      TRAINING_MOVEMENTS.forEach(function(ex,i){
+        var done=completed.indexOf(ex.id)>=0;
+        h+='<details style="padding:12px 0;border-top:1px solid var(--line)"><summary style="cursor:pointer"><b>'+(i+1)+'. '+esc(ex.n)+'</b><small class="subtle" style="display:block">'+esc(ex.dose)+' · '+esc(ex.focus)+'</small></summary>'
+          +'<p class="note"><b>Izvedba:</b> '+esc(ex.how)+'</p><p class="note"><b>Pazi:</b> '+esc(ex.caution)+'</p>'
+          +'<a href="'+esc(ex.video)+'" target="_blank" rel="noopener noreferrer">Poišči prikaz na YouTubu (izberi video z jasno tehniko)</a>'
+          +'<label style="display:flex;align-items:center;gap:8px;margin:10px 0 0"><input type="checkbox" data-training="'+esc(ex.id)+'"'+(done?' checked':'')+(canLog?'':' disabled')+'> Opravil sem vajo</label></details>';
+      });
+      h+='<p class="note">'+completed.length+' / '+TRAINING_MOVEMENTS.length+' vaj označenih. Po koncu 3–5 minut mirne hoje.</p></div>';
+    }else{
+      h+='<div class="card"><b>Danes je dan hoje ali regeneracije.</b><p class="note">30 minut hoje po počutju. Sobota lahko vključuje kolo, vendar upoštevaj hidracijo, energijo in počutje.</p></div>';
+    }
+    h+='<p class="subtle">To je dnevnik v tem brskalniku, ne podatki iz ure. Videopovezave odprejo iskanje na YouTubu, ne enega vnaprej preverjenega posnetka. Ob bolečini v prsih, omotici ali nenavadni zadihanosti prenehaj z vadbo in poišči ustrezno pomoč.</p>';
+    return h;
   }
 
   function renderProgress() {
@@ -2002,6 +2065,10 @@ li.eaten .lab{color:var(--muted)}
     if(a==='barcodeLookup'){barcodeLookup($('barcodeInput')?$('barcodeInput').value:barcodeInput);return;}
     if(a==='barcodeSave'){barcodeSaveFood(false);return;}
     if(a==='barcodeSaveMeal'){barcodeSaveFood(true);return;}
+    if(a==='trainingDay'){
+      var idx=Number(b.dataset.i);if(!Number.isInteger(idx)||idx<0||idx>6)return;
+      trainingDayIdx=idx;render();return;
+    }
     if(a==='favoriteToggle'){
       if(!S.foods.some(function(f){return f.id===id;}))return;
       change(function(){var i=S.favoriteFoodIds.indexOf(id);if(i>=0)S.favoriteFoodIds.splice(i,1);else S.favoriteFoodIds.unshift(id);},'Priljubljena živila posodobljena');return;
@@ -2212,6 +2279,24 @@ li.eaten .lab{color:var(--muted)}
       if(!isFinite(v)||v<0||v>(+fs.it.q||0)){setStatus('Količina mora biti med 0 in načrtovanimi '+fmtN(fs.it.q)+' '+fd.unit+'. Za več uporabi »Dodaj, kar sem jedel«.');return;}
       var date=dateOfIdx(dayIdx),fraction=(+fs.it.q||0)>0?v/(+fs.it.q):0;
       change(function(){if(fraction>0){fs.it.eatenOn=date;fs.it.portion=fraction;}else{delete fs.it.eatenOn;delete fs.it.portion;}});return;
+    }
+    if(t.dataset.walk){
+      if(e.type!=='change')return;
+      var date=dateOfIdx(trainingDayIdx);if(date>dKey(new Date()))return;
+      var value=Number(t.value);
+      if(!Number.isFinite(value)||value<0||value>600){setStatus('Vnesi hojo med 0 in 600 minutami.');return;}
+      if(!S.activityLog[date])S.activityLog[date]={};
+      S.activityLog[date].walkMinutes=Math.round(value);
+      render();save();return;
+    }
+    if(t.dataset.training){
+      if(e.type!=='change')return;
+      var date=dateOfIdx(trainingDayIdx),id=t.dataset.training;
+      if(date>dKey(new Date())||!trainingPlanDay(trainingDayIdx)||!TRAINING_MOVEMENTS.some(function(x){return x.id===id;}))return;
+      if(!S.activityLog[date])S.activityLog[date]={};
+      var entries=S.activityLog[date],arr=Array.isArray(entries.completed)?entries.completed:[];
+      entries.completed=t.checked?arr.filter(function(x){return x!==id;}).concat([id]):arr.filter(function(x){return x!==id;});
+      render();save();return;
     }
     if(t.dataset.pantry){
       if(e.type!=='change')return;
