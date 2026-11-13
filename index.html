@@ -316,7 +316,10 @@ li.eaten .lab{color:var(--muted)}
   }
   function visibleMealItems(m, di) {
     var sw = activeSwap(m, di);
-    return sw ? sw.items : m.items.filter(function(it) { return !it.extra || it.addedOn === dateOfIdx(di); });
+    var date=dateOfIdx(di);
+    return sw ? sw.items : m.items.filter(function(it) {
+      return (!it.planFrom || date>=it.planFrom) && (!it.extra || it.addedOn===date);
+    });
   }
   function portionOf(it, date) {
     if (it.eatenOn !== date) return 0;
@@ -630,7 +633,9 @@ li.eaten .lab{color:var(--muted)}
     }
     includeFood({id:'korenje_kuhano',cat:'Zelenjava',label:'Korenje, kuhano v kosih',unit:'g',kcal:35,p:0.8,carbs:8.2,fat:0.2,fiber:2.8,def:150,source:'Generična orientacijska vrednost; preveri pripravo'});
     includeFood({id:'brokoli_kuhan',cat:'Zelenjava',label:'Brokoli, kuhan v cvetovih',unit:'g',kcal:35,p:2.4,carbs:7.2,fat:0.4,fiber:3.3,def:150,source:'Generična orientacijska vrednost; preveri pripravo'});
-    var today=dKey(new Date());
+    var today=dKey(new Date()),nextMonday=weekMonday();
+    nextMonday.setDate(nextMonday.getDate()+7);
+    var newPlanFrom=dKey(nextMonday);
     var smoothiePlan={
       s39:{n:'Beljakovinski mlečni (brez sadja)',ing:'200 ml mleka, 125 g skute, 150 g skyra. Gozdne sadeže pojej cele posebej.',parts:[{f:'mleko',q:206},{f:'skuta',q:125},{f:'skyr',q:150}]},
       s3a:{n:'Mlečni s cimetom (brez sadja)',ing:'200 ml mleka, 125 g skute, 150 g skyra, cimet po okusu. Banano pojej celo posebej.',parts:[{f:'mleko',q:206},{f:'skuta',q:125},{f:'skyr',q:150},{f:'x_cimet',q:1.3}]},
@@ -666,7 +671,7 @@ li.eaten .lab{color:var(--muted)}
             it.extra=true;it.addedOn=oldDate;it.n='Predhodni smoothie (zaužit pred spremembo)';
             it.k=Math.round(variant.oldEnergy*servings);it.p=Math.round(variant.oldProtein*servings*10)/10;
             delete it.f;delete it.q;delete it.parts;
-            additions.push({id:nid('i'),f:formerId,q:Math.round(variant.newMass*servings*100)/100,note:'Brez sadja, sadje posebej'});
+            additions.push({id:nid('i'),f:formerId,q:Math.round(variant.newMass*servings*100)/100,planFrom:newPlanFrom,note:'Brez sadja, sadje posebej (od naslednjega tedna)'});
           }else{
             it.q=Math.round(variant.newMass*servings*100)/100;
             it.note='Brez sadja; sadje pojej posebej';
@@ -746,7 +751,7 @@ li.eaten .lab{color:var(--muted)}
     }
     return true;
   }
-  function shown(it, i) { return !it.extra || it.addedOn === dateOfIdx(i); }
+  function shown(it, i) { var date=dateOfIdx(i);return (!it.planFrom||date>=it.planFrom)&&(!it.extra||it.addedOn===date); }
   function mealEK(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemK(it)*portionOf(it,dateOfIdx(i)); },0); }
   function mealActuallyEatenHtml(m,i) {return '<strong class="kc tnum">Pojedeno: '+Math.round(mealEK(m,i))+' kcal · '+fmtN(mealEP(m,i))+' g belj.</strong>';}
   function mealEP(m, i) { return visibleMealItems(m,i).reduce(function (a,it) { return a+itemP(it)*portionOf(it,dateOfIdx(i)); },0); }
