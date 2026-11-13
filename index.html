@@ -644,29 +644,13 @@ li.eaten .lab{color:var(--muted)}
       if(!proposed)return;
       var seed=original.smoothies.filter(function(x){return x.id===sm.id;})[0];
       if(!seed || (sm.ing!==seed.ing && !sm.doctorPlan))return;
-      var oldMass=Number(sm.servingGrams)||300;
+      var oldMass=Number(sm.servingGrams)||300,oldEnergy=Number(sm.k)||0,oldProtein=Number(sm.p)||0;
       sm.parts=JSON.parse(JSON.stringify(proposed.parts));
       sm.servingGrams=sm.parts.reduce(function(a,p){return a+p.q;},0);
       sm.n=proposed.n;sm.ing=proposed.ing;sm.doctorPlan=true;
-      changedSm['s:'+sm.id]={oldMass:oldMass,newMass:sm.servingGrams};
+      var computed=smoothieValues(sm.parts);sm.k=computed.k;sm.p=computed.p;
+      changedSm['s:'+sm.id]={oldMass:oldMass,newMass:sm.servingGrams,oldEnergy:oldEnergy,oldProtein:oldProtein};
     });
-    function freezeIfEaten(it,sourceMeal){
-      if(!it.eatenOn || !/^\d{4}-\d\d-\d\d$/.test(it.eatenOn))return false;
-      // Ohrani dejansko zaužito kot ločen dneven vnos, še preden spremeniš recept.
-      var fromDate=it.eatenOn,originalK=it.k,originalP=it.p,origN=it.n;
-      if(it.f || Array.isArray(it.parts)){
-        // Del vnosa je lahko smoothie; staro energijo poišči v arhivu, kadar je na voljo.
-        var old=S.history[fromDate],entry=old&&old.items&&old.items.filter(function(e){return e.name && (e.name===itemLabel(it)||e.name.indexOf(sourceMeal.name)>=0);})[0];
-        originalK=originalK!=null?originalK:(entry&&entry.kcal!=null?entry.kcal:null);
-        originalP=originalP!=null?originalP:(entry&&entry.protein!=null?entry.protein:null);
-      }
-      it.extra=true;it.addedOn=fromDate;
-      if(originalK!=null&&originalP!=null){
-        it.k=Number(originalK);it.p=Number(originalP);it.n=origN||'Predhodno zaužit obrok';
-        delete it.f;delete it.q;delete it.parts;
-      }
-      return true;
-    }
     function mealBy(di,ix){return S.days[di]&&S.days[di].meals[ix];}
     (S.days||[]).forEach(function(d,di){
       (d.meals||[]).forEach(function(m){
@@ -675,15 +659,15 @@ li.eaten .lab{color:var(--muted)}
           var variant=changedSm[it.f];
           if(!variant)return;
           var servings=(Number(it.q)||0)/variant.oldMass;
-          if(it.eatenOn && it.eatenOn===dateOfIdx(di)){
-            var kcalOld=(+original.smoothies.filter(function(s){return 's:'+s.id===it.f;})[0]?.k||0)*servings;
-            var proteinOld=(+original.smoothies.filter(function(s){return 's:'+s.id===it.f;})[0]?.p||0)*servings;
-            // Pretvori v samostojen dnevni zapis brez povezave z novo formulo.
-            var oldDate=it.eatenOn;
-            it.extra=true;it.addedOn=oldDate;it.n='Predhodni smoothie (zaužit pred spremembo)';it.k=Math.round(kcalOld);it.p=proteinOld;
-            delete it.f;delete it.q;
-            additions.push({id:nid('i'),f:'s:'+Object.keys(smoothiePlan).filter(function(k){return 's:'+k in changedSm;})[0],q:variant.newMass*servings,note:'Po priporočilu zdravnice: sadje posebej'});
-          }else if(!it.eatenOn){
+          if(it.eatenOn){
+            // Stari že zaužiti smuti ostane točno tak, kot je bil pred spremembo.
+            // Novi smoothie je nov načrtovani vnos, ne označen kot zaužit.
+            var formerId=it.f,oldDate=it.eatenOn;
+            it.extra=true;it.addedOn=oldDate;it.n='Predhodni smoothie (zaužit pred spremembo)';
+            it.k=Math.round(variant.oldEnergy*servings);it.p=Math.round(variant.oldProtein*servings*10)/10;
+            delete it.f;delete it.q;delete it.parts;
+            additions.push({id:nid('i'),f:formerId,q:Math.round(variant.newMass*servings*100)/100,note:'Brez sadja, sadje posebej'});
+          }else{
             it.q=Math.round(variant.newMass*servings*100)/100;
             it.note='Brez sadja; sadje pojej posebej';
           }
