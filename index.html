@@ -12,7 +12,8 @@
 <meta name="theme-color" content="#fbf8f6">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="apple-touch-icon.png">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}.food-picker{flex:1;min-width:0;position:relative}.food-picker details{position:relative}.food-picker-trigger{cursor:pointer;display:block;list-style:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:28px;position:relative}.food-picker-trigger::-webkit-details-marker{display:none}.food-picker-trigger::after{content:"⌄";position:absolute;right:10px;top:50%;transform:translateY(-50%)}.food-picker-panel{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 22px #0002;padding:8px;min-width:210px}.food-picker-search{width:100%;margin-bottom:6px}.food-picker-results{max-height:min(45vh,320px);overflow-y:auto;overscroll-behavior:contain}.food-picker-choice{display:block;text-align:left;width:100%;border:0;background:transparent;padding:9px 8px;border-radius:7px;font-size:15px;line-height:1.3}.food-picker-choice:hover,.food-picker-choice:focus,.food-picker-choice[aria-current="true"]{background:var(--soft)}.food-picker-choice[hidden],.food-picker-group[hidden]{display:none}.food-picker-group{font-size:12px;font-weight:700;color:var(--muted);padding:8px 8px 3px}.food-picker-empty{padding:8px}
+</style>
 </head>
 <body>
 
@@ -878,6 +879,24 @@ li.eaten .lab{color:var(--muted)}
     return h;
   }
 
+  function foodPickerChoices(sel) {
+    var h = '<button type="button" class="food-picker-choice" data-food-choice=""' + (!sel ? ' aria-current="true"' : '') + '>Drugo (vpišem kalorije sam)</button>';
+    if (S.smoothies.length) {
+      h += '<div class="food-picker-group">Smutiji</div>';
+      S.smoothies.forEach(function (sm) {
+        var id = 's:' + sm.id;
+        h += '<button type="button" class="food-picker-choice" data-food-choice="' + esc(id) + '"' + (id === sel ? ' aria-current="true"' : '') + '>' + esc(sm.n) + '</button>';
+      });
+    }
+    groupedFoods('').forEach(function (group) {
+      h += '<div class="food-picker-group">' + esc(group.c) + '</div>';
+      group.items.forEach(function (f) {
+        h += '<button type="button" class="food-picker-choice" data-food-choice="' + esc(f.id) + '"' + (f.id === sel ? ' aria-current="true"' : '') + '>' + esc(f.label) + '</button>';
+      });
+    });
+    return h;
+  }
+
   // ---------- persistence ----------
   function save() {
     localRev++;
@@ -960,8 +979,11 @@ li.eaten .lab{color:var(--muted)}
   function kvTxt(o) { var p = itemP(o); return '~' + itemK(o) + ' kcal' + (p >= 1 ? ' · ' + pTxt(p) : ''); }
   function itemEditor(o, pfx, id) {
     var fd = o.f ? food(o.f) : null, a = ' data-p="' + pfx + '" data-id="' + id + '"';
-    var h = '<input class="field" style="width:100%;margin-bottom:6px" type="search" id="fs-' + pfx + '-' + id + '" data-food-search="' + pfx + 'f-' + id + '" placeholder="Išči živilo (npr. polak)" aria-label="Poišči živilo v seznamu">' +
-      '<div class="two"><select class="field" id="' + pfx + 'f-' + id + '" data-k="f"' + a + ' aria-label="Živilo">' + foodOptions(o.f) + '</select>' +
+    var foodName = fd ? fd.label : (o.f ? (food(o.f) || {}).label : '') || 'Drugo (vpišem kalorije sam)';
+    var h = '<div class="two"><div class="food-picker"><details><summary class="field food-picker-trigger" aria-label="Izberi živilo">' + esc(foodName) + '</summary>' +
+      '<div class="food-picker-panel"><input class="field food-picker-search" type="search" placeholder="Išči živilo (npr. polak)" aria-label="Išči med živili" autocomplete="off">' +
+      '<div class="food-picker-results">' + foodPickerChoices(o.f) + '</div><p class="food-picker-empty note" hidden>Ni zadetkov.</p></div></details>' +
+      '<select hidden id="' + pfx + 'f-' + id + '" data-k="f"' + a + ' aria-label="Živilo">' + foodOptions(o.f) + '</select></div>' +
       (pfx === 'e' ? '<button type="button" class="x" data-act="delItem" data-id="' + id + '" aria-label="Odstrani">×</button>' : '') + '</div>';
     if (fd) {
       h += '<div class="two"><input class="field tnum" style="width:90px;text-align:right" id="' + pfx + 'q-' + id + '" data-k="q"' + a + ' value="' + esc(fmtN(o.q)) + '" inputmode="decimal" aria-label="Količina">' +
@@ -2053,6 +2075,16 @@ li.eaten .lab{color:var(--muted)}
 
   // ---------- events ----------
   app.addEventListener('click', function (e) {
+    var choice = e.target.closest('[data-food-choice]');
+    if (choice) {
+      var picker = choice.closest('.food-picker');
+      var select = picker && picker.querySelector('select[data-k="f"]');
+      if (select) {
+        select.value = choice.dataset.foodChoice;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      return;
+    }
     var b = e.target.closest('[data-act]'); if (!b) return;
     var a = b.dataset.act, id = b.dataset.id;
     if(a==='barcodeOpen'){
@@ -2351,10 +2383,23 @@ li.eaten .lab{color:var(--muted)}
     if (t.dataset.inj) { if (e.type !== 'change') return; S.injDay = +t.value; save(); return; }
     if (t.dataset.rf) { if (e.type === 'change') return; var rr = S.recipes.filter(function (x) { return x.id === id; })[0]; if (!rr) return; var rf = t.dataset.rf; rr[rf] = (rf === 'k' || rf === 'p') ? num(t.value) : t.value; save(); return; }
     if (t.id === 'smallDay') { if (e.type !== 'change') return; dayIdx = +t.value; render(); return; }
-    if (t.dataset.foodSearch) {
+    if (t.classList.contains('food-picker-search')) {
       if (e.type !== 'input') return;
-      var select = $(t.dataset.foodSearch);
-      if (select) select.innerHTML = foodOptions(select.value, t.value);
+      var panel = t.closest('.food-picker-panel'), needle = foodSearchKey(t.value), visible = 0;
+      panel.querySelectorAll('.food-picker-choice').forEach(function (choice) {
+        var matches = foodSearchKey(choice.textContent).indexOf(needle) >= 0;
+        choice.hidden = !matches;
+        if (matches) visible++;
+      });
+      panel.querySelectorAll('.food-picker-group').forEach(function (group) {
+        var next = group.nextElementSibling, any = false;
+        while (next && !next.classList.contains('food-picker-group')) {
+          if (!next.hidden) any = true;
+          next = next.nextElementSibling;
+        }
+        group.hidden = !any;
+      });
+      panel.querySelector('.food-picker-empty').hidden = visible !== 0;
       return;
     }
     if (t.id === 'foodSearch') { if (e.type !== 'input') return; foodQ = t.value; render(); return; }
