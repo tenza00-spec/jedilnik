@@ -315,6 +315,7 @@ li.eaten .lab{color:var(--muted)}
     if (!S.wellness || typeof S.wellness !== 'object') S.wellness = {};
     if (!Array.isArray(S.weights)) S.weights = [];
     if(!S.activityLog||typeof S.activityLog!=='object'||Array.isArray(S.activityLog))S.activityLog={};
+    if(!Array.isArray(S.activitySessions))S.activitySessions=[];
     if(!Array.isArray(S.favoriteFoodIds))S.favoriteFoodIds=[];
     S.favoriteFoodIds=S.favoriteFoodIds.filter(function(id){return typeof id==='string' && S.foods.some(function(f){return f.id===id;});});
     if(!S.pantry || typeof S.pantry!=='object' || Array.isArray(S.pantry))S.pantry={};
@@ -1391,8 +1392,68 @@ li.eaten .lab{color:var(--muted)}
       caution:'Ne izvajaj na stopnici in ne izgubi stika z oporo. Če te bolijo stopala ali Ahilova tetiva, skrajšaj gib.',
       video:'https://www.youtube.com/results?search_query=standing+calf+raises+support+exercise+physical+therapy'}
   ];
-  var trainingDayIdx=(new Date().getDay()+6)%7;
+  var trainingDayIdx=(new Date().getDay()+6)%7, activityDate=dKey(new Date()), activityDraft=null;
+  var ACTIVITY_TYPES=[['walk','Sprehod'],['strength','Vadba za moč'],['bike','Kolesarjenje'],['swim','Plavanje'],['other','Druga aktivnost']];
   function trainingPlanDay(di){return di===0||di===2||di===4;}
+
+  // Evidenca dejanskih aktivnosti je ločena od načrta vaj in prehranskih kalorij.
+  function activityName(type){var x=ACTIVITY_TYPES.filter(function(a){return a[0]===type;})[0];return x?x[1]:'Druga aktivnost';}
+  function sessionsFor(date){return (S.activitySessions||[]).filter(function(a){return a.date===date;}).sort(function(a,b){return String(a.createdAt||'').localeCompare(String(b.createdAt||''));});}
+  function activitySums(list){
+    return list.reduce(function(acc,a){
+      acc.count++;acc.minutes+=(+a.minutes||0);
+      if(a.type==='walk')acc.walkMinutes+=(+a.minutes||0);
+      if(a.type==='strength')acc.strengthMinutes+=(+a.minutes||0);
+      if(a.activeKcal!==null&&a.activeKcal!==undefined&&a.activeKcal!==''){acc.activeKcal+=(+a.activeKcal||0);acc.activeCount++;}
+      if(a.totalKcal!==null&&a.totalKcal!==undefined&&a.totalKcal!==''){acc.totalKcal+=(+a.totalKcal||0);acc.totalCount++;}
+      return acc;
+    },{count:0,minutes:0,walkMinutes:0,strengthMinutes:0,activeKcal:0,totalKcal:0,activeCount:0,totalCount:0});
+  }
+  function activityField(label,key,type,placeholder){
+    return '<label class="note" style="flex:1;min-width:120px">'+label+
+      '<input class="field" style="width:100%" data-activity-field="'+key+'" type="'+(type||'text')+'"'+(type==='number'?' min="0" step="1" inputmode="numeric"':'')+
+      ' value="'+esc(activityDraft[key]==null?'':activityDraft[key])+'" placeholder="'+esc(placeholder||'')+'"></label>';
+  }
+  function renderActivityDiary(){
+    var today=dKey(new Date()),key=activityDate||today,daySessions=sessionsFor(key),tot=activitySums(daySessions);
+    var end=new Date(),start=new Date(end.getFullYear(),end.getMonth(),end.getDate()-6);
+    var recent=(S.activitySessions||[]).filter(function(a){return a.date>=dKey(start)&&a.date<=today;});
+    var weekly=activitySums(recent),byDay={},walkDays=0,strengthDays=0;
+    recent.forEach(function(a){if(!byDay[a.date])byDay[a.date]={walk:0,strength:false};if(a.type==='walk')byDay[a.date].walk+=(+a.minutes||0);if(a.type==='strength')byDay[a.date].strength=true;});
+    Object.keys(byDay).forEach(function(k){if(byDay[k].walk>=30)walkDays++;if(byDay[k].strength)strengthDays++;});
+    var h='<h2>Dnevnik aktivnosti</h2><p class="note">Zabeleži dejanske sprehode in treninge. <b>Aktivne kcal</b> so energija, ocenjena za gibanje; <b>skupne kcal</b> vključujejo tudi porabo v mirovanju med aktivnostjo. Teh dveh števil ne seštevaj. Ocene ure so lahko nenatančne in se <b>ne odštevajo od zaužitih kalorij</b>.</p>';
+    h+='<div class="card"><h3 style="margin-top:0">Zadnjih 7 dni</h3>'+
+      '<div class="two" style="display:flex;flex-wrap:wrap;gap:12px"><span><b>'+weekly.count+'</b> aktivnosti</span><span><b>'+weekly.minutes+' min</b> gibanja</span><span><b>'+weekly.walkMinutes+' min</b> hoje</span><span><b>'+weekly.strengthMinutes+' min</b> moči</span></div>'+
+      '<p class="note">'+(weekly.activeCount?('Skupaj '+Math.round(weekly.activeKcal)+' aktivnih kcal ('+weekly.activeCount+' zapisov z vneseno vrednostjo).'):'Aktivne kcal še niso zabeležene.')+
+      ' Hoja ≥ 30 min: '+walkDays+' dni · Treningi moči: '+strengthDays+' dni (po vpisanih aktivnostih).</p>'+
+      '<p class="subtle">Seštevek vključuje le posamezne vpisane aktivnosti. Stare kljukice in ročno vnesene minute hoje so ohranjene ločeno.</p></div>';
+    h+='<div class="card"><div class="two" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><label class="note" style="flex:1">Datum dnevnika<input class="field" data-activity-date="1" type="date" max="'+today+'" value="'+esc(key)+'" style="width:100%"></label>'+
+       '<button type="button" class="primary" data-act="activityNew">+ Dodaj aktivnost</button></div>';
+    if(activityDraft){
+      h+='<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><h3 style="margin-top:0">'+(activityDraft.id?'Uredi aktivnost':'Nova aktivnost')+'</h3>'+
+        '<label class="note">Vrsta aktivnosti<select class="field" data-activity-field="type" style="width:100%">'+
+        ACTIVITY_TYPES.map(function(t){return '<option value="'+t[0]+'"'+(activityDraft.type===t[0]?' selected':'')+'>'+t[1]+'</option>';}).join('')+'</select></label>'+
+        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap">'+activityField('Trajanje (min)','minutes','number','npr. 60')+
+        activityField('Aktivne kcal (ura)','activeKcal','number','npr. 480')+'</div>'+
+        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap">'+activityField('Skupne kcal (ura)','totalKcal','number','npr. 700')+'</div>'+
+        '<label class="note">Opomba (neobvezno)<input class="field" style="width:100%" data-activity-field="note" type="text" maxlength="180" value="'+esc(activityDraft.note||'')+'" placeholder="npr. hitra hoja, 6 vaj, 2 seriji"></label>'+
+        '<p class="subtle">Kalorije z ure so neobvezne. Če jih ura ne pokaže, pusti prazno – aplikacija jih ne ugiba.</p>'+
+        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="primary" data-act="activitySave">Shrani aktivnost</button><button type="button" class="ghost" data-act="activityCancel">Prekliči</button></div></div>';
+    }
+    h+='<h3>Aktivnosti za '+esc(key)+'</h3>';
+    if(!daySessions.length)h+='<p class="subtle">Za ta datum še ni vpisanih aktivnosti.</p>';
+    daySessions.forEach(function(a){
+      var metrics=[a.minutes+' min'];
+      if(a.activeKcal!==null&&a.activeKcal!==undefined&&a.activeKcal!=='')metrics.push(Math.round(+a.activeKcal)+' aktivnih kcal');
+      if(a.totalKcal!==null&&a.totalKcal!==undefined&&a.totalKcal!=='')metrics.push(Math.round(+a.totalKcal)+' skupnih kcal');
+      h+='<div style="padding:10px 0;border-top:1px solid var(--line)"><b>'+esc(activityName(a.type))+'</b><p class="note">'+esc(metrics.join(' · '))+(a.note?' · '+esc(a.note):'')+'</p>'+
+        '<div class="two" style="display:flex;gap:8px"><button type="button" class="ghost" data-act="activityEdit" data-id="'+esc(a.id)+'">Uredi</button>'+
+        '<button type="button" class="ghost" data-act="activityDelete" data-id="'+esc(a.id)+'">Izbriši</button></div></div>';
+    });
+    h+='<p class="note">Skupaj za datum: <b>'+tot.minutes+' minut</b>'+(tot.activeCount?' · '+Math.round(tot.activeKcal)+' aktivnih kcal':'')+'.</p></div>';
+    return h;
+  }
+
   function renderTraining(){
     var today=dKey(new Date()),date=dateOfIdx(trainingDayIdx),
       log=S.activityLog[date]||{},completed=Array.isArray(log.completed)?log.completed:[],
@@ -1418,6 +1479,7 @@ li.eaten .lab{color:var(--muted)}
     }else{
       h+='<div class="card"><b>Danes je dan hoje ali regeneracije.</b><p class="note">30 minut hoje po počutju. Sobota lahko vključuje kolo, vendar upoštevaj hidracijo, energijo in počutje.</p></div>';
     }
+    h+=renderActivityDiary();
     h+='<p class="subtle">To je dnevnik v tem brskalniku, ne podatki iz ure. Videopovezave odprejo iskanje na YouTubu, ne enega vnaprej preverjenega posnetka. Ob bolečini v prsih, omotici ali nenavadni zadihanosti prenehaj z vadbo in poišči ustrezno pomoč.</p>';
     return h;
   }
@@ -2208,6 +2270,33 @@ li.eaten .lab{color:var(--muted)}
     if(a==='barcodeLookup'){barcodeLookup($('barcodeInput')?$('barcodeInput').value:barcodeInput);return;}
     if(a==='barcodeSave'){barcodeSaveFood(false);return;}
     if(a==='barcodeSaveMeal'){barcodeSaveFood(true);return;}
+    if(a==='activityNew'){activityDraft={id:'',type:'walk',minutes:60,activeKcal:'',totalKcal:'',note:''};render();return;}
+    if(a==='activityCancel'){activityDraft=null;render();return;}
+    if(a==='activityEdit'){
+      var selected=(S.activitySessions||[]).filter(function(x){return x.id===id;})[0];
+      if(selected){activityDate=selected.date;activityDraft=JSON.parse(JSON.stringify(selected));render();}
+      return;
+    }
+    if(a==='activityDelete'){
+      if(!window.confirm('Ali želiš izbrisati ta zapis aktivnosti?'))return;
+      change(function(){S.activitySessions=S.activitySessions.filter(function(x){return x.id!==id;});if(activityDraft&&activityDraft.id===id)activityDraft=null;},'Aktivnost izbrisana');return;
+    }
+    if(a==='activitySave'){
+      if(!activityDraft)return;
+      var minutes=Number(activityDraft.minutes),ak=activityDraft.activeKcal,tk=activityDraft.totalKcal;
+      var active=ak===''||ak===null?null:Number(ak),total=tk===''||tk===null?null:Number(tk);
+      var date=activityDate||dKey(new Date());
+      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||date>dKey(new Date())||!Number.isFinite(minutes)||minutes<=0||minutes>1440||
+        (active!==null&&(!Number.isFinite(active)||active<0||active>20000))||
+        (total!==null&&(!Number.isFinite(total)||total<0||total>20000))||
+        (active!==null&&total!==null&&active>total)){
+        setStatus('Preveri datum, trajanje (1–1440 min) in kalorije. Aktivne kcal ne smejo presegati skupnih.');return;
+      }
+      var next={id:activityDraft.id||nid('act'),date:date,type:ACTIVITY_TYPES.some(function(t){return t[0]===activityDraft.type;})?activityDraft.type:'other',
+        minutes:Math.round(minutes),activeKcal:active,totalKcal:total,note:String(activityDraft.note||'').trim().slice(0,180),
+        createdAt:activityDraft.createdAt||new Date().toISOString()};
+      change(function(){var i=S.activitySessions.findIndex(function(x){return x.id===next.id;});if(i>=0)S.activitySessions[i]=next;else S.activitySessions.push(next);activityDraft=null;},'Aktivnost shranjena');return;
+    }
     if(a==='trainingDay'){
       var idx=Number(b.dataset.i);if(!Number.isInteger(idx)||idx<0||idx>6)return;
       trainingDayIdx=idx;render();return;
@@ -2422,6 +2511,17 @@ li.eaten .lab{color:var(--muted)}
       if(!isFinite(v)||v<0||v>(+fs.it.q||0)){setStatus('Količina mora biti med 0 in načrtovanimi '+fmtN(fs.it.q)+' '+fd.unit+'. Za več uporabi »Dodaj, kar sem jedel«.');return;}
       var date=dateOfIdx(dayIdx),fraction=(+fs.it.q||0)>0?v/(+fs.it.q):0;
       change(function(){if(fraction>0){fs.it.eatenOn=date;fs.it.portion=fraction;}else{delete fs.it.eatenOn;delete fs.it.portion;}});return;
+    }
+    if(t.dataset.activityDate){
+      if(e.type!=='change')return;
+      var date=t.value;if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||date>dKey(new Date()))return;
+      activityDate=date;activityDraft=null;render();return;
+    }
+    if(t.dataset.activityField){
+      if(!activityDraft)return;
+      var field=t.dataset.activityField;
+      if(['type','minutes','activeKcal','totalKcal','note'].indexOf(field)>=0)activityDraft[field]=t.value;
+      return;
     }
     if(t.dataset.walk){
       if(e.type!=='change')return;
