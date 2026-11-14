@@ -2286,7 +2286,7 @@ li.eaten .lab{color:var(--muted)}
       var minutes=Number(activityDraft.minutes),ak=activityDraft.activeKcal,tk=activityDraft.totalKcal;
       var active=ak===''||ak===null?null:Number(ak),total=tk===''||tk===null?null:Number(tk);
       var date=activityDate||dKey(new Date());
-      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||date>dKey(new Date())||!Number.isFinite(minutes)||minutes<=0||minutes>1440||
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>dKey(new Date())||!Number.isFinite(minutes)||minutes<=0||minutes>1440||
         (active!==null&&(!Number.isFinite(active)||active<0||active>20000))||
         (total!==null&&(!Number.isFinite(total)||total<0||total>20000))||
         (active!==null&&total!==null&&active>total)){
@@ -2514,7 +2514,7 @@ li.eaten .lab{color:var(--muted)}
     }
     if(t.dataset.activityDate){
       if(e.type!=='change')return;
-      var date=t.value;if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||date>dKey(new Date()))return;
+      var date=t.value;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>dKey(new Date()))return;
       activityDate=date;activityDraft=null;render();return;
     }
     if(t.dataset.activityField){
