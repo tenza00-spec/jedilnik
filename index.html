@@ -305,7 +305,7 @@ li.eaten .lab{color:var(--muted)}
       }
     });
     if (editing) h += '<button type="button" class="add" data-act="addRec">+ Dodaj recept</button>';
-    return h;
+    return renderBatchCalculator()+h;
   }
 
   // Ločen arhiv za zgodovino. Podatki so lokalni in jih ne pošiljamo na strežnik.
@@ -317,7 +317,7 @@ li.eaten .lab{color:var(--muted)}
     if(!S.activityLog||typeof S.activityLog!=='object'||Array.isArray(S.activityLog))S.activityLog={};
     if(!Array.isArray(S.activitySessions))S.activitySessions=[];
     if(!Array.isArray(S.favoriteFoodIds))S.favoriteFoodIds=[];
-    S.favoriteFoodIds=S.favoriteFoodIds.filter(function(id){return typeof id==='string' && S.foods.some(function(f){return f.id===id;});});
+    S.favoriteFoodIds=S.favoriteFoodIds.filter(function(id){return typeof id==='string' && (S.foods.some(function(f){return f.id===id;}) || (id.indexOf('r:')===0 && (S.batchRecipes||[]).some(function(r){return 'r:'+r.id===id;})));});
     if(!S.pantry || typeof S.pantry!=='object' || Array.isArray(S.pantry))S.pantry={};
     if(!Array.isArray(S.recentFoodIds))S.recentFoodIds=[];
     if(!S.foodUnitOverrides || typeof S.foodUnitOverrides!=='object' || Array.isArray(S.foodUnitOverrides))S.foodUnitOverrides={};
@@ -785,6 +785,15 @@ li.eaten .lab{color:var(--muted)}
       var sm = S.smoothies.filter(function (x) { return 's:' + x.id === f; })[0];
       return sm ? { id: f, label: 'Smoothie: ' + sm.n, unit: 'g', kcal: smMacros(sm).k*100/(sm.servingGrams||300), p: smMacros(sm).p*100/(sm.servingGrams||300), def:sm.servingGrams||300, massReview:sm.massReview||null } : null;
     }
+    if(f.indexOf('r:')===0){
+      var recipe=(S.batchRecipes||[]).filter(function(x){return 'r:'+x.id===f;})[0];
+      if(!recipe)return null;
+      var t=batchTotals(recipe),mass=batchRecipeMass(recipe,t);
+      if(!t.valid||!(mass>0))return null;
+      var o={id:f,label:recipe.name,cat:'Shranjeni recepti',unit:'g',kcal:t.k*100/mass,p:t.p*100/mass,def:100};
+      ['fat','carbs','fiber','sugars'].forEach(function(key){o[key]=t.nutrients[key]===null?null:t.nutrients[key]*100/mass;});
+      return o;
+    }
     return (S.foods || []).filter(function (x) { return x.id === f; })[0] || null;
   }
 
@@ -881,6 +890,11 @@ li.eaten .lab{color:var(--muted)}
     var needle = foodSearchKey(query), matches = 0;
     function visible(name, id) { return !needle || foodSearchKey(name).indexOf(needle) >= 0 || sel === id; }
     var h = '<option value=""' + (!sel ? ' selected' : '') + '>Drugo (vpišem kalorije sam)</option>';
+    var recipes=(S.batchRecipes||[]).filter(function(r){return visible(r.name,'r:'+r.id)&&food('r:'+r.id);});
+    if(recipes.length){h+='<optgroup label="Shranjeni recepti">';
+      recipes.forEach(function(r){var id='r:'+r.id;h+='<option value="'+esc(id)+'"'+(sel===id?' selected':'')+'>'+esc(r.name)+'</option>';matches++;});
+      h+='</optgroup>';
+    }
     var smoothies = S.smoothies.filter(function (s) { return visible(s.n, 's:' + s.id); });
     if (smoothies.length) {
       h += '<optgroup label="Smutiji">';
@@ -896,8 +910,14 @@ li.eaten .lab{color:var(--muted)}
     return h;
   }
 
-  function foodPickerChoices(sel) {
+  function foodPickerChoices(sel,includeRecipes) {
     var h = '<button type="button" class="food-picker-choice" data-food-choice=""' + (!sel ? ' aria-current="true"' : '') + '>Drugo (vpišem kalorije sam)</button>';
+    if(includeRecipes!==false){
+      var rs=(S.batchRecipes||[]).filter(function(r){return food('r:'+r.id);});
+      if(rs.length){h+='<div class="food-picker-group">Shranjeni recepti</div>';
+        rs.forEach(function(r){var id='r:'+r.id;h+='<button type="button" class="food-picker-choice" data-food-choice="'+esc(id)+'"'+(id===sel?' aria-current="true"':'')+'>'+esc(r.name)+'</button>';});
+      }
+    }
     if (S.smoothies.length) {
       h += '<div class="food-picker-group">Smutiji</div>';
       S.smoothies.forEach(function (sm) {
@@ -1861,39 +1881,47 @@ li.eaten .lab{color:var(--muted)}
   }
 
 
-  // ---------- batch recipes: raw ingredients, cooked yield, measured serving ----------
-  function newBatchDraft() {
-    return {id:'',name:'',parts:[{f:'',q:100}],yieldGrams:'',portionGrams:'',mealId:''};
-  }
-  function batchTotals(recipe) {
-    var k=0,p=0,valid=!!(recipe.parts&&recipe.parts.length);
+  // Recepti iz sestavin: skupna energija, samodejna masa in preračun na 100 g.
+  function newBatchDraft(){return {id:'',name:'',parts:[{f:'',q:100}]};}
+  function batchTotals(recipe){
+    var t={k:0,p:0,mass:0,valid:!!(recipe.parts&&recipe.parts.length),nutrients:{fat:0,carbs:0,fiber:0,sugars:0}};
     (recipe.parts||[]).forEach(function(part){
-      var f=food(part.f),q=Number(String(part.q).replace(',','.'));
-      if(!f||!Number.isFinite(q)||q<=0){valid=false;return;}
-      k+=(+f.kcal||0)*q/per(f.unit);
-      p+=(+f.p||0)*q/per(f.unit);
+      var f=part.f&&part.f.indexOf('r:')===0?null:food(part.f),q=Number(String(part.q).replace(',','.'));
+      if(!f||!Number.isFinite(q)||q<=0){t.valid=false;return;}
+      var factor=q/per(f.unit);
+      t.k+=(+f.kcal||0)*factor;t.p+=(+f.p||0)*factor;
+      var grams=(f.unit==='g'||f.unit==='ml')?q:q*(+f.gramPerPiece||+f.legacyGramFactor||0);
+      if(!(grams>0))t.valid=false;else t.mass+=grams;
+      ['fat','carbs','fiber','sugars'].forEach(function(key){
+        var n=knownNutrient(f,key);
+        if(n===null)t.nutrients[key]=null;
+        else if(t.nutrients[key]!==null)t.nutrients[key]+=n*factor;
+      });
     });
-    return {k:k,p:p,valid:valid};
+    return t;
   }
-  function batchPortion(recipe) {
-    var t=batchTotals(recipe),yieldGrams=Number(String(recipe.yieldGrams).replace(',','.')),portionGrams=Number(String(recipe.portionGrams).replace(',','.'));
-    var valid=t.valid&&Number.isFinite(yieldGrams)&&yieldGrams>0&&Number.isFinite(portionGrams)&&portionGrams>0&&portionGrams<=yieldGrams;
-    return {valid:valid,k:valid?t.k*portionGrams/yieldGrams:0,p:valid?t.p*portionGrams/yieldGrams:0,percent:valid?100*portionGrams/yieldGrams:0,total:t};
+  function batchRecipeMass(recipe,t){
+    var legacy=Number(String(recipe.yieldGrams||'').replace(',','.'));
+    return Number.isFinite(legacy)&&legacy>0?legacy:t.mass;
+  }
+  function batchSummary(recipe){
+    var t=batchTotals(recipe),mass=batchRecipeMass(recipe,t);
+    return {valid:t.valid&&mass>0,total:t,mass:mass,k100:mass>0?t.k*100/mass:0,p100:mass>0?t.p*100/mass:0};
   }
   function batchFoodSelect(sel,i){
     var f=food(sel),label=f?f.label:'Izberi živilo';
     return '<div class="food-picker" style="flex:1"><details><summary class="field food-picker-trigger" aria-label="Izberi sestavino">'+esc(label)+'</summary>'+
-      '<div class="food-picker-panel"><input class="field food-picker-search" type="search" placeholder="Išči: špageti, goveje surovo ..." aria-label="Išči sestavino" autocomplete="off">'+
-      '<div class="food-picker-results">'+foodPickerChoices(sel)+'</div><p class="food-picker-empty note" hidden>Ni zadetkov.</p></div></details>'+
+      '<div class="food-picker-panel"><input class="field food-picker-search" type="search" placeholder="Išči sestavino ..." aria-label="Išči sestavino" autocomplete="off">'+
+      '<div class="food-picker-results">'+foodPickerChoices(sel,false)+'</div><p class="food-picker-empty note" hidden>Ni zadetkov.</p></div></details>'+
       '<select hidden data-batch-field="food" data-bi="'+i+'" aria-label="Sestavina '+(i+1)+'"><option value="">Izberi živilo</option>'+
       groupedFoods('').map(function(g){return '<optgroup label="'+esc(g.c)+'">'+g.items.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===sel?' selected':'')+'>'+esc(x.label)+'</option>';}).join('')+'</optgroup>';}).join('')+'</select></div>';
   }
   function renderBatchCalculator(){
-    var h='<h2>Recept iz več sestavin</h2><p class="note">Za bolognese, golaž, rižote in podobne jedi: surove sestavine stehtaj posebej, po kuhanju pa celotno jed in svojo porcijo. Testenine, ki jih skuhaš ločeno, zabeleži posebej.</p>';
+    var h='<h2>Moji recepti iz sestavin</h2><p class="note">Vpiši sestavine in grame. Aplikacija izračuna kalorije in beljakovine celotnega recepta. Nato recept pri obroku izbereš kot živilo in vpišeš grame.</p>';
     h+='<button type="button" class="ghost" data-act="batchNew">+ Nov recept iz sestavin</button>';
     if(batchDraft){
-      var d=batchDraft,b=batchPortion(d);
-      h+='<div class="card" style="margin-top:10px"><label class="note">Ime recepta<input class="field" style="width:100%" data-batch-field="name" value="'+esc(d.name)+'" placeholder="npr. Goveja bolognese"></label><h3>Sestavine (pred kuhanjem)</h3>';
+      var d=batchDraft,b=batchSummary(d);
+      h+='<div class="card" style="margin-top:10px"><label class="note">Ime recepta<input class="field" style="width:100%" data-batch-field="name" value="'+esc(d.name)+'" placeholder="npr. Bolonjska omaka"></label><h3>Sestavine</h3>';
       d.parts.forEach(function(part,i){
         var f=food(part.f);
         h+='<div class="two" style="display:flex;gap:6px;align-items:center;margin-bottom:7px">'+batchFoodSelect(part.f,i)+
@@ -1901,22 +1929,17 @@ li.eaten .lab{color:var(--muted)}
           '<span class="note">'+esc(f?f.unit:'')+'</span><button type="button" class="x" data-act="batchRemovePart" data-bi="'+i+'" aria-label="Odstrani sestavino">×</button></div>';
       });
       h+='<button type="button" class="ghost" data-act="batchAddPart">+ Dodaj sestavino</button>'+
-        '<div class="macro-grid" style="margin-top:12px"><label class="note">Celotna kuhana jed (g)<input class="field" style="width:100%" type="text" inputmode="decimal" data-batch-field="yieldGrams" value="'+esc(d.yieldGrams)+'" placeholder="npr. 1100"></label>'+
-        '<label class="note">Moja porcija (g)<input class="field" style="width:100%" type="text" inputmode="decimal" data-batch-field="portionGrams" value="'+esc(d.portionGrams)+'" placeholder="npr. 600"></label></div>'+
-        '<p class="note" id="batchCalcResult">'+(b.valid?('Tvoja porcija: <b>'+Math.round(b.k)+' kcal · '+fmtN(b.p)+' g beljakovin</b> ('+fmtN(b.percent)+' % recepta). Celoten recept: '+Math.round(b.total.k)+' kcal · '+fmtN(b.total.p)+' g beljakovin.'): 'Vnesi vsa živila, količine ter težo cele kuhane jedi in svoje porcije.')+'</p>'+
-        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="ghost" data-act="batchCalc">Izračunaj</button><button type="button" class="primary" data-act="batchSave">Shrani recept</button><button type="button" class="ghost" data-act="batchCancel">Zapri</button></div>'+
-        '<p class="note">Dodaj porcijo med današnje zaužite obroke (izračun ostane shranjen kot posnetek).</p>'+
-        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><select class="field" style="flex:1" data-batch-field="mealId" aria-label="Današnji obrok">'+S.days[(new Date().getDay()+6)%7].meals.map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===d.mealId?' selected':'')+'>'+esc(m.name)+'</option>';}).join('')+'</select>'+
-        '<button type="button" class="primary" data-act="batchEat">Dodaj kot pojedeno danes</button></div></div>';
+        '<p class="note" id="batchCalcResult">'+(b.valid?('Celoten recept: <b>'+Math.round(b.total.k)+' kcal · '+fmtN(b.total.p)+' g beljakovin</b>. Masa: '+fmtN(b.mass)+' g. Na 100 g: '+Math.round(b.k100)+' kcal · '+fmtN(b.p100)+' g beljakovin.'): 'Izberi vsa živila in vnesi količine v gramih (ali kosih z znano maso).')+'</p>'+
+        '<p class="subtle">Pri novih receptih je masa vsota sestavin; kuhanje lahko spremeni dejansko maso. Pri starih receptih ohranimo že izmerjeno kuhano maso.</p>'+
+        '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="ghost" data-act="batchCalc">Izračunaj</button><button type="button" class="primary" data-act="batchSave">Shrani recept</button><button type="button" class="ghost" data-act="batchCancel">Zapri</button></div></div>';
     }
     var saved=S.batchRecipes||[];
     if(saved.length){
       h+='<h3>Shranjeni recepti ('+saved.length+')</h3>';
       saved.forEach(function(recipe){
-        var result=batchPortion(recipe);
-        h+='<div class="card"><b>'+esc(recipe.name||'Recept')+'</b><p class="note">Cela kuhana jed: '+fmtN(recipe.yieldGrams)+' g · zadnja porcija: '+fmtN(recipe.portionGrams)+' g</p>'+
-          '<p class="note">'+(result.valid?('Celoten recept: '+Math.round(result.total.k)+' kcal · '+fmtN(result.total.p)+' g belj.'): 'Preveri sestavine recepta.')+'</p>'+
-          '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="ghost" data-act="batchEdit" data-id="'+esc(recipe.id)+'">Uredi / odmeri porcijo</button><button type="button" class="x" data-act="batchDelete" data-id="'+esc(recipe.id)+'" aria-label="Odstrani recept">×</button></div></div>';
+        var b=batchSummary(recipe);
+        h+='<div class="card"><b>'+esc(recipe.name||'Recept')+'</b><p class="note">'+(b.valid?('Celoten recept: '+Math.round(b.total.k)+' kcal · '+fmtN(b.total.p)+' g beljakovin · '+fmtN(b.mass)+' g. Na 100 g: '+Math.round(b.k100)+' kcal · '+fmtN(b.p100)+' g beljakovin.'): 'Preveri sestavine recepta.')+'</p>'+
+          '<div class="two" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="ghost" data-act="batchEdit" data-id="'+esc(recipe.id)+'">Uredi recept</button><button type="button" class="x" data-act="batchDelete" data-id="'+esc(recipe.id)+'" aria-label="Odstrani recept">×</button></div></div>';
       });
     }
     return h;
@@ -1929,7 +1952,13 @@ li.eaten .lab{color:var(--muted)}
       +'<p class="note">Vpisane maščobe, OH in vlaknine: '+complete+' / '+S.foods.length+' živil. Pri '+uncertain+' živilih je bila masa stare enote ocenjena. Jajca, tortilije, sadje in podobne izdelke štejemo v kosih; meso, sir in druge tehtane izdelke v gramih.</p>';
     h += '<div class="barcode-actions"><button type="button" class="primary" data-act="barcodeOpen"> <span aria-hidden="true">▥</span> Skeniraj črtno kodo</button><button type="button" class="ghost" data-act="addFood">+ Dodaj v g</button><button type="button" class="ghost" data-act="addFoodPiece">+ Dodaj kot kos</button></div>';
     h += barcodePanelHtml();
-    h += renderBatchCalculator();
+    var recipeFoods=(S.batchRecipes||[]).filter(function(r){return food('r:'+r.id);});
+    if(recipeFoods.length){
+      h+='<h3>Shranjeni recepti kot živila</h3><div class="card"><ul class="items">'+recipeFoods.map(function(r){
+        var f=food('r:'+r.id);
+        return '<li><button type="button" class="fav-button'+(S.favoriteFoodIds.indexOf(f.id)>=0?' starred':'')+'" data-act="favoriteToggle" data-id="'+esc(f.id)+'" aria-label="Priljubljeno: '+esc(f.label)+'">'+(S.favoriteFoodIds.indexOf(f.id)>=0?'★':'☆')+'</button><span>'+esc(f.label)+'</span><em class="tnum">'+Math.round(f.kcal)+' kcal · '+fmtN(f.p)+' g belj. / 100 g</em></li>';
+      }).join('')+'</ul><p class="subtle">Recept urediš v zavihku Recepti, pri obroku ga izbereš kot živilo.</p></div>';
+    }
     if(!editing && S.favoriteFoodIds.length){
       var favorites=S.favoriteFoodIds.map(function(id){return food(id);}).filter(Boolean);
       h+='<h3>★ Priljubljena živila ('+favorites.length+')</h3><div class="card">'
@@ -2196,6 +2225,7 @@ li.eaten .lab{color:var(--muted)}
   function foodUsedInStructuredRecipes(fid) {
     var inParts=function(it){return Array.isArray(it.parts) && it.parts.some(function(p){return p.f===fid;});};
     if(S.smoothies.some(inParts))return true;
+    if((S.batchRecipes||[]).some(inParts))return true;
     if(S.days.some(function(d){return d.meals.some(function(m){return m.items.some(inParts);});}))return true;
     return Object.keys(S.daySwaps||{}).some(function(day){return Object.keys(S.daySwaps[day]||{}).some(function(mid){
       var swap=S.daySwaps[day][mid];return swap && Array.isArray(swap.items) && swap.items.some(inParts);
@@ -2232,22 +2262,26 @@ li.eaten .lab{color:var(--muted)}
     if(a==='batchCancel'){batchDraft=null;render();return;}
     if(a==='batchAddPart'){if(!batchDraft)return;batchDraft.parts.push({f:'',q:100});render();return;}
     if(a==='batchRemovePart'){if(!batchDraft)return;batchDraft.parts.splice(+b.dataset.bi,1);if(!batchDraft.parts.length)batchDraft.parts.push({f:'',q:100});render();return;}
-    if(a==='batchCalc'){if(!batchDraft)return;var calc=batchPortion(batchDraft),where=$('batchCalcResult');if(where)where.textContent=calc.valid?'Tvoja porcija: '+Math.round(calc.k)+' kcal, '+fmtN(calc.p)+' g beljakovin ('+fmtN(calc.percent)+' % recepta).':'Preveri sestavine in količine: porcija mora biti večja od 0 in ne večja od celotne kuhane jedi.';return;}
+    if(a==='batchCalc'){
+      if(!batchDraft)return;
+      var b=batchSummary(batchDraft),where=$('batchCalcResult');
+      if(where)where.textContent=b.valid?'Celoten recept: '+Math.round(b.total.k)+' kcal, '+fmtN(b.total.p)+' g beljakovin, '+fmtN(b.mass)+' g; na 100 g: '+Math.round(b.k100)+' kcal, '+fmtN(b.p100)+' g beljakovin.':'Preveri sestavine in njihove količine.';
+      return;
+    }
     if(a==='batchSave'){
       if(!batchDraft)return;
-      var result=batchPortion(batchDraft),name=String(batchDraft.name||'').trim();
-      if(!name||!result.valid){setStatus('Za shranjevanje vnesi ime, vsa živila, količine ter težo celotne jedi in porcije.');return;}
-      var next=JSON.parse(JSON.stringify(batchDraft));next.name=name;if(!next.id)next.id=nid('batch');
-      change(function(){if(!Array.isArray(S.batchRecipes))S.batchRecipes=[];var i=S.batchRecipes.findIndex(function(x){return x.id===next.id;});if(i>=0)S.batchRecipes[i]=next;else S.batchRecipes.push(next);batchDraft=null;},'Recept shranjen');return;
-    }
-    if(a==='batchEat'){
-      if(!batchDraft)return;
-      var serving=batchPortion(batchDraft),name=String(batchDraft.name||'').trim(),today=(new Date().getDay()+6)%7,
-        meal=S.days[today].meals.filter(function(m){return m.id===batchDraft.mealId;})[0]||S.days[today].meals[0];
-      if(!serving.valid||!name||!meal){setStatus('Izpolni ime, živila, količine, težo jedi in porcije.');return;}
-      var date=dKey(new Date()),it={id:nid('i'),n:name+' ('+fmtN(batchDraft.portionGrams)+' g)',k:Math.round(serving.k),p:Math.round(serving.p*10)/10,
-        extra:true,addedOn:date,eatenOn:date,note:'Recept: '+fmtN(batchDraft.portionGrams)+' g od '+fmtN(batchDraft.yieldGrams)+' g kuhane jedi'};
-      change(function(){var sw=activeSwap(meal,today);(sw?sw.items:meal.items).push(it);},'Porcija dodana kot pojedena');return;
+      var b=batchSummary(batchDraft),name=String(batchDraft.name||'').trim();
+      if(!name||!b.valid){setStatus('Za shranjevanje vnesi ime, vsa živila in količine.');return;}
+      var next=JSON.parse(JSON.stringify(batchDraft));next.name=name;
+      delete next.portionGrams;delete next.mealId;
+      if(!next.id)next.id=nid('batch');
+      change(function(){
+        if(!Array.isArray(S.batchRecipes))S.batchRecipes=[];
+        var i=S.batchRecipes.findIndex(function(x){return x.id===next.id;});
+        if(i>=0)S.batchRecipes[i]=next;else S.batchRecipes.push(next);
+        batchDraft=null;
+      },'Recept shranjen kot živilo');
+      return;
     }
     if(a==='batchEdit'){
       var recipe=(S.batchRecipes||[]).filter(function(x){return x.id===id;})[0];
@@ -2256,7 +2290,7 @@ li.eaten .lab{color:var(--muted)}
     }
     if(a==='batchDelete'){
       if(!window.confirm('Odstranim shranjeni recept? Že zabeleženi obroki ostanejo nedotaknjeni.'))return;
-      change(function(){S.batchRecipes=S.batchRecipes.filter(function(x){return x.id!==id;});if(batchDraft&&batchDraft.id===id)batchDraft=null;},'Recept odstranjen');return;
+      change(function(){freezeRefs('r:'+id);S.batchRecipes=S.batchRecipes.filter(function(x){return x.id!==id;});S.favoriteFoodIds=S.favoriteFoodIds.filter(function(x){return x!=='r:'+id;});if(batchDraft&&batchDraft.id===id)batchDraft=null;},'Recept odstranjen');return;
     }
     if(a==='barcodeOpen'){
       barcodeRequestSeq++;barcodeOpen=true;barcodeError='';barcodeDayIdx=dayIdx;barcodeMealId=S.days[dayIdx].meals[0].id;render();return;
@@ -2302,7 +2336,7 @@ li.eaten .lab{color:var(--muted)}
       trainingDayIdx=idx;render();return;
     }
     if(a==='favoriteToggle'){
-      if(!S.foods.some(function(f){return f.id===id;}))return;
+      if(!food(id))return;
       change(function(){var i=S.favoriteFoodIds.indexOf(id);if(i>=0)S.favoriteFoodIds.splice(i,1);else S.favoriteFoodIds.unshift(id);},'Priljubljena živila posodobljena');return;
     }
     if(a==='quickEaten'||a==='quickPlanned'){
@@ -2617,7 +2651,7 @@ li.eaten .lab{color:var(--muted)}
       var field=t.dataset.batchField,bi=+t.dataset.bi;
       if(field==='food' && batchDraft.parts[bi]){batchDraft.parts[bi].f=t.value;render();return;}
       else if(field==='qty' && batchDraft.parts[bi])batchDraft.parts[bi].q=t.value;
-      else if(['name','yieldGrams','portionGrams','mealId'].indexOf(field)>=0)batchDraft[field]=t.value;
+      else if(field==='name')batchDraft.name=t.value;
       return;
     }
     if (t.id === 'foodSearch') { if (e.type !== 'input') return; foodQ = t.value; render(); return; }
