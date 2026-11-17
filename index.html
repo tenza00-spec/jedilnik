@@ -1124,23 +1124,29 @@ li.eaten .lab{color:var(--muted)}
     var current=new Date(dateOfIdx(di)+'T12:00:00');current.setDate(current.getDate()-1);return dKey(current);
   }
   function yesterdayMealEntries(m,di) {
-    var date=yesterdayDate(di), currentMonday=weekMonday(), previous=new Date(date+'T12:00:00');
-    var prevIdx=(previous.getDay()+6)%7, sourceMeal=null;
-    // For dates in the current week, read the actual recorded portions first.
-    if(previous>=currentMonday && S.days[prevIdx]){
-      sourceMeal=S.days[prevIdx].meals.filter(function(x){return x.name===m.name || x.id===m.id;})[0];
-      if(sourceMeal){
-        var live=visibleMealItems(sourceMeal,prevIdx).filter(function(it){return portionOf(it,date)>0;}).map(function(it){
-          var fraction=portionOf(it,date);
-          var e={name:itemLabel(it),kcal:Math.round(itemK(it)*fraction),protein:Math.round(itemP(it)*fraction*10)/10,meal:m.name};
-          NUTRIENT_KEYS.forEach(function(k){var n=itemNutrient(it,k);e[k]=n==null?null:Math.round(n*fraction*10)/10;});
-          return e;
-        });
-        if(live.length)return live;
-      }
-    }
+    var date=yesterdayDate(di), previous=new Date(date+'T12:00:00');
+    var prevIdx=(previous.getDay()+6)%7, currentMeals=S.days[di]&&S.days[di].meals||[];
+    var mealIndex=currentMeals.findIndex(function(x){return x.id===m.id;});
+    var prevMeals=S.days[prevIdx]&&S.days[prevIdx].meals||[];
+    // Meal IDs and labels may differ between weekdays. Match by position first.
+    var sourceMeal=mealIndex>=0?prevMeals[mealIndex]:null;
+    if(!sourceMeal)sourceMeal=prevMeals.filter(function(x){return x.name===m.name;})[0];
     var hist=S.history&&S.history[date];
-    return hist&&Array.isArray(hist.items)?hist.items.filter(function(x){return x.meal===m.name || (sourceMeal && x.meal===sourceMeal.name);}):[];
+    // Archived entries are the source of truth for dates outside the active week.
+    var histEntries=hist&&Array.isArray(hist.items)?hist.items.filter(function(x){
+      return x.meal===(sourceMeal?sourceMeal.name:m.name);
+    }):[];
+    var currentMonday=weekMonday();
+    if(previous>=currentMonday && sourceMeal){
+      var live=visibleMealItems(sourceMeal,prevIdx).filter(function(it){return portionOf(it,date)>0;}).map(function(it){
+        var fraction=portionOf(it,date);
+        var e={name:itemLabel(it),kcal:Math.round(itemK(it)*fraction),protein:Math.round(itemP(it)*fraction*10)/10,meal:m.name};
+        NUTRIENT_KEYS.forEach(function(k){var n=itemNutrient(it,k);e[k]=n==null?null:Math.round(n*fraction*10)/10;});
+        return e;
+      });
+      if(live.length)return live;
+    }
+    return histEntries;
   }
   function renderWeek() {
     var short = ['Pon', 'Tor', 'Sre', 'Čet', 'Pet', 'Sob', 'Ned'], today = (new Date().getDay() + 6) % 7;
