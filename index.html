@@ -1158,13 +1158,14 @@ li.eaten .lab{color:var(--muted)}
             '<div class="acts"><button type="button" class="primary" data-act="adderSave">Dodaj</button><button type="button" class="ghost" data-act="adderCancel">Prekliči</button></div></div>';
         } else {
           h += '<button type="button" class="add" data-act="adderOpen" data-m="' + m.id + '">+ Dodaj, kar sem jedel</button>';
-          if(yesterdayMealEntries(m,dayIdx).length && dateOfIdx(dayIdx)<=dKey(new Date()))
-            h += '<button type="button" class="ghost" data-act="repeatYesterday" data-m="'+esc(m.id)+'" style="margin:6px 0">↻ Ponovi včerajšnje zaužito</button>';
+
         }
       } else {
         visibleMealItems(m,dayIdx).forEach(function (it) { h += '<div class="eitem">' + itemEditor(it, 'e', it.id) + '</div>'; });
         if (!activeSwap(m,dayIdx)) h += '<button type="button" class="add" data-act="addItem" data-m="' + m.id + '">+ Dodaj jed v jedilnik</button>';
       }
+      var canRepeatYesterday = yesterdayMealEntries(m,dayIdx).length > 0 && dateOfIdx(dayIdx)<=dKey(new Date());
+      h += '<button type="button" class="ghost" data-act="repeatYesterday" data-m="'+esc(m.id)+'" style="margin:6px 0"'+(canRepeatYesterday?'':' disabled title="Za ta obrok včeraj ni zabeleženih zaužitih jedi"')+'>↻ Ponovi včerajšnje zaužito</button>';
       if (activeSwap(m,dayIdx)) h += '<button type="button" class="ghost" data-act="swapRevert" data-m="' + m.id + '">Vrni prvotni obrok</button>';
       h += '<button type="button" class="add" data-act="suggest" data-m="' + m.id + '">Predlagaj manjši obrok</button>';
       if (mealSuggest === m.id) {
